@@ -1,0 +1,141 @@
+// ==========================================================================
+// SHARP CRACKERS - CART & ORDER CONTEXT
+// Manages shopping cart state, real-time calculations, and persistent sessions
+// ==========================================================================
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { dataService } from '../services/dataService';
+
+const CartContext = createContext();
+
+const CART_STORAGE_KEY = 'sharp_crackers_cart_session';
+
+export const CartProvider = ({ children }) => {
+  // Cart stored as { [productId]: quantity }
+  const [quantities, setQuantities] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY) || localStorage.getItem('shark_crackers_cart_session');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [products, setProducts] = useState(() => dataService.getProducts());
+  const [settings, setSettings] = useState(() => dataService.getSettings());
+
+  // Listen to product/setting updates
+  useEffect(() => {
+    const handleDataChange = () => {
+      setProducts(dataService.getProducts());
+      setSettings(dataService.getSettings());
+    };
+    window.addEventListener('sharp_data_changed', handleDataChange);
+    window.addEventListener('shark_data_changed', handleDataChange);
+    return () => {
+      window.removeEventListener('sharp_data_changed', handleDataChange);
+      window.removeEventListener('shark_data_changed', handleDataChange);
+    };
+  }, []);
+
+  // Save cart to localStorage on changes
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(quantities));
+  }, [quantities]);
+
+  const getItemQuantity = (productId) => {
+    return quantities[productId] || 0;
+  };
+
+  const updateQuantity = (productId, delta) => {
+    setQuantities(prev => {
+      const current = prev[productId] || 0;
+      const next = Math.max(0, current + delta);
+      const updated = { ...prev };
+      if (next === 0) {
+        delete updated[productId];
+      } else {
+        updated[productId] = next;
+      }
+      return updated;
+    });
+  };
+
+  const setItemQuantity = (productId, rawValue) => {
+    const val = parseInt(rawValue, 10);
+    const next = isNaN(val) ? 0 : Math.max(0, val);
+    setQuantities(prev => {
+      const updated = { ...prev };
+      if (next === 0) {
+        delete updated[productId];
+      } else {
+        updated[productId] = next;
+      }
+      return updated;
+    });
+  };
+
+  const removeFromCart = (productId) => {
+    setQuantities(prev => {
+      const updated = { ...prev };
+      delete updated[productId];
+      return updated;
+    });
+  };
+
+  const clearCart = () => {
+    setQuantities({});
+  };
+
+  // Compile cart items with full product snapshots
+  const cartItems = Object.entries(quantities)
+    .filter(([_, qty]) => qty > 0)
+    .map(([productId, qty]) => {
+      const product = products.find(p => p.id === productId);
+      if (!product) return null;
+      return {
+        ...product,
+        quantity: qty,
+        totalPrice: Number(product.unitPrice) * qty
+      };
+    })
+    .filter(Boolean);
+
+  const totalSelectedProducts = cartItems.length;
+  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartSubtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+  const deliveryCharge = 0;
+  const cartGrandTotal = cartSubtotal;
+
+  return (
+    <CartContext.Provider
+      value={{
+        quantities,
+        cartItems,
+        getItemQuantity,
+        updateQuantity,
+        setItemQuantity,
+        removeFromCart,
+        clearCart,
+        totalSelectedProducts,
+        totalQuantity,
+        cartSubtotal,
+        deliveryCharge,
+        cartGrandTotal,
+        settings,
+        products
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};

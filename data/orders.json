@@ -1,0 +1,146 @@
+[
+  {
+    "orderId": "SC-2026-1082",
+    "createdAt": "2026-10-17T03:20:36.805Z",
+    "customer": {
+      "name": "Suresh Kumar",
+      "phone": "9876543210",
+      "email": "suresh.kumar@example.com",
+      "deliveryType": "delivery",
+      "address": "No. 12, Anna Nagar West, Madurai - 625020",
+      "notes": "Please deliver before Friday evening."
+    },
+    "items": [
+      {
+        "id": "prod-1",
+        "code": "SC-SP01",
+        "name": "10 cm Electric Sparklers",
+        "packDetails": "10 pcs / box",
+        "unitPrice": 45,
+        "quantity": 4,
+        "totalPrice": 180,
+        "image": "/images/product_sparkler_1791567639029.jpg"
+      },
+      {
+        "id": "prod-5",
+        "code": "SC-FP01",
+        "name": "Flower Pot Special (Standard)",
+        "packDetails": "10 pcs / box",
+        "unitPrice": 130,
+        "quantity": 2,
+        "totalPrice": 260,
+        "image": "/images/product_flowerpots.jpg"
+      },
+      {
+        "id": "prod-8",
+        "code": "SC-GC01",
+        "name": "Ground Chakkar Special",
+        "packDetails": "10 pcs / box",
+        "unitPrice": 90,
+        "quantity": 3,
+        "totalPrice": 270,
+        "image": "/images/product_chakkars.jpg"
+      },
+      {
+        "id": "prod-22",
+        "code": "SC-GB02",
+        "name": "Sharp Family Sparkle Pack (35 Items)",
+        "packDetails": "1 Mega Box",
+        "unitPrice": 1490,
+        "quantity": 1,
+        "totalPrice": 1490,
+        "image": "/images/product_giftpack_1791567665442.jpg"
+      }
+    ],
+    "subtotal": 2200,
+    "deliveryCharge": 150,
+    "grandTotal": 2350,
+    "status": "Pending"
+  },
+  {
+    "orderId": "SC-2026-1045",
+    "createdAt": "2026-10-16T04:20:36.805Z",
+    "customer": {
+      "name": "Priya Sundaram",
+      "phone": "9842198421",
+      "email": "priya.sundar@gmail.com",
+      "deliveryType": "pickup",
+      "address": "Store Pickup - Sivakasi Showroom",
+      "notes": "Will pick up around 6 PM."
+    },
+    "items": [
+      {
+        "id": "prod-15",
+        "code": "SC-SD02",
+        "name": "1000 Wala Deluxe Garland (Ladi)",
+        "packDetails": "1 pc",
+        "unitPrice": 390,
+        "quantity": 2,
+        "totalPrice": 780,
+        "image": "/images/product_garland.jpg"
+      },
+      {
+        "id": "prod-19",
+        "code": "SC-FC03",
+        "name": "12 Shots Sky Wonder Repeater",
+        "packDetails": "1 box",
+        "unitPrice": 450,
+        "quantity": 2,
+        "totalPrice": 900,
+        "image": "/images/product_fountain_1791567652291.jpg"
+      },
+      {
+        "id": "prod-3",
+        "code": "SC-SP03",
+        "name": "30 cm Deluxe Golden Sparklers",
+        "packDetails": "5 pcs / box",
+        "unitPrice": 110,
+        "quantity": 5,
+        "totalPrice": 550,
+        "image": "/images/product_sparkler_1791567639029.jpg"
+      }
+    ],
+    "subtotal": 2230,
+    "deliveryCharge": 0,
+    "grandTotal": 2230,
+    "status": "Processing"
+  },
+  {
+    "orderId": "SC-2026-0988",
+    "createdAt": "2026-10-14T08:20:36.805Z",
+    "customer": {
+      "name": "Murugan Enterprises",
+      "phone": "9443312345",
+      "email": "murugan.office@yahoo.com",
+      "deliveryType": "delivery",
+      "address": "Plot 88, SIDCO Industrial Estate, Coimbatore - 641021",
+      "notes": "Company staff Diwali gift packs."
+    },
+    "items": [
+      {
+        "id": "prod-23",
+        "code": "SC-GB03",
+        "name": "Sharp Royal Deluxe VIP Box (50 Items)",
+        "packDetails": "1 Luxury Trunk",
+        "unitPrice": 2750,
+        "quantity": 3,
+        "totalPrice": 8250,
+        "image": "/images/product_giftpack_1791567665442.jpg"
+      },
+      {
+        "id": "prod-16",
+        "code": "SC-SD03",
+        "name": "5000 Wala Royal Mega Garland",
+        "packDetails": "1 pc",
+        "unitPrice": 1950,
+        "quantity": 1,
+        "totalPrice": 1950,
+        "image": "/images/product_garland.jpg"
+      }
+    ],
+    "subtotal": 10200,
+    "deliveryCharge": 0,
+    "grandTotal": 10200,
+    "status": "Completed"
+  }
+]
