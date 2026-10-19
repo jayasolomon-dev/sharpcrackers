@@ -8,6 +8,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { redisCache } from './src/services/redisService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,7 @@ const PORT = process.env.PORT || 10000;
 const DIST_DIR = path.join(__dirname, 'dist');
 const DATA_DIR = path.join(__dirname, 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const BACKUP_ORDERS_FILE = path.join(DATA_DIR, 'orders_backup.json');
 const DELETED_ORDERS_FILE = path.join(DATA_DIR, 'deleted_orders.json');
 const ENQUIRIES_FILE = path.join(DATA_DIR, 'enquiries.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
@@ -24,6 +26,58 @@ const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
+
+// ============================================================================
+// 30-DAY BILL RETENTION & BACKUP ARCHIVE SYSTEM
+// Bills older than 30 days are automatically archived to orders_backup.json
+// ============================================================================
+const ORDER_RETENTION_DAYS = 30;
+const ORDER_RETENTION_MS = ORDER_RETENTION_DAYS * 24 * 60 * 60 * 1000; // 30 days = 2,592,000,000 ms
+
+const isOrderExpired = (order, now = Date.now()) => {
+  if (!order || !order.createdAt) return false;
+  const time = new Date(order.createdAt).getTime();
+  if (isNaN(time)) return false;
+  return (now - time) > ORDER_RETENTION_MS;
+};
+
+// Append expired orders to backup archive file
+const appendToBackupOrders = (expiredOrders = []) => {
+  if (!Array.isArray(expiredOrders) || expiredOrders.length === 0) return;
+  try {
+    const existing = readJsonFile(BACKUP_ORDERS_FILE, []);
+    const map = new Map();
+    existing.forEach(o => { if (o && o.orderId) map.set(o.orderId, o); });
+    const nowIso = new Date().toISOString();
+    expiredOrders.forEach(o => {
+      if (o && o.orderId && !map.has(o.orderId)) {
+        map.set(o.orderId, { ...o, archivedAt: nowIso, isArchived: true });
+      }
+    });
+    const updated = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    writeJsonFile(BACKUP_ORDERS_FILE, updated);
+    console.log(`[Backup Archive] Safely stored ${expiredOrders.length} bills in backup archive (Total: ${updated.length})`);
+  } catch (err) {
+    console.error('[Backup Archive Error]', err);
+  }
+};
+
+const pruneExpiredOrders = (orders = [], now = Date.now()) => {
+  if (!Array.isArray(orders)) return [];
+  const active = [];
+  const expired = [];
+  for (const o of orders) {
+    if (isOrderExpired(o, now)) {
+      expired.push(o);
+    } else {
+      active.push(o);
+    }
+  }
+  if (expired.length > 0) {
+    appendToBackupOrders(expired);
+  }
+  return active;
+};
 
 // Initial sample orders if file doesn't exist yet
 const INITIAL_ORDERS = [
@@ -122,12 +176,33 @@ const writeJsonFile = (filePath, data) => {
 if (!fs.existsSync(ORDERS_FILE)) {
   writeJsonFile(ORDERS_FILE, INITIAL_ORDERS);
 }
+if (!fs.existsSync(BACKUP_ORDERS_FILE)) {
+  writeJsonFile(BACKUP_ORDERS_FILE, []);
+}
 if (!fs.existsSync(DELETED_ORDERS_FILE)) {
   writeJsonFile(DELETED_ORDERS_FILE, []);
 }
 if (!fs.existsSync(ENQUIRIES_FILE)) {
   writeJsonFile(ENQUIRIES_FILE, []);
 }
+if (!fs.existsSync(SETTINGS_FILE)) {
+  writeJsonFile(SETTINGS_FILE, {});
+}
+
+// Automatic background 30-day bill cleanup worker (runs every 1 hour)
+setInterval(() => {
+  try {
+    const raw = readJsonFile(ORDERS_FILE, []);
+    const active = pruneExpiredOrders(raw);
+    if (active.length !== raw.length) {
+      const purgedCount = raw.length - active.length;
+      writeJsonFile(ORDERS_FILE, active);
+      console.log(`[Auto-Retention 30-Days] Successfully purged ${purgedCount} expired bill(s). Active orders remaining: ${active.length}`);
+    }
+  } catch (err) {
+    console.error('[Auto-Retention Error]', err);
+  }
+}, 3600000);
 
 // MIME types for static assets
 const MIME_TYPES = {
@@ -172,7 +247,8 @@ const parseRequestBody = (req) => {
 // HTTP Server
 const server = http.createServer(async (req, res) => {
   // Common CORS and security headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -193,11 +269,9 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/sync' && req.method === 'POST') {
     try {
       const payload = await parseRequestBody(req);
-      const clientOrders = Array.isArray(payload.orders) ? payload.orders : [];
-      const clientDeletedIds = Array.isArray(payload.deletedOrderIds) ? payload.deletedOrderIds : [];
-
-      // Read current server state
-      let serverOrders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+      // Read current server state and prune bills older than 30 days
+      const now = Date.now();
+      let serverOrders = pruneExpiredOrders(readJsonFile(ORDERS_FILE, INITIAL_ORDERS), now);
       let serverDeletedIds = readJsonFile(DELETED_ORDERS_FILE, []);
 
       // Merge deleted IDs (once deleted anywhere, stays deleted)
@@ -205,7 +279,7 @@ const server = http.createServer(async (req, res) => {
       const mergedDeletedList = Array.from(allDeletedSet);
       writeJsonFile(DELETED_ORDERS_FILE, mergedDeletedList);
 
-      // Reconcile and merge orders by orderId
+      // Reconcile and merge orders by orderId (strictly within 30-day window)
       const ordersMap = new Map();
       serverOrders.forEach(o => {
         if (o && o.orderId && !allDeletedSet.has(o.orderId)) {
@@ -213,7 +287,7 @@ const server = http.createServer(async (req, res) => {
         }
       });
 
-      clientOrders.forEach(co => {
+      pruneExpiredOrders(clientOrders, now).forEach(co => {
         if (!co || !co.orderId || allDeletedSet.has(co.orderId)) return;
         const existing = ordersMap.get(co.orderId);
         if (!existing) {
@@ -275,20 +349,101 @@ const server = http.createServer(async (req, res) => {
 
   // 1. ORDERS API
   if (pathname === '/api/orders' && req.method === 'GET') {
-    const orders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+    const rawOrders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+    const activeOrders = pruneExpiredOrders(rawOrders);
+    if (activeOrders.length !== rawOrders.length) {
+      writeJsonFile(ORDERS_FILE, activeOrders);
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(orders));
+    res.end(JSON.stringify(activeOrders));
+    return;
+  }
+
+  // Explicit purge endpoint for 30-day bill auto-cleaning
+  if (pathname === '/api/orders/purge-expired' && req.method === 'POST') {
+    const rawOrders = readJsonFile(ORDERS_FILE, []);
+    const activeOrders = pruneExpiredOrders(rawOrders);
+    const purgedCount = rawOrders.length - activeOrders.length;
+    if (purgedCount > 0) {
+      writeJsonFile(ORDERS_FILE, activeOrders);
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, purgedCount, activeCount: activeOrders.length }));
+    return;
+  }
+
+  // 1.1 BACKUP & ARCHIVE ORDERS API
+  if (pathname === '/api/orders/backup' && req.method === 'GET') {
+    const backupOrders = readJsonFile(BACKUP_ORDERS_FILE, []);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(backupOrders));
+    return;
+  }
+
+  if (pathname === '/api/orders/backup' && req.method === 'POST') {
+    try {
+      const payload = await parseRequestBody(req);
+      const incoming = Array.isArray(payload) ? payload : (Array.isArray(payload.orders) ? payload.orders : []);
+      appendToBackupOrders(incoming);
+      const currentBackup = readJsonFile(BACKUP_ORDERS_FILE, []);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, count: currentBackup.length, backupOrders: currentBackup }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // Restore order from backup storage back into active orders
+  if (pathname === '/api/orders/restore' && req.method === 'POST') {
+    try {
+      const { orderId } = await parseRequestBody(req);
+      if (!orderId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'orderId is required' }));
+        return;
+      }
+      const backupList = readJsonFile(BACKUP_ORDERS_FILE, []);
+      const target = backupList.find(o => o.orderId === orderId);
+      if (!target) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Order not found in backup storage' }));
+        return;
+      }
+
+      // Remove from backup list
+      const updatedBackup = backupList.filter(o => o.orderId !== orderId);
+      writeJsonFile(BACKUP_ORDERS_FILE, updatedBackup);
+
+      // Restore into active orders with refreshed timestamp
+      const restored = { ...target, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      delete restored.archivedAt;
+      delete restored.isArchived;
+
+      const activeOrders = readJsonFile(ORDERS_FILE, []);
+      activeOrders.unshift(restored);
+      writeJsonFile(ORDERS_FILE, activeOrders);
+
+      console.log(`[Backup Archive] Restored order #${orderId} back to active orders!`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, restoredOrder: restored }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 
   if (pathname === '/api/orders' && req.method === 'POST') {
     try {
       const newOrder = await parseRequestBody(req);
-      const orders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+      const rawOrders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
+      const orders = pruneExpiredOrders(rawOrders);
 
       // Verify and prepend order
       if (!newOrder.orderId) {
-        newOrder.orderId = `SC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        newOrder.orderId = `SC-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
       }
       if (!newOrder.createdAt) {
         newOrder.createdAt = new Date().toISOString();
@@ -303,7 +458,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       writeJsonFile(ORDERS_FILE, orders);
-      console.log(`[API] New Order Placed: #${newOrder.orderId} by ${newOrder.customer?.name || 'Customer'} (Total: ₹${newOrder.grandTotal})`);
+      console.log(`[API] New Order Placed & Cloud-Stored: #${newOrder.orderId} by ${newOrder.customer?.name || 'Customer'} (Total: ₹${newOrder.grandTotal})`);
 
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(newOrder));
@@ -371,7 +526,7 @@ const server = http.createServer(async (req, res) => {
         newEnquiry.id = 'enq-' + Date.now();
       }
       if (!newEnquiry.enquiryNumber) {
-        newEnquiry.enquiryNumber = `#ENQ-${1000 + enquiries.length + 1}`;
+        newEnquiry.enquiryNumber = `#ENQ-${Date.now().toString().slice(-6)}`;
       }
       if (!newEnquiry.createdAt) {
         newEnquiry.createdAt = new Date().toISOString();
@@ -411,6 +566,11 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/settings' && req.method === 'POST') {
     try {
       const newSettings = await parseRequestBody(req);
+      if (!newSettings || typeof newSettings !== 'object' || Array.isArray(newSettings)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid settings payload: expected object' }));
+        return;
+      }
       writeJsonFile(SETTINGS_FILE, newSettings);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(newSettings));
@@ -419,6 +579,61 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ error: err.message }));
     }
     return;
+  }
+
+  // ------------------------------------------------------------------------
+  // 4. REDIS ACCELERATION & CACHE API
+  // ------------------------------------------------------------------------
+  if (pathname === '/api/redis/status' && req.method === 'GET') {
+    const stats = await redisCache.getStats();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(stats));
+    return;
+  }
+
+  if (pathname === '/api/redis/warm' && req.method === 'POST') {
+    const pubDir = path.join(__dirname, 'public');
+    const warmed = await redisCache.prewarm(pubDir);
+    if (fs.existsSync(DIST_DIR)) await redisCache.prewarm(DIST_DIR);
+    const stats = await redisCache.getStats();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, imagesWarmed: warmed, stats }));
+    return;
+  }
+
+  if (pathname === '/api/redis/flush' && req.method === 'POST') {
+    await redisCache.flushall();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, message: 'Redis cache flushed' }));
+    return;
+  }
+
+  // ------------------------------------------------------------------------
+  // REDIS-ACCELERATED STATIC IMAGE SERVING (0ms RAM Delivery, 0 Network Overhead)
+  // ------------------------------------------------------------------------
+  if (pathname.startsWith('/images/')) {
+    const ext = path.extname(pathname).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'image/jpeg';
+    const redisKey = `img:${pathname}`;
+    const cachedBuf = await redisCache.getBuffer(redisKey);
+
+    if (cachedBuf) {
+      const etag = `W/"${cachedBuf.length.toString(16)}"`;
+      if (req.headers['if-none-match'] === etag) {
+        res.writeHead(304, { 'Cache-Control': 'public, max-age=31536000, immutable' });
+        res.end();
+        return;
+      }
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'ETag': etag,
+        'X-Redis-Cache': 'HIT',
+        'Content-Length': cachedBuf.length
+      });
+      res.end(cachedBuf);
+      return;
+    }
   }
 
   // ------------------------------------------------------------------------
@@ -437,9 +652,15 @@ const server = http.createServer(async (req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
     const content = fs.readFileSync(filePath);
+
+    // If it's an image not yet in Redis, cache it now
+    if (pathname.startsWith('/images/')) {
+      await redisCache.setBuffer(`img:${pathname}`, content);
+    }
+
     res.writeHead(200, {
       'Content-Type': contentType,
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000'
+      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable'
     });
     res.end(content);
     return;
@@ -462,8 +683,12 @@ const server = http.createServer(async (req, res) => {
   res.end('Application building or dist directory not found. Please run "npm run build".');
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 SHARP CRACKERS Server running on port ${PORT}`);
   console.log(`📁 Serving static files from: ${DIST_DIR}`);
   console.log(`💾 Live JSON Storage path: ${DATA_DIR}`);
+
+  // Prewarm Redis cache with all static images
+  await redisCache.prewarm(path.join(__dirname, 'public'));
+  if (fs.existsSync(DIST_DIR)) await redisCache.prewarm(DIST_DIR);
 });

@@ -76,10 +76,8 @@ export const ProductsPage = ({
       setCategories(dataService.getCategories());
     };
     window.addEventListener('sharp_data_changed', handleDataChange);
-    window.addEventListener('shark_data_changed', handleDataChange);
     return () => {
       window.removeEventListener('sharp_data_changed', handleDataChange);
-      window.removeEventListener('shark_data_changed', handleDataChange);
     };
   }, []);
 
@@ -462,7 +460,14 @@ export const ProductsPage = ({
                                 onClick={() => setPreviewProduct(product)}
                                 title="Click to view large photo"
                               >
-                                <img src={product.image} alt={product.name} className="product-thumb" />
+                                <img 
+                                  src={product.image} 
+                                  alt={product.name} 
+                                  className="product-thumb" 
+                                  loading="lazy"
+                                  decoding="async"
+                                  onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                                />
                                 <div className="thumb-zoom-icon">
                                   <Eye size={12} />
                                 </div>
@@ -578,7 +583,14 @@ export const ProductsPage = ({
                             onClick={() => setPreviewProduct(product)}
                             title="Tap to preview image"
                           >
-                            <img src={product.image} alt={product.name} className="mobile-thumb-img" />
+                            <img 
+                              src={product.image} 
+                              alt={product.name} 
+                              className="mobile-thumb-img" 
+                              loading="lazy"
+                              decoding="async"
+                              onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                            />
                             <div className="mobile-thumb-zoom-badge">
                               <Eye size={12} />
                             </div>
@@ -752,7 +764,14 @@ export const ProductsPage = ({
             </button>
             <div className="modal-body-layout">
               <div className="modal-img-frame">
-                <img src={previewProduct.image} alt={previewProduct.name} className="modal-large-img" />
+                <img 
+                  src={previewProduct.image} 
+                  alt={previewProduct.name} 
+                  className="modal-large-img" 
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                />
               </div>
               <div className="modal-product-info">
                 <div className="code-pill">{previewProduct.code}</div>

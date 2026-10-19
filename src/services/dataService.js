@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   CATEGORIES: 'sharp_crackers_categories',
   PRODUCTS: 'sharp_crackers_products',
   ORDERS: 'sharp_crackers_orders',
+  BACKUP_ORDERS: 'sharp_crackers_orders_backup',
   DELETED_ORDERS: 'sharp_crackers_deleted_orders',
   ENQUIRIES: 'sharp_crackers_enquiries',
   ADMIN_SESSION: 'sharp_crackers_admin_session'
@@ -48,7 +49,7 @@ const DEFAULT_SETTINGS = {
   deliveryCharge: 150,
   freeDeliveryThreshold: 5000,
   promoBannerText: "💥 DIWALI 2026 SPECIAL OFFER: Flat Direct Sourcing with Heavy Savings! Order online now for guaranteed express delivery! 🎆",
-  logoUrl: "/images/beats_crackers_logo.jpg",
+  logoUrl: "/images/sharp_crackers_logo_final.png",
   heroBannerUrl: "/images/hero_banner_1791567625102.jpg"
 };
 
@@ -634,6 +635,57 @@ const DEFAULT_ORDERS = [
   }
 ];
 
+// ============================================================================
+// 30-DAY BILL RETENTION & AUTO-DELETE SYSTEM
+// ============================================================================
+export const ORDER_RETENTION_DAYS = 30;
+export const ORDER_RETENTION_MS = ORDER_RETENTION_DAYS * 24 * 60 * 60 * 1000; // 30 days = 2,592,000,000 ms
+
+/**
+ * Checks if an order's createdAt is older than 30 days
+ */
+export const isOrderExpired = (order, now = Date.now()) => {
+  if (!order || !order.createdAt) return false;
+  const time = new Date(order.createdAt).getTime();
+  if (isNaN(time)) return false;
+  return (now - time) > ORDER_RETENTION_MS;
+};
+
+/**
+ * Returns precise retention details for Admin UI (days remaining, expiry timestamp, alert flags)
+ */
+export const getOrderRetentionDetails = (order, now = Date.now()) => {
+  if (!order || !order.createdAt) {
+    return { daysRemaining: ORDER_RETENTION_DAYS, isExpired: false, percentRemaining: 100, expiresAt: null };
+  }
+  const time = new Date(order.createdAt).getTime();
+  if (isNaN(time)) {
+    return { daysRemaining: ORDER_RETENTION_DAYS, isExpired: false, percentRemaining: 100, expiresAt: null };
+  }
+  const ageMs = now - time;
+  const msRemaining = ORDER_RETENTION_MS - ageMs;
+  const daysRemaining = Math.max(0, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
+  const isExpired = ageMs > ORDER_RETENTION_MS;
+  const percentRemaining = Math.max(0, Math.min(100, Math.round((msRemaining / ORDER_RETENTION_MS) * 100)));
+  const expiresAt = new Date(time + ORDER_RETENTION_MS).toISOString();
+
+  return {
+    daysRemaining,
+    isExpired,
+    percentRemaining,
+    expiresAt,
+    isNearExpiry: daysRemaining <= 5 && !isExpired
+  };
+};
+
+/**
+ * Filters out any bills older than 30 days
+ */
+export const filterActiveOrders = (orders = [], now = Date.now()) => {
+  if (!Array.isArray(orders)) return [];
+  return orders.filter(o => !isOrderExpired(o, now));
+};
+
 // Data service helpers
 export const dataService = {
   // --- SETTINGS ---
@@ -658,8 +710,8 @@ export const dataService = {
         parsed.subtitle = parsed.subtitle.replace(/Wholesale\s*&\s*Retail/gi, 'Retail & Online').replace(/Wholesale/gi, 'Direct');
         changed = true;
       }
-      if (!parsed.logoUrl) {
-        parsed.logoUrl = '/images/beats_crackers_logo.jpg';
+      if (!parsed.logoUrl || parsed.logoUrl.includes('beats_crackers_logo')) {
+        parsed.logoUrl = '/images/sharp_crackers_logo_final.png';
         changed = true;
       }
       if (changed) {
@@ -833,6 +885,13 @@ export const dataService = {
     return true;
   },
 
+  // --- 30-DAY RETENTION EXPORTS ATTACHED TO dataService ---
+  ORDER_RETENTION_DAYS,
+  ORDER_RETENTION_MS,
+  isOrderExpired,
+  getOrderRetentionDetails,
+  filterActiveOrders,
+
   // --- ORDERS & SYNC ---
   getDeletedOrderIds() {
     try {
@@ -851,35 +910,181 @@ export const dataService = {
     }
   },
 
+  // --- BACKUP & ARCHIVE ORDERS (Bills retained past 30 days) ---
+  getBackupOrders() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.BACKUP_ORDERS) || localStorage.getItem('shark_crackers_orders_backup');
+      const list = data ? JSON.parse(data) : [];
+      return Array.isArray(list) ? list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveBackupOrders(backupOrders) {
+    if (!Array.isArray(backupOrders)) return [];
+    localStorage.setItem(STORAGE_KEYS.BACKUP_ORDERS, JSON.stringify(backupOrders));
+    notifyDataChanged({ type: 'BACKUP_ORDERS_UPDATED' });
+    return backupOrders;
+  },
+
+  archiveExpiredOrders(expiredOrders = []) {
+    if (!Array.isArray(expiredOrders) || expiredOrders.length === 0) return [];
+    const currentBackup = this.getBackupOrders();
+    const map = new Map();
+    currentBackup.forEach(o => { if (o && o.orderId) map.set(o.orderId, o); });
+    const nowIso = new Date().toISOString();
+
+    expiredOrders.forEach(o => {
+      if (o && o.orderId && !map.has(o.orderId)) {
+        map.set(o.orderId, { ...o, archivedAt: nowIso, isArchived: true });
+      }
+    });
+
+    const updatedBackup = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    this.saveBackupOrders(updatedBackup);
+
+    // Sync backup batch to server/cloud storage
+    fetch('/api/orders/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(expiredOrders)
+    }).catch(() => {});
+
+    return updatedBackup;
+  },
+
+  async fetchBackupOrders() {
+    try {
+      const res = await fetch('/api/orders/backup');
+      if (res.ok) {
+        const remoteBackup = await res.json();
+        if (Array.isArray(remoteBackup)) {
+          const localBackup = this.getBackupOrders();
+          const map = new Map();
+          localBackup.forEach(o => { if (o && o.orderId) map.set(o.orderId, o); });
+          remoteBackup.forEach(o => { if (o && o.orderId) map.set(o.orderId, o); });
+          const unified = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          this.saveBackupOrders(unified);
+          return unified;
+        }
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+    return this.getBackupOrders();
+  },
+
+  async restoreOrderFromBackup(orderId) {
+    const backupList = this.getBackupOrders();
+    const target = backupList.find(o => o.orderId === orderId);
+    if (!target) return false;
+
+    // Remove from backup
+    const newBackup = backupList.filter(o => o.orderId !== orderId);
+    this.saveBackupOrders(newBackup);
+
+    // Refresh timestamps and prepend to active orders
+    const restored = {
+      ...target,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    delete restored.archivedAt;
+    delete restored.isArchived;
+
+    const currentOrders = this.getOrders();
+    const updatedOrders = [restored, ...currentOrders.filter(o => o.orderId !== orderId)];
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updatedOrders));
+    notifyDataChanged({ type: 'ORDER_RESTORED', order: restored });
+
+    // Sync to backend
+    fetch('/api/orders/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId })
+    }).catch(() => {});
+
+    return restored;
+  },
+
   getOrders() {
     const data = localStorage.getItem(STORAGE_KEYS.ORDERS);
     if (!data) {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(DEFAULT_ORDERS));
-      return DEFAULT_ORDERS;
+      const initialActive = filterActiveOrders(DEFAULT_ORDERS);
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(initialActive));
+      return initialActive;
     }
     try {
       const parsed = JSON.parse(data);
       const deletedSet = new Set(this.getDeletedOrderIds());
-      return parsed.filter(o => o && o.orderId && !deletedSet.has(o.orderId));
+      const nonDeleted = parsed.filter(o => o && o.orderId && !deletedSet.has(o.orderId));
+      
+      // Separate active and expired (> 30 days)
+      const activeOrders = [];
+      const expiredOrders = [];
+      nonDeleted.forEach(o => {
+        if (isOrderExpired(o)) {
+          expiredOrders.push(o);
+        } else {
+          activeOrders.push(o);
+        }
+      });
+
+      // Automatically store expired bills into secure backup storage
+      if (expiredOrders.length > 0) {
+        this.archiveExpiredOrders(expiredOrders);
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(activeOrders));
+      } else if (activeOrders.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(activeOrders));
+      }
+      return activeOrders;
     } catch {
-      return DEFAULT_ORDERS;
+      return filterActiveOrders(DEFAULT_ORDERS);
     }
   },
 
-  // Safe deduplicated two-way merge: never blindly overwrites
+  // Manual or automatic purge of expired orders (> 30 days old)
+  pruneExpiredOrders() {
+    const rawData = localStorage.getItem(STORAGE_KEYS.ORDERS);
+    const parsed = rawData ? JSON.parse(rawData) : [];
+    const active = [];
+    const expired = [];
+    parsed.forEach(o => {
+      if (isOrderExpired(o)) {
+        expired.push(o);
+      } else {
+        active.push(o);
+      }
+    });
+
+    if (expired.length > 0) {
+      this.archiveExpiredOrders(expired);
+    }
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(active));
+    if (expired.length > 0) {
+      notifyDataChanged({ type: 'ORDERS_PRUNED', prunedCount: expired.length });
+    }
+    // Sync with cloud backend
+    this.fetchOrders().catch(() => {});
+    return { prunedCount: expired.length, remainingCount: active.length };
+  },
+
+  // Safe deduplicated two-way merge: keeps active orders within 30 days
   mergeOrders(localOrders = [], remoteOrders = [], deletedIds = []) {
     const deletedSet = new Set(deletedIds);
     const map = new Map();
+    const now = Date.now();
 
-    // 1. Load local orders
-    localOrders.forEach(o => {
+    // 1. Load local orders (only active within 30 days)
+    filterActiveOrders(localOrders, now).forEach(o => {
       if (o && o.orderId && !deletedSet.has(o.orderId)) {
         map.set(o.orderId, o);
       }
     });
 
-    // 2. Merge remote orders (keep newest update/status)
-    remoteOrders.forEach(ro => {
+    // 2. Merge remote orders (only active within 30 days)
+    filterActiveOrders(remoteOrders, now).forEach(ro => {
       if (!ro || !ro.orderId || deletedSet.has(ro.orderId)) return;
       const existing = map.get(ro.orderId);
       if (!existing) {
@@ -977,8 +1182,14 @@ export const dataService = {
       };
     });
 
-    const randomHex = Math.floor(1000 + Math.random() * 9000);
-    const orderId = `SC-${new Date().getFullYear()}-${randomHex}`;
+    const settings = this.getSettings();
+    const isPickup = orderData.customer && orderData.customer.deliveryType === 'pickup';
+    const deliveryCharge = (!isPickup && calculatedSubtotal > 0 && calculatedSubtotal < (Number(settings.freeDeliveryThreshold) || 5000))
+      ? (Number(settings.deliveryCharge) || 0)
+      : 0;
+    const grandTotal = calculatedSubtotal + deliveryCharge;
+
+    const orderId = `SC-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
 
     const newOrder = {
       orderId,
@@ -994,14 +1205,15 @@ export const dataService = {
       },
       items: validatedItems,
       subtotal: calculatedSubtotal,
-      deliveryCharge: 0,
-      grandTotal: calculatedSubtotal,
+      deliveryCharge: deliveryCharge,
+      grandTotal: grandTotal,
       status: 'Pending'
     };
 
-    // Save immediately locally so it is NEVER lost on device
-    orders.unshift(newOrder);
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    // Save immediately locally (pruning any orders older than 30 days)
+    const activeOrders = filterActiveOrders(orders);
+    activeOrders.unshift(newOrder);
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(activeOrders));
     notifyDataChanged({ type: 'ORDER_CREATED', order: newOrder });
 
     // Sync to universal cloud/server API with guaranteed await
@@ -1011,6 +1223,8 @@ export const dataService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newOrder)
       });
+      // Reconcile cloud state across all devices
+      this.fetchOrders().catch(() => {});
     } catch (err) {
       console.warn('Network sync pending; order safely stored locally:', err);
     }
@@ -1054,8 +1268,12 @@ export const dataService = {
 
   // --- ENQUIRIES ---
   getEnquiries() {
-    const data = localStorage.getItem(STORAGE_KEYS.ENQUIRIES);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ENQUIRIES);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
   },
 
   async fetchEnquiries() {
@@ -1088,8 +1306,7 @@ export const dataService = {
 
   addEnquiry(enquiry) {
     const enquiries = this.getEnquiries();
-    const count = enquiries.length + 1;
-    const enquiryNumber = `#ENQ-${1000 + count}`;
+    const enquiryNumber = `#ENQ-${Date.now().toString().slice(-6)}`;
     const newEnquiry = {
       id: 'enq-' + Date.now(),
       enquiryNumber: enquiryNumber,
@@ -1125,18 +1342,23 @@ export const dataService = {
   },
 
   adminLogin(username, password) {
-    const validUsers = ['admin', 'sharp', 'shark'];
-    const validPasswords = ['sharp2026!', 'shark2026!', 'admin123'];
-    if (validUsers.includes(username) && validPasswords.includes(password)) {
+    const credentials = {
+      'admin': 'sharp2026!',
+      'sharp': 'sharp2026!'
+    };
+    const cleanUser = (username || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
+
+    if (credentials[cleanUser] && credentials[cleanUser] === cleanPass) {
       const session = {
         authenticated: true,
-        user: 'Admin Manager',
+        user: cleanUser === 'admin' ? 'Admin Manager' : 'Store Admin',
         loginTime: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, JSON.stringify(session));
       return { success: true };
     }
-    return { success: false, message: 'Invalid username or password. (Hint: admin / sharp2026!)' };
+    return { success: false, message: 'Invalid username or password.' };
   },
 
   adminLogout() {

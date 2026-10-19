@@ -14,7 +14,7 @@ export const CartProvider = ({ children }) => {
   // Cart stored as { [productId]: quantity }
   const [quantities, setQuantities] = useState(() => {
     try {
-      const saved = localStorage.getItem(CART_STORAGE_KEY) || localStorage.getItem('shark_crackers_cart_session');
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -31,10 +31,8 @@ export const CartProvider = ({ children }) => {
       setSettings(dataService.getSettings());
     };
     window.addEventListener('sharp_data_changed', handleDataChange);
-    window.addEventListener('shark_data_changed', handleDataChange);
     return () => {
       window.removeEventListener('sharp_data_changed', handleDataChange);
-      window.removeEventListener('shark_data_changed', handleDataChange);
     };
   }, []);
 
@@ -105,8 +103,10 @@ export const CartProvider = ({ children }) => {
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
-  const deliveryCharge = 0;
-  const cartGrandTotal = cartSubtotal;
+  const deliveryCharge = (cartSubtotal > 0 && cartSubtotal < (Number(settings.freeDeliveryThreshold) || 5000))
+    ? (Number(settings.deliveryCharge) || 0)
+    : 0;
+  const cartGrandTotal = cartSubtotal + deliveryCharge;
 
   return (
     <CartContext.Provider

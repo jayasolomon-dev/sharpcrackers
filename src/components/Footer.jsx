@@ -70,7 +70,7 @@ export const Footer = ({ setCurrentPage }) => {
             <div className="footer-brand" onClick={() => handleNav('home')}>
               <div className="footer-logo-frame">
                 <img 
-                  src={settings.logoUrl || "/images/beats_crackers_logo.jpg"} 
+                  src={settings.logoUrl || "/images/sharp_crackers_logo_final.png"} 
                   alt="Sharp Crackers" 
                   className="footer-logo-img"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}

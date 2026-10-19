@@ -457,3 +457,27 @@ input, select, textarea {
 .print-only {
   display: none;
 }
+
+/* ==========================================================================
+   REDIS & INSTANT IMAGE ACCELERATION STYLES
+   ========================================================================== */
+@keyframes fastShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.fast-img-wrapper {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  background-color: #0f1d3d;
+}
+
+.fast-img-wrapper img {
+  content-visibility: auto;
+  contain: paint;
+}

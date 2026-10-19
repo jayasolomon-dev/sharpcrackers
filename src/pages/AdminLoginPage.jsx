@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 
 export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('sharp2026!');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -99,11 +99,6 @@ export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-            </div>
-
-            <div className="login-hint-strip">
-              <span className="hint-label">Default Demo Credentials:</span>
-              <span className="hint-val">Username: <strong>admin</strong> | Password: <strong>sharp2026!</strong></span>
             </div>
 
             <button type="submit" className="btn btn-primary btn-block login-btn" disabled={loading}>

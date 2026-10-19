@@ -39,6 +39,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     totalSelectedProducts, 
     totalQuantity, 
     cartSubtotal, 
+    deliveryCharge,
     cartGrandTotal,
     settings 
   } = useCart();
@@ -63,10 +64,11 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     if (!customer.name.trim()) {
       errors.name = 'Please enter your name';
     }
-    if (!customer.phone.trim()) {
-      errors.phone = 'Please enter your 10-digit mobile number';
-    } else if (!/^[6-9]\d{9}$/.test(customer.phone.trim())) {
-      errors.phone = 'Please enter a valid 10-digit Indian mobile number';
+    const cleanPhone = customer.phone.replace(/[\s-]/g, '');
+    if (!cleanPhone) {
+      errors.phone = 'Please enter your mobile number';
+    } else if (!/^(\+?\d{1,4})?[6-9]\d{9}$/.test(cleanPhone) && !/^\+?\d{10,15}$/.test(cleanPhone)) {
+      errors.phone = 'Please enter a valid mobile number (e.g. 9842123456 or +91 9842123456)';
     }
     if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim())) {
       errors.email = 'Please enter a valid email address';
@@ -685,6 +687,21 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   <span>Total Ordered Products:</span>
                   <strong>{totalSelectedProducts} Varieties ({totalQuantity} Boxes)</strong>
                 </div>
+                <div className="calc-row">
+                  <span>Cart Subtotal:</span>
+                  <strong>{formatCur(cartSubtotal)}</strong>
+                </div>
+                <div className="calc-row">
+                  <span>Delivery Charges:</span>
+                  <strong className={deliveryCharge > 0 ? "text-orange" : "text-green font-bold"}>
+                    {deliveryCharge > 0 ? formatCur(deliveryCharge) : "FREE"}
+                  </strong>
+                </div>
+                {deliveryCharge > 0 && settings.freeDeliveryThreshold && (
+                  <div className="calc-sub-hint text-muted" style={{ fontSize: '0.8rem', textAlign: 'right' }}>
+                    Add {formatCur(Math.max(0, settings.freeDeliveryThreshold - cartSubtotal))} more for Free Delivery!
+                  </div>
+                )}
                 <div className="calc-row grand-total-row">
                   <span>Total Order Amount:</span>
                   <span className="grand-price">{formatCur(cartGrandTotal)}</span>
@@ -729,9 +746,9 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   </label>
                   <input
                     type="tel"
-                    placeholder="10-digit mobile number"
+                    placeholder="10-digit mobile number (or +91...)"
                     value={customer.phone}
-                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value.replace(/[^\d+\s-]/g, '').slice(0, 16) })}
                     className={`form-input ${formErrors.phone ? 'error' : ''}`}
                   />
                   {formErrors.phone && <span className="error-text">{formErrors.phone}</span>}
@@ -765,6 +782,16 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                 {/* Order Confirmation Summary */}
                 <div className="final-confirmation-summary">
                   <div className="confirm-row">
+                    <span>Subtotal:</span>
+                    <span>{formatCur(cartSubtotal)}</span>
+                  </div>
+                  <div className="confirm-row">
+                    <span>Delivery:</span>
+                    <span className={deliveryCharge > 0 ? "text-orange" : "text-green font-bold"}>
+                      {deliveryCharge > 0 ? formatCur(deliveryCharge) : "FREE"}
+                    </span>
+                  </div>
+                  <div className="confirm-row grand-total">
                     <span>Total Amount:</span>
                     <strong className="confirm-price">{formatCur(cartGrandTotal)}</strong>
                   </div>

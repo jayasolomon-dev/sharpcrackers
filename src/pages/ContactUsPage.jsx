@@ -42,10 +42,11 @@ export const ContactUsPage = () => {
   const validate = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = 'Please enter your full name';
-    if (!formData.phone.trim()) {
+    const cleanPhone = formData.phone.replace(/[\s-]/g, '');
+    if (!cleanPhone) {
       errs.phone = 'Please enter your mobile number';
-    } else if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
-      errs.phone = 'Please enter a valid 10-digit mobile number';
+    } else if (!/^(\+?\d{1,4})?[6-9]\d{9}$/.test(cleanPhone) && !/^\+?\d{10,15}$/.test(cleanPhone)) {
+      errs.phone = 'Please enter a valid mobile number (e.g. 9842123456 or +91 9842123456)';
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       errs.email = 'Please enter a valid email address';

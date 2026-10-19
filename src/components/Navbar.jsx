@@ -67,7 +67,7 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           <div className="nav-brand" onClick={() => handleNavClick('home')}>
             <div className="brand-logo-frame">
               <img 
-                src={settings.logoUrl || "/images/beats_crackers_logo.jpg"} 
+                src={settings.logoUrl || "/images/sharp_crackers_logo_final.png"} 
                 alt="Sharp Crackers Official Logo" 
                 className="brand-logo-img"
                 onError={(e) => {

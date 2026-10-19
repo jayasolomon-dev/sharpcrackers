@@ -74,9 +74,12 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
             <div className="hero-brand-block">
               <div className="hero-brand-logo-frame">
                 <img 
-                  src={settings.logoUrl || "/images/beats_crackers_logo.jpg"} 
+                  src={settings.logoUrl || "/images/sharp_crackers_logo_final.png"} 
                   alt="Sharp Crackers Official Logo" 
                   className="hero-brand-logo-img" 
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
                 />
               </div>
               <div className="hero-brand-text-wrap">
@@ -138,7 +141,14 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                 onClick={() => handleCategoryClick(cat.id)}
               >
                 <div className="cat-img-wrapper">
-                  <img src={cat.image} alt={cat.name} className="cat-img" />
+                  <img 
+                    src={cat.image} 
+                    alt={cat.name} 
+                    className="cat-img" 
+                    loading="eager"
+                    decoding="async"
+                    onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                  />
                   <span className="cat-badge">{cat.count}</span>
                 </div>
                 <div className="cat-info">
@@ -194,7 +204,14 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                   title={`Click to view ${product.name} in Products catalog`}
                 >
                   <div className="product-card-media">
-                    <img src={product.image} alt={product.name} className="product-card-img" />
+                    <img 
+                      src={product.image} 
+                      alt={product.name} 
+                      className="product-card-img" 
+                      loading="eager"
+                      decoding="async"
+                      onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                    />
                     <span className="discount-tag">{discount}% OFF</span>
                     <div className="bestseller-star-badge">
                       <Star size={12} fill="#ffb703" color="#ffb703" />

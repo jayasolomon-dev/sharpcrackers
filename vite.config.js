@@ -3,12 +3,62 @@ import react from '@vitejs/plugin-react'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { redisCache } from './src/services/redisService.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.join(__dirname, 'data')
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json')
 const DELETED_ORDERS_FILE = path.join(DATA_DIR, 'deleted_orders.json')
+const BACKUP_ORDERS_FILE = path.join(DATA_DIR, 'orders_backup.json')
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json')
+const ENQUIRIES_FILE = path.join(DATA_DIR, 'enquiries.json')
+
+// 30-Day Bill Retention & Backup Archive System
+const ORDER_RETENTION_DAYS = 30
+const ORDER_RETENTION_MS = ORDER_RETENTION_DAYS * 24 * 60 * 60 * 1000
+
+function isOrderExpired(order, now = Date.now()) {
+  if (!order || !order.createdAt) return false
+  const time = new Date(order.createdAt).getTime()
+  if (isNaN(time)) return false
+  return (now - time) > ORDER_RETENTION_MS
+}
+
+function appendToBackupOrders(expiredOrders = []) {
+  if (!Array.isArray(expiredOrders) || expiredOrders.length === 0) return
+  try {
+    const existing = readJsonFile(BACKUP_ORDERS_FILE, [])
+    const map = new Map()
+    existing.forEach(o => { if (o && o.orderId) map.set(o.orderId, o) })
+    const nowIso = new Date().toISOString()
+    expiredOrders.forEach(o => {
+      if (o && o.orderId && !map.has(o.orderId)) {
+        map.set(o.orderId, { ...o, archivedAt: nowIso, isArchived: true })
+      }
+    })
+    const updated = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    writeJsonFile(BACKUP_ORDERS_FILE, updated)
+  } catch (err) {
+    console.error('Failed to append to backup in vite config:', err)
+  }
+}
+
+function pruneExpiredOrders(orders = [], now = Date.now()) {
+  if (!Array.isArray(orders)) return []
+  const active = []
+  const expired = []
+  for (const o of orders) {
+    if (isOrderExpired(o, now)) {
+      expired.push(o)
+    } else {
+      active.push(o)
+    }
+  }
+  if (expired.length > 0) {
+    appendToBackupOrders(expired)
+  }
+  return active
+}
 
 function readJsonFile(filePath, fallback = []) {
   try {
@@ -50,7 +100,36 @@ function apiDevPlugin() {
   return {
     name: 'api-dev-server',
     configureServer(server) {
+      // Pre-warm Redis cache on dev server initialization
+      redisCache.prewarm(path.join(__dirname, 'public')).catch(() => {})
+
       server.middlewares.use(async (req, res, next) => {
+        const url = new URL(req.url, 'http://localhost')
+        const pathname = url.pathname
+
+        // Redis-Accelerated Static Image Delivery (Instant RAM + 0 Network Traffic)
+        if (pathname.startsWith('/images/')) {
+          const redisKey = `img:${pathname}`
+          const cachedBuf = await redisCache.getBuffer(redisKey)
+          if (cachedBuf) {
+            const ext = path.extname(pathname).toLowerCase()
+            const contentType = ext === '.png' ? 'image/png' : 'image/jpeg'
+            const etag = `W/"${cachedBuf.length.toString(16)}"`
+            if (req.headers['if-none-match'] === etag) {
+              res.statusCode = 304
+              res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+              res.end()
+              return
+            }
+            res.setHeader('Content-Type', contentType)
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+            res.setHeader('ETag', etag)
+            res.setHeader('X-Redis-Cache', 'HIT')
+            res.end(cachedBuf)
+            return
+          }
+        }
+
         if (!req.url.startsWith('/api/')) return next()
         
         res.setHeader('Content-Type', 'application/json')
@@ -64,12 +143,29 @@ function apiDevPlugin() {
           return
         }
 
+        // Redis API Endpoints
+        if (pathname === '/api/redis/status' && req.method === 'GET') {
+          const stats = await redisCache.getStats()
+          res.end(JSON.stringify(stats))
+          return
+        }
+
+        if (pathname === '/api/redis/warm' && req.method === 'POST') {
+          const warmed = await redisCache.prewarm(path.join(__dirname, 'public'))
+          const stats = await redisCache.getStats()
+          res.end(JSON.stringify({ success: true, imagesWarmed: warmed, stats }))
+          return
+        }
+
+        if (pathname === '/api/redis/flush' && req.method === 'POST') {
+          await redisCache.flushall()
+          res.end(JSON.stringify({ success: true, message: 'Redis cache flushed' }))
+          return
+        }
+
         if (!fs.existsSync(DATA_DIR)) {
           fs.mkdirSync(DATA_DIR, { recursive: true })
         }
-
-        const url = new URL(req.url, 'http://localhost')
-        const pathname = url.pathname
 
         // 1. SMART SYNC API
         if (pathname === '/api/sync' && req.method === 'POST') {
@@ -78,7 +174,8 @@ function apiDevPlugin() {
             const clientOrders = Array.isArray(payload.orders) ? payload.orders : []
             const clientDeletedIds = Array.isArray(payload.deletedOrderIds) ? payload.deletedOrderIds : []
 
-            let serverOrders = readJsonFile(ORDERS_FILE, [])
+            const now = Date.now()
+            let serverOrders = pruneExpiredOrders(readJsonFile(ORDERS_FILE, []), now)
             let serverDeletedIds = readJsonFile(DELETED_ORDERS_FILE, [])
 
             const allDeletedSet = new Set([...serverDeletedIds, ...clientDeletedIds])
@@ -92,7 +189,7 @@ function apiDevPlugin() {
               }
             })
 
-            clientOrders.forEach(co => {
+            pruneExpiredOrders(clientOrders, now).forEach(co => {
               if (!co || !co.orderId || allDeletedSet.has(co.orderId)) return
               const existing = ordersMap.get(co.orderId)
               if (!existing) {
@@ -146,17 +243,77 @@ function apiDevPlugin() {
 
         // 2. ORDERS API
         if (pathname === '/api/orders' && req.method === 'GET') {
-          const orders = readJsonFile(ORDERS_FILE, [])
-          res.end(JSON.stringify(orders))
+          const rawOrders = readJsonFile(ORDERS_FILE, [])
+          const activeOrders = pruneExpiredOrders(rawOrders)
+          if (activeOrders.length !== rawOrders.length) {
+            writeJsonFile(ORDERS_FILE, activeOrders)
+          }
+          res.end(JSON.stringify(activeOrders))
+          return
+        }
+
+        // 2.1 BACKUP & ARCHIVE ORDERS API
+        if (pathname === '/api/orders/backup' && req.method === 'GET') {
+          const backupOrders = readJsonFile(BACKUP_ORDERS_FILE, [])
+          res.end(JSON.stringify(backupOrders))
+          return
+        }
+
+        if (pathname === '/api/orders/backup' && req.method === 'POST') {
+          try {
+            const payload = await parseBody(req)
+            const incoming = Array.isArray(payload) ? payload : (Array.isArray(payload.orders) ? payload.orders : [])
+            appendToBackupOrders(incoming)
+            const currentBackup = readJsonFile(BACKUP_ORDERS_FILE, [])
+            res.end(JSON.stringify({ success: true, count: currentBackup.length, backupOrders: currentBackup }))
+          } catch (e) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: e.message }))
+          }
+          return
+        }
+
+        if (pathname === '/api/orders/restore' && req.method === 'POST') {
+          try {
+            const { orderId } = await parseBody(req)
+            if (!orderId) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'orderId is required' }))
+              return
+            }
+            const backupList = readJsonFile(BACKUP_ORDERS_FILE, [])
+            const target = backupList.find(o => o.orderId === orderId)
+            if (!target) {
+              res.statusCode = 404
+              res.end(JSON.stringify({ error: 'Order not found in backup' }))
+              return
+            }
+            const updatedBackup = backupList.filter(o => o.orderId !== orderId)
+            writeJsonFile(BACKUP_ORDERS_FILE, updatedBackup)
+
+            const restored = { ...target, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+            delete restored.archivedAt
+            delete restored.isArchived
+
+            const activeOrders = readJsonFile(ORDERS_FILE, [])
+            activeOrders.unshift(restored)
+            writeJsonFile(ORDERS_FILE, activeOrders)
+
+            res.end(JSON.stringify({ success: true, restoredOrder: restored }))
+          } catch (e) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: e.message }))
+          }
           return
         }
 
         if (pathname === '/api/orders' && req.method === 'POST') {
           try {
             const newOrder = await parseBody(req)
-            let orders = readJsonFile(ORDERS_FILE, [])
+            const rawOrders = readJsonFile(ORDERS_FILE, [])
+            const orders = pruneExpiredOrders(rawOrders)
             if (!newOrder.orderId) {
-              newOrder.orderId = `SC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+              newOrder.orderId = `SC-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`
             }
             if (!newOrder.createdAt) {
               newOrder.createdAt = new Date().toISOString()
@@ -228,7 +385,7 @@ function apiDevPlugin() {
             const newEnq = await parseBody(req)
             let enqs = readJsonFile(ENQUIRIES_FILE, [])
             if (!newEnq.id) newEnq.id = 'enq-' + Date.now()
-            if (!newEnq.enquiryNumber) newEnq.enquiryNumber = `#ENQ-${1000 + enqs.length + 1}`
+            if (!newEnq.enquiryNumber) newEnq.enquiryNumber = `#ENQ-${Date.now().toString().slice(-6)}`
             if (!newEnq.createdAt) newEnq.createdAt = new Date().toISOString()
             enqs.unshift(newEnq)
             writeJsonFile(ENQUIRIES_FILE, enqs)
