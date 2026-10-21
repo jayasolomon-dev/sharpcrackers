@@ -15,19 +15,31 @@ import {
   Search, 
   UserCheck, 
   Flame,
-  Package
+  Package,
+  Home,
+  Info,
+  Building2
 } from 'lucide-react';
 
 export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
-  const { totalQuantity, totalSelectedProducts, settings } = useCart();
+  const { totalQuantity, totalSelectedProducts, cartSubtotal, settings } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navLinks = [
-    { id: 'home', label: 'Home', icon: '🏠' },
-    { id: 'products', label: 'Products', icon: '🎆' },
-    { id: 'cart', label: 'Cart', count: totalQuantity, icon: '🛒' },
-    { id: 'about', label: 'About Us', icon: '🏭' },
-    { id: 'contact', label: 'Contact Us', icon: '📞' }
+  // Desktop navigation links (Cart is in dedicated right-side action button)
+  const desktopLinks = [
+    { id: 'home', label: 'Home', ta: 'முகப்பு' },
+    { id: 'products', label: 'Products & Price List', ta: 'ரகங்கள் & விலை' },
+    { id: 'about', label: 'About Us', ta: 'எங்களை பற்றி' },
+    { id: 'contact', label: 'Contact Us', ta: 'தொடர்பு' }
+  ];
+
+  // Mobile drawer links include Cart with live count
+  const mobileLinks = [
+    { id: 'home', label: 'Home', ta: 'முகப்பு', icon: '🏠' },
+    { id: 'products', label: 'Products & Price List', ta: 'பட்டாசு ரகங்கள்', icon: '🎆' },
+    { id: 'cart', label: 'Cart & Order Sheet', ta: 'ஆர்டர் கூடை', count: totalQuantity, icon: '🛒' },
+    { id: 'about', label: 'About Us', ta: 'எங்களை பற்றி', icon: '🏭' },
+    { id: 'contact', label: 'Contact Us', ta: 'தொடர்பு கொள்ள', icon: '📞' }
   ];
 
   const handleNavClick = (pageId) => {
@@ -41,21 +53,21 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
       {/* Top Festive Announcement Ticker */}
       <div className="top-ticker">
         <div className="nav-container ticker-container">
-          <div className="ticker-spacer"></div>
+          <div className="ticker-left-info">
+            <span className="ticker-badge-mini">
+              <ShieldCheck size={12} className="text-emerald" />
+              <span>100% Green Certified</span>
+            </span>
+          </div>
           <div className="ticker-center">
             <span className="ticker-pulse"></span>
             <span className="ticker-text">{settings.promoBannerText || "💥 DIWALI 2026 MEGA SALE: Flat Direct Sivakasi Pricing with Heavy Savings! 🎆"}</span>
           </div>
           <div className="ticker-right">
-            <a href={`tel:${settings.phone}`} className="ticker-contact">
-              <PhoneCall size={13} />
-              <span>Call: {settings.phone}</span>
+            <a href={`tel:${settings.phone}`} className="ticker-contact" title="Direct Phone Helpline">
+              <PhoneCall size={12} />
+              <span>Hotline: {settings.phone}</span>
             </a>
-            <span className="ticker-divider">|</span>
-            <div className="ticker-badge">
-              <ShieldCheck size={13} className="text-emerald" />
-              <span>100% Green Crackers</span>
-            </div>
           </div>
         </div>
       </div>
@@ -83,12 +95,13 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
               <div className="brand-name">
                 SHARP <span className="text-orange">CRACKERS</span>
               </div>
+              <div className="brand-tagline">DIRECT SIVAKASI FIREWORKS</div>
             </div>
           </div>
 
           {/* Desktop Navigation Links */}
           <div className="desktop-links">
-            {navLinks.map((link) => {
+            {desktopLinks.map((link) => {
               const isActive = currentPage === link.id;
               return (
                 <button
@@ -97,10 +110,7 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
                   className={`nav-link-btn ${isActive ? 'active' : ''}`}
                 >
                   <span className="nav-link-en">{link.label}</span>
-                  {link.badge && <span className="nav-pill-badge">{link.badge}</span>}
-                  {link.count > 0 && link.id === 'cart' && (
-                    <span className="nav-cart-badge">{link.count}</span>
-                  )}
+                  <span className="nav-link-ta">{link.ta}</span>
                 </button>
               );
             })}
@@ -128,10 +138,12 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
               onClick={() => handleNavClick('cart')}
               title="View Cart / Order Summary"
             >
-              <ShoppingCart size={19} />
+              <ShoppingCart size={18} />
               <span className="cart-btn-label">Cart</span>
-              {totalQuantity > 0 && (
+              {totalQuantity > 0 ? (
                 <span className="cart-count-pill">{totalQuantity}</span>
+              ) : (
+                <span className="cart-zero-pill">0</span>
               )}
             </button>
 
@@ -141,7 +153,7 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
               className={`admin-nav-btn ${currentPage.startsWith('admin') ? 'active' : ''}`}
               title="Shop Owner Portal"
             >
-              <UserCheck size={16} />
+              <UserCheck size={15} />
               <span className="admin-btn-en">Admin</span>
             </button>
 
@@ -151,7 +163,7 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
@@ -160,7 +172,7 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
         {mobileMenuOpen && (
           <div className="mobile-drawer">
             <div className="mobile-drawer-content">
-              {navLinks.map((link) => (
+              {mobileLinks.map((link) => (
                 <button
                   key={link.id}
                   onClick={() => handleNavClick(link.id)}
@@ -170,13 +182,13 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
                     <span className="mobile-nav-icon">{link.icon}</span>
                     <div className="mobile-nav-text">
                       <span className="item-name">{link.label}</span>
+                      <span className="item-name-ta">{link.ta}</span>
                     </div>
                   </div>
                   <div className="mobile-nav-right">
                     {link.id === 'cart' && totalQuantity > 0 && (
-                      <span className="mobile-cart-badge">{totalQuantity} items</span>
+                      <span className="mobile-cart-badge">{totalQuantity} boxes</span>
                     )}
-                    {link.badge && <span className="nav-pill-badge">{link.badge}</span>}
                   </div>
                 </button>
               ))}
@@ -235,16 +247,27 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
         }
 
         .ticker-container {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
+          display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 1rem;
           min-width: 0;
           width: 100%;
         }
 
-        .ticker-spacer {
-          min-width: 0;
+        .ticker-left-info {
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
+        }
+
+        .ticker-badge-mini {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          color: #a7f3d0;
+          font-size: 0.75rem;
+          font-weight: 600;
         }
 
         .ticker-center {
@@ -256,7 +279,7 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           white-space: nowrap;
           text-overflow: ellipsis;
           min-width: 0;
-          justify-self: center;
+          flex: 1;
           text-align: center;
         }
 
@@ -290,7 +313,6 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           align-items: center;
           gap: 0.75rem;
           flex-shrink: 0;
-          justify-self: end;
         }
 
         .ticker-contact {
@@ -387,6 +409,14 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           color: #ffffff;
           letter-spacing: 0.5px;
           line-height: 1;
+        }
+
+        .brand-tagline {
+          font-size: 0.65rem;
+          font-weight: 800;
+          letter-spacing: 1.2px;
+          color: #ffb703;
+          margin-top: 3px;
         }
 
         .text-orange {
@@ -548,6 +578,21 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           border: 1.5px solid #ffffff;
         }
 
+        .cart-zero-pill {
+          background: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+          font-size: 0.75rem;
+          font-weight: 800;
+          min-width: 20px;
+          height: 20px;
+          border-radius: 99px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 5px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
         .admin-nav-btn {
           display: flex;
           align-items: center;
@@ -609,12 +654,23 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           display: block;
           background: linear-gradient(180deg, #0a1329 0%, #060d1f 100%);
           border-top: 1.5px solid rgba(255, 183, 3, 0.35);
-          padding: 1rem 1rem 1.5rem;
+          padding: 1rem 1rem 2rem;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
           animation: slideDownDrawer 0.25s cubic-bezier(0.16, 1, 0.3, 1);
           max-height: calc(100vh - 75px);
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 183, 3, 0.3) transparent;
+        }
+
+        .mobile-drawer::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        .mobile-drawer::-webkit-scrollbar-thumb {
+          background: rgba(255, 183, 3, 0.3);
+          border-radius: 4px;
         }
 
         @keyframes slideDownDrawer {

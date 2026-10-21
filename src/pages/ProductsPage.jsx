@@ -62,6 +62,7 @@ export const ProductsPage = ({
   const [previewProduct, setPreviewProduct] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSampleReceipt, setShowSampleReceipt] = useState(false);
+  const [showAllCatGrid, setShowAllCatGrid] = useState(false);
 
   // Sync with prop if changed from Navbar/Home
   useEffect(() => {
@@ -351,59 +352,101 @@ export const ProductsPage = ({
               </div>
             </div>
 
-            {/* Dedicated Mobile 2-Column Categories Grid (Visible on Mobile <= 768px) */}
+            {/* Dedicated Mobile Categories (Sleek Horizontal Pill Bar + Expandable Grid) */}
             <div className="mobile-categories-section">
               <div className="mobile-cat-header">
                 <div className="mobile-cat-header-title">
                   <Filter size={14} className="text-orange" />
                   <span>Categories / வகைகள்</span>
                 </div>
-                <span className="mobile-cat-badge-current">
-                  {categories.find(c => c.id === activeCategory)?.name || 'All Products'}
-                  {CATEGORY_TAMIL_NAMES[activeCategory] && (
-                    <> / {CATEGORY_TAMIL_NAMES[activeCategory]}</>
-                  )}
-                </span>
+                <div className="mobile-cat-header-right">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowAllCatGrid(!showAllCatGrid)} 
+                    className="mobile-cat-toggle-btn"
+                  >
+                    <span>{showAllCatGrid ? 'Collapse' : 'All Categories'}</span>
+                    <ChevronDown size={14} style={{ transform: showAllCatGrid ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+                  </button>
+                </div>
               </div>
 
-              <div className="mobile-categories-2col-grid">
-                <button
-                  type="button"
-                  className={`mobile-cat-card-btn ${activeCategory === 'all' ? 'active' : ''}`}
-                  onClick={() => handleCategorySelect('all')}
-                >
-                  <span className="m-cat-icon">✨</span>
-                  <div className="m-cat-text">
-                    <span className="m-cat-name-en">All Products</span>
-                    <span className="m-cat-name-ta">அனைத்து ரகங்கள்</span>
-                  </div>
-                  <span className="m-cat-count-badge">{products.length}</span>
-                </button>
+              {!showAllCatGrid ? (
+                /* 1. Sleek Horizontal Pill Bar (Default - saves 400px of vertical space) */
+                <div className="mobile-cat-pill-strip">
+                  <button
+                    type="button"
+                    className={`mobile-cat-pill-btn ${activeCategory === 'all' ? 'active' : ''}`}
+                    onClick={() => handleCategorySelect('all')}
+                  >
+                    <span>✨ All Products ({products.length})</span>
+                  </button>
+                  {categories
+                    .filter(c => c.id !== 'all' && c.active !== false)
+                    .map((cat) => {
+                      const count = products.filter(p => p.category === cat.id).length;
+                      const isActive = activeCategory === cat.id;
 
-                {categories
-                  .filter(c => c.id !== 'all' && c.active !== false)
-                  .map((cat) => {
-                    const count = products.filter(p => p.category === cat.id).length;
-                    const isActive = activeCategory === cat.id;
-                    const tamilCat = CATEGORY_TAMIL_NAMES[cat.id] || cat.ta || '';
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          className={`mobile-cat-pill-btn ${isActive ? 'active' : ''}`}
+                          onClick={() => handleCategorySelect(cat.id)}
+                        >
+                          <span className="m-pill-icon">{cat.icon || '🎆'}</span>
+                          <span className="m-pill-text">{cat.name} ({count})</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              ) : (
+                /* 2. Expanded 2-Column Grid (when user taps All Categories) */
+                <div className="mobile-categories-2col-grid">
+                  <button
+                    type="button"
+                    className={`mobile-cat-card-btn ${activeCategory === 'all' ? 'active' : ''}`}
+                    onClick={() => {
+                      handleCategorySelect('all');
+                      setShowAllCatGrid(false);
+                    }}
+                  >
+                    <span className="m-cat-icon">✨</span>
+                    <div className="m-cat-text">
+                      <span className="m-cat-name-en">All Products</span>
+                      <span className="m-cat-name-ta">அனைத்து ரகங்கள்</span>
+                    </div>
+                    <span className="m-cat-count-badge">{products.length}</span>
+                  </button>
 
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        className={`mobile-cat-card-btn ${isActive ? 'active' : ''}`}
-                        onClick={() => handleCategorySelect(cat.id)}
-                      >
-                        <span className="m-cat-icon">{cat.icon || '🎆'}</span>
-                        <div className="m-cat-text">
-                          <span className="m-cat-name-en">{cat.name}</span>
-                          {tamilCat && <span className="m-cat-name-ta">{tamilCat}</span>}
-                        </div>
-                        <span className="m-cat-count-badge">{count}</span>
-                      </button>
-                    );
-                  })}
-              </div>
+                  {categories
+                    .filter(c => c.id !== 'all' && c.active !== false)
+                    .map((cat) => {
+                      const count = products.filter(p => p.category === cat.id).length;
+                      const isActive = activeCategory === cat.id;
+                      const tamilCat = CATEGORY_TAMIL_NAMES[cat.id] || cat.ta || '';
+
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          className={`mobile-cat-card-btn ${isActive ? 'active' : ''}`}
+                          onClick={() => {
+                            handleCategorySelect(cat.id);
+                            setShowAllCatGrid(false);
+                          }}
+                        >
+                          <span className="m-cat-icon">{cat.icon || '🎆'}</span>
+                          <div className="m-cat-text">
+                            <span className="m-cat-name-en">{cat.name}</span>
+                            {tamilCat && <span className="m-cat-name-ta">{tamilCat}</span>}
+                          </div>
+                          <span className="m-cat-count-badge">{count}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
             </div>
 
             {/* Wholesale Order Table */}
@@ -1399,10 +1442,20 @@ export const ProductsPage = ({
         .table-responsive-wrapper {
           overflow-x: auto;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+          scrollbar-width: thin;
+        }
+
+        .table-responsive-wrapper::-webkit-scrollbar {
+          height: 6px;
+        }
+        .table-responsive-wrapper::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
         }
 
         .wholesale-order-table {
           width: 100%;
+          min-width: 820px;
           border-collapse: separate;
           border-spacing: 0;
           font-size: 0.92rem;
@@ -2046,6 +2099,63 @@ export const ProductsPage = ({
             color: #0f172a;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+          }
+
+          .mobile-cat-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #c2410c;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            padding: 0.25rem 0.6rem;
+            border-radius: 99px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+          .mobile-cat-toggle-btn:active {
+            transform: scale(0.96);
+          }
+
+          .mobile-cat-pill-strip {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.25rem 0.15rem 0.5rem;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .mobile-cat-pill-strip::-webkit-scrollbar {
+            display: none;
+          }
+
+          .mobile-cat-pill-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 99px;
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            color: #334155;
+            font-size: 0.82rem;
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+          }
+
+          .mobile-cat-pill-btn.active {
+            background: linear-gradient(135deg, #ff6f00 0%, #ea580c 100%);
+            border-color: #ff6f00;
+            color: #ffffff;
+            box-shadow: 0 3px 10px rgba(255, 111, 0, 0.3);
           }
 
           .mobile-cat-badge-current {

@@ -15,11 +15,14 @@ import {
   Truck, 
   Tag, 
   Package, 
-  Star 
+  Star,
+  Plus,
+  Minus,
+  ShoppingCart
 } from 'lucide-react';
 
 export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
-  const { products, settings } = useCart();
+  const { products, settings, getItemQuantity, updateQuantity } = useCart();
 
   const handleCategoryClick = (categoryId) => {
     if (setSelectedCategory) setSelectedCategory(categoryId);
@@ -43,14 +46,14 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Curated Featured Categories
+  // Curated Featured Categories with Bilingual Names
   const featuredCategories = [
-    { id: 'sparklers', name: 'Sparklers', count: '4 Varieties', desc: 'Electric, Golden & Multi-color rods', image: '/images/product_sparkler_1791567639029.jpg' },
-    { id: 'flower-pots', name: 'Flower Pots', count: '3 Varieties', desc: 'Dense golden sparks & Asoka towers', image: '/images/product_flowerpots.jpg' },
-    { id: 'ground-chakkars', name: 'Ground Chakkars', count: '3 Varieties', desc: 'High-speed spinning wheels & spinners', image: '/images/product_chakkars.jpg' },
-    { id: 'rockets', name: 'Rockets & Aerial', count: '3 Varieties', desc: 'Whistling sky rockets with parachute drops', image: '/images/product_rockets.jpg' },
-    { id: 'fancy-crackers', name: 'Fancy Fountains', count: '4 Varieties', desc: 'Multi-shot repeaters & dancing peacock', image: '/images/product_fountain_1791567652291.jpg' },
-    { id: 'gift-boxes', name: 'Diwali Gift Boxes', count: '3 Packs', desc: 'Complete family celebration hampers', image: '/images/product_giftpack_1791567665442.jpg' },
+    { id: 'sparklers', name: 'Sparklers', ta: 'கம்பி மத்தாப்பு', count: '4 Varieties', desc: 'Electric, Golden & Multi-color rods', image: '/images/product_sparkler_1791567639029.jpg' },
+    { id: 'flower-pots', name: 'Flower Pots', ta: 'பூந்தொட்டி', count: '3 Varieties', desc: 'Dense golden sparks & Asoka towers', image: '/images/product_flowerpots.jpg' },
+    { id: 'ground-chakkars', name: 'Ground Chakkars', ta: 'தரை சக்கரம்', count: '3 Varieties', desc: 'High-speed spinning wheels & spinners', image: '/images/product_chakkars.jpg' },
+    { id: 'rockets', name: 'Rockets & Aerial', ta: 'வான வெடி & ராக்கெட்', count: '3 Varieties', desc: 'Whistling sky rockets with parachute drops', image: '/images/product_rockets.jpg' },
+    { id: 'fancy-crackers', name: 'Fancy Fountains', ta: 'ஃபேசி வெடிகள்', count: '4 Varieties', desc: 'Multi-shot repeaters & dancing peacock', image: '/images/product_fountain_1791567652291.jpg' },
+    { id: 'gift-boxes', name: 'Diwali Gift Boxes', ta: 'தீபாவளி கிப்ட் பாக்ஸ்', count: '3 Packs', desc: 'Complete family celebration hampers', image: '/images/product_giftpack_1791567665442.jpg' },
   ];
 
   // Best-selling products
@@ -66,27 +69,30 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
 
         <div className="container hero-container">
           <div className="hero-content">
-            <div className="hero-pill-badge">
-              <Sparkles size={16} className="text-gold" />
-              <span>Direct From Sivakasi • Best Price Guarantee</span>
+            <div className="hero-header-stack">
+              <div className="hero-brand-block">
+                <div className="hero-brand-logo-frame">
+                  <img 
+                    src={settings.logoUrl || "/images/sharp_crackers_logo_final.png"} 
+                    alt="Sharp Crackers Official Logo" 
+                    className="hero-brand-logo-img" 
+                    loading="eager"
+                    decoding="async"
+                    onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                  />
+                </div>
+                <div className="hero-brand-text-wrap">
+                  <div className="hero-brand-callout">SHARP CRACKERS</div>
+                  <div className="hero-brand-subline">DIRECT SIVAKASI FIREWORKS</div>
+                </div>
+              </div>
+
+              <div className="hero-pill-badge">
+                <Sparkles size={15} className="text-gold" />
+                <span>Direct From Sivakasi • Best Price Guarantee</span>
+              </div>
             </div>
 
-            <div className="hero-brand-block">
-              <div className="hero-brand-logo-frame">
-                <img 
-                  src={settings.logoUrl || "/images/sharp_crackers_logo_final.png"} 
-                  alt="Sharp Crackers Official Logo" 
-                  className="hero-brand-logo-img" 
-                  loading="eager"
-                  decoding="async"
-                  onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
-                />
-              </div>
-              <div className="hero-brand-text-wrap">
-                <div className="hero-brand-callout">SHARP CRACKERS</div>
-                <div className="hero-brand-subline">DIRECT SIVAKASI FIREWORKS</div>
-              </div>
-            </div>
             <h1 className="hero-main-title">
               Light Up Your <span className="highlight-text">Celebrations!</span>
             </h1>
@@ -154,11 +160,15 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                 <div className="cat-info">
                   <h3 className="cat-title">
                     <span className="cat-title-en">{cat.name}</span>
-                    <span className="cat-title-sep"> / </span>
-                    <span className="cat-title-ta">{cat.ta}</span>
+                    {cat.ta && (
+                      <>
+                        <span className="cat-title-sep"> / </span>
+                        <span className="cat-title-ta">{cat.ta}</span>
+                      </>
+                    )}
                   </h3>
                   <p className="cat-desc">{cat.desc}</p>
-                  <button className="cat-btn">
+                  <button className="cat-btn" type="button">
                     <span>View Products</span>
                     <ArrowRight size={15} />
                   </button>
@@ -187,11 +197,12 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           <div className="bestsellers-grid">
             {bestSellers.map((product) => {
               const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
+              const qty = getItemQuantity(product.id);
 
               return (
                 <div 
                   key={product.id} 
-                  className="product-showcase-card clickable-bestseller-card"
+                  className={`product-showcase-card clickable-bestseller-card ${qty > 0 ? 'card-has-items' : ''}`}
                   onClick={() => handleProductCardClick(product)}
                   role="button"
                   tabIndex={0}
@@ -236,17 +247,39 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                     </div>
 
                     <div className="product-card-action">
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProductCardClick(product);
-                        }}
-                        className="btn btn-primary btn-block view-bestseller-btn"
-                      >
-                        <span>View in Products</span>
-                        <ArrowRight size={16} />
-                      </button>
+                      {qty === 0 ? (
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateQuantity(product.id, 1);
+                          }}
+                          className="btn btn-primary btn-block add-bestseller-btn"
+                        >
+                          <Plus size={16} />
+                          <span>Add to Order</span>
+                        </button>
+                      ) : (
+                        <div className="bestseller-stepper-control" onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            type="button"
+                            onClick={() => updateQuantity(product.id, -1)}
+                            className="bestseller-stepper-btn minus"
+                            title="Decrease quantity"
+                          >
+                            <Minus size={15} />
+                          </button>
+                          <span className="bestseller-stepper-val">{qty} in Order</span>
+                          <button 
+                            type="button"
+                            onClick={() => updateQuantity(product.id, 1)}
+                            className="bestseller-stepper-btn plus"
+                            title="Increase quantity"
+                          >
+                            <Plus size={15} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -302,9 +335,9 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
               <div className="feature-icon-box">
                 <Award size={28} className="text-orange" />
               </div>
-              <h3 className="feature-title">Convenient Order Management</h3>
+              <h3 className="feature-title">Instant PDF & Order Sheets</h3>
               <p className="feature-text">
-                Instant computer-generated PDF invoices, print-ready order sheets, and real-time order tracking via our automated system.
+                Generate computer invoices instantly, print paper order sheets, and forward orders directly to our Sivakasi desk with 1-click WhatsApp.
               </p>
             </div>
 
@@ -315,6 +348,16 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
               <h3 className="feature-title">Customer-Friendly Service</h3>
               <p className="feature-text">
                 Dedicated direct phone assistance, festive guidance, and transparent fulfillment updates ensure your festive deliveries arrive intact and on schedule.
+              </p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon-box">
+                <Sparkles size={28} className="text-emerald" />
+              </div>
+              <h3 className="feature-title">100% Legal Green Crackers</h3>
+              <p className="feature-text">
+                CSIR-NEERI and PESO compliant fireworks formulated without harmful barium compounds, generating 30% lower smoke and crisp celebrations.
               </p>
             </div>
           </div>
@@ -384,10 +427,11 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           inset: 0;
           background: linear-gradient(
             90deg, 
-            rgba(5, 10, 24, 0.95) 0%, 
-            rgba(10, 19, 41, 0.88) 55%, 
-            rgba(5, 10, 24, 0.7) 100%
+            rgba(5, 10, 24, 0.98) 0%, 
+            rgba(10, 19, 41, 0.92) 55%, 
+            rgba(5, 10, 24, 0.82) 100%
           );
+          backdrop-filter: blur(2px);
         }
 
         .hero-container {
@@ -397,6 +441,14 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
 
         .hero-content {
           max-width: 680px;
+        }
+
+        .hero-header-stack {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.85rem;
+          margin-bottom: 1.5rem;
         }
 
         .hero-pill-badge {
@@ -410,7 +462,7 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           border-radius: var(--radius-full);
           font-size: 0.85rem;
           font-weight: 700;
-          margin-bottom: 1.25rem;
+          margin-bottom: 0;
           backdrop-filter: blur(8px);
         }
 
@@ -418,8 +470,8 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           display: inline-flex;
           align-items: center;
           gap: 1.25rem;
-          margin-bottom: 1.25rem;
-          background: rgba(10, 19, 41, 0.7);
+          margin-bottom: 0;
+          background: rgba(10, 19, 41, 0.75);
           padding: 0.6rem 1.4rem 0.6rem 0.6rem;
           border-radius: 20px;
           border: 1.5px solid rgba(255, 183, 3, 0.45);
@@ -885,26 +937,77 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           border-color: #ff6f00;
         }
 
-        .view-bestseller-btn {
+        .card-has-items {
+          border-color: #ff6f00 !important;
+          box-shadow: 0 8px 24px rgba(255, 111, 0, 0.18) !important;
+        }
+
+        .add-bestseller-btn {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
           background: linear-gradient(135deg, #ff6f00 0%, #ea580c 100%);
           color: #ffffff;
-          padding: 0.7rem 1rem;
+          padding: 0.65rem 1rem;
           border-radius: var(--radius-md);
           font-weight: 700;
           font-size: 0.92rem;
           box-shadow: 0 4px 12px rgba(255, 111, 0, 0.25);
           transition: all 0.2s ease;
+          width: 100%;
         }
 
-        .view-bestseller-btn:hover,
-        .clickable-bestseller-card:hover .view-bestseller-btn {
+        .add-bestseller-btn:hover {
           background: linear-gradient(135deg, #ff8500 0%, #ff6f00 100%);
-          box-shadow: 0 6px 16px rgba(255, 111, 0, 0.35);
+          box-shadow: 0 6px 18px rgba(255, 111, 0, 0.4);
           transform: translateY(-1px);
+        }
+
+        .bestseller-stepper-control {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #fff7ed;
+          border: 1.5px solid #ffb703;
+          border-radius: var(--radius-md);
+          padding: 0.35rem 0.65rem;
+          box-shadow: 0 2px 8px rgba(255, 111, 0, 0.15);
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .bestseller-stepper-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .bestseller-stepper-btn.minus {
+          background: #ffffff;
+          color: #d90429;
+          border: 1px solid #fecaca;
+        }
+
+        .bestseller-stepper-btn.plus {
+          background: #ff6f00;
+          color: #ffffff;
+        }
+
+        .bestseller-stepper-btn:hover {
+          transform: scale(1.08);
+        }
+
+        .bestseller-stepper-val {
+          font-weight: 800;
+          font-size: 0.88rem;
+          color: #c2410c;
         }
 
         /* Why Choose Us Features */
@@ -1034,32 +1137,40 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           .promo-content {
             padding: 2.5rem 1.5rem;
           }
+          .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
         }
 
         @media (max-width: 768px) {
+          .hero-header-stack {
+            align-items: flex-start;
+            gap: 0.65rem;
+            margin-bottom: 1rem;
+          }
           .hero-brand-block {
             gap: 0.85rem;
             padding: 0.5rem 1rem 0.5rem 0.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0;
           }
           .hero-brand-logo-frame {
-            width: 70px;
-            height: 70px;
+            width: 65px;
+            height: 65px;
             border-radius: 12px;
           }
           .hero-brand-callout {
-            font-size: 1.3rem;
-            letter-spacing: 1.2px;
+            font-size: 1.25rem;
+            letter-spacing: 1px;
           }
           .hero-brand-subline {
-            font-size: 0.65rem;
+            font-size: 0.62rem;
           }
           .hero-section {
             padding: 3rem 0;
             min-height: auto;
           }
           .hero-main-title {
-            font-size: 2rem;
+            font-size: 2.1rem;
             line-height: 1.2;
           }
           .section-title {
@@ -1077,21 +1188,36 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
             gap: 0.5rem;
           }
           .categories-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 1.25rem;
           }
           .bestsellers-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 1.25rem;
-          }
-          .features-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
           }
           .section-header-flex {
             flex-direction: column;
             align-items: flex-start;
             gap: 1rem;
+          }
+        }
+
+        @media (max-width: 540px) {
+          .categories-grid {
+            grid-template-columns: 1fr;
+          }
+          .bestsellers-grid {
+            grid-template-columns: 1fr;
+          }
+          .features-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          .hero-main-title {
+            font-size: 1.85rem;
+          }
+          .hero-description {
+            font-size: 0.95rem;
           }
         }
       `}</style>

@@ -17,11 +17,17 @@ import {
   Lock
 } from 'lucide-react';
 
-export const Footer = ({ setCurrentPage }) => {
+export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
   const { settings } = useCart();
 
   const handleNav = (page) => {
     setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCategoryNav = (categoryId) => {
+    if (setSelectedCategory) setSelectedCategory(categoryId);
+    setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -132,32 +138,32 @@ export const Footer = ({ setCurrentPage }) => {
             <h4 className="footer-heading">Top Categories</h4>
             <ul className="footer-links-list">
               <li>
-                <button onClick={() => handleNav('products')} className="footer-link-btn">
+                <button onClick={() => handleCategoryNav('sparklers')} className="footer-link-btn">
                   <ChevronRight size={14} /> Electric & Color Sparklers
                 </button>
               </li>
               <li>
-                <button onClick={() => handleNav('products')} className="footer-link-btn">
+                <button onClick={() => handleCategoryNav('flower-pots')} className="footer-link-btn">
                   <ChevronRight size={14} /> Deluxe Flower Pots & Asoka
                 </button>
               </li>
               <li>
-                <button onClick={() => handleNav('products')} className="footer-link-btn">
+                <button onClick={() => handleCategoryNav('ground-chakkars')} className="footer-link-btn">
                   <ChevronRight size={14} /> High-Speed Ground Chakkars
                 </button>
               </li>
               <li>
-                <button onClick={() => handleNav('products')} className="footer-link-btn">
+                <button onClick={() => handleCategoryNav('fancy-crackers')} className="footer-link-btn">
                   <ChevronRight size={14} /> Sky Shots & Dancing Fountains
                 </button>
               </li>
               <li>
-                <button onClick={() => handleNav('products')} className="footer-link-btn">
+                <button onClick={() => handleCategoryNav('sound-crackers')} className="footer-link-btn">
                   <ChevronRight size={14} /> 1000 to 5000 Wala Garlands
                 </button>
               </li>
               <li>
-                <button onClick={() => handleNav('products')} className="footer-link-btn">
+                <button onClick={() => handleCategoryNav('gift-boxes')} className="footer-link-btn">
                   <ChevronRight size={14} /> Diwali Family Gift Mega Packs
                 </button>
               </li>
