@@ -946,7 +946,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                           className="btn btn-primary btn-sm empty-test-order-btn"
                         >
                           <ExternalLink size={14} />
-                          <span>Open Customer Store to Test</span>
+                          <span>Open Customer Store</span>
                         </a>
                       </div>
                     </>
