@@ -68,11 +68,13 @@ export const ProductsPage = ({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSampleReceipt, setShowSampleReceipt] = useState(false);
   const [showLiveTrackerModal, setShowLiveTrackerModal] = useState(false);
+  const catalogWorkspaceRef = useRef(null);
 
   // Sync with prop if changed from Navbar/Home
   useEffect(() => {
     if (selectedCategory) {
       setActiveCategory(selectedCategory);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }, [selectedCategory]);
 
@@ -103,26 +105,52 @@ export const ProductsPage = ({
   }, [previewProduct]);
 
   const handleCategorySelect = (catId) => {
+    // 1. Calculate the ideal target scroll position before any DOM alteration
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const targetElement = isMobile 
+      ? (document.querySelector('.mobile-categories-section') || catalogWorkspaceRef.current)
+      : (document.querySelector('.filter-toolbar') || catalogWorkspaceRef.current);
+    
+    let targetTop = 0;
+    if (targetElement) {
+      const navOffset = isMobile ? 65 : 85;
+      const rect = targetElement.getBoundingClientRect();
+      targetTop = Math.max(0, rect.top + (window.pageYOffset || window.scrollY || 0) - navOffset);
+    }
+
+    // 2. HEIGHT LOCK: When switching from 88 items to a small category (e.g. 3 items),
+    // the document height would suddenly drop from 6500px to 1000px.
+    // If scroll was at 3000px, the browser clamps scrollY to the bottom of the page (the footer).
+    // By locking the current height temporarily, the document CANNOT collapse before the scroll jumps!
+    if (catalogWorkspaceRef.current) {
+      const currentHeight = catalogWorkspaceRef.current.offsetHeight;
+      if (currentHeight > 0) {
+        catalogWorkspaceRef.current.style.minHeight = `${currentHeight}px`;
+      }
+    }
+
+    // 3. Immediately jump scroll to target position (instant, not smooth)
+    window.scrollTo({
+      top: targetTop,
+      behavior: 'instant'
+    });
+
+    // 4. Update category state
     setActiveCategory(catId);
     if (setSelectedCategory) setSelectedCategory(catId);
 
-    // Smoothly scroll to the top of the products catalog,
-    // completely preventing the viewport from collapsing and dumping the user in the footer!
-    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-    const targetElement = isMobile 
-      ? (document.querySelector('.mobile-categories-section') || document.querySelector('.catalog-workspace'))
-      : (document.querySelector('.filter-toolbar') || document.querySelector('.catalog-workspace'));
-    
-    if (targetElement) {
-      const navOffset = isMobile ? 65 : 85;
-      const targetTop = targetElement.getBoundingClientRect().top + window.pageYOffset - navOffset;
+    // 5. Release the height lock safely after the new category items have rendered
+    requestAnimationFrame(() => {
       window.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior: 'smooth'
+        top: targetTop,
+        behavior: 'instant'
       });
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+      setTimeout(() => {
+        if (catalogWorkspaceRef.current) {
+          catalogWorkspaceRef.current.style.minHeight = '';
+        }
+      }, 120);
+    });
   };
 
   // Filter and sort products
@@ -322,7 +350,7 @@ export const ProductsPage = ({
       </section>
 
       {/* Main Catalog Workspace */}
-      <div className="container catalog-workspace">
+      <div ref={catalogWorkspaceRef} className="container catalog-workspace">
         {/* Layout Grid: Left Sidebar + Right Products Sheet */}
         <div className="catalog-grid-layout">
           {/* ============================================================
@@ -339,6 +367,7 @@ export const ProductsPage = ({
 
             <div className="category-list-wrapper">
               <button
+                type="button"
                 className={`category-item-btn ${activeCategory === 'all' ? 'active' : ''}`}
                 onClick={() => handleCategorySelect('all')}
               >
@@ -359,6 +388,7 @@ export const ProductsPage = ({
                   return (
                     <button
                       key={cat.id}
+                      type="button"
                       className={`category-item-btn ${isActive ? 'active' : ''}`}
                       onClick={() => handleCategorySelect(cat.id)}
                     >

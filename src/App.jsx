@@ -311,7 +311,7 @@ export function App() {
 
         {/* Render Customer Footer on non-admin-dashboard pages */}
         {!isAdminView && (
-          <Footer setCurrentPage={setCurrentPage} />
+          <Footer setCurrentPage={setCurrentPage} setSelectedCategory={setSelectedCategory} />
         )}
       </div>
     </CartProvider>
