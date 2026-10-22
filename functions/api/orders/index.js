@@ -60,8 +60,20 @@ export async function onRequestPost({ request, env }) {
   try {
     const newOrder = await request.json();
 
-    if (!newOrder.orderId) {
-      newOrder.orderId = `SC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!newOrder.orderId || !/^SC-\d{4}-\d{4}$/.test(newOrder.orderId)) {
+      const maxRow = await env.DB.prepare(`
+        SELECT order_id FROM orders WHERE order_id LIKE 'SC-%' ORDER BY created_at DESC LIMIT 100
+      `).all().catch(() => ({ results: [] }));
+      let maxSeq = 0;
+      (maxRow.results || []).forEach(r => {
+        const m = String(r.order_id).match(/SC-(?:\d{4}-)?(\d{1,4})$/i);
+        if (m) {
+          const n = parseInt(m[1], 10);
+          if (!isNaN(n) && n < 10000 && n > maxSeq) maxSeq = n;
+        }
+      });
+      const nextSeq = maxSeq + 1;
+      newOrder.orderId = `SC-${new Date().getFullYear()}-${String(nextSeq).padStart(4, '0')}`;
     }
     if (!newOrder.createdAt) {
       newOrder.createdAt = new Date().toISOString();

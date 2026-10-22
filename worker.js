@@ -467,7 +467,7 @@ async function handleApiRequest(request, env, url) {
         }
 
         let orderId = String(order.orderId || '');
-        if (!orderId || !/^SC-\d{4}-\d{4,}$/.test(orderId)) {
+        if (!orderId || !/^SC-\d{4}-\d{4}$/.test(orderId)) {
           const maxRow = await env.DB.prepare(`
             SELECT order_id FROM orders 
             WHERE order_id LIKE 'SC-%' 
@@ -477,10 +477,10 @@ async function handleApiRequest(request, env, url) {
           
           let maxSeq = 0;
           (maxRow.results || []).forEach(r => {
-            const m = String(r.order_id).match(/SC-(?:\d{4}-)?(\d+)/i);
+            const m = String(r.order_id).match(/SC-(?:\d{4}-)?(\d{1,4})$/i);
             if (m) {
               const n = parseInt(m[1], 10);
-              if (!isNaN(n) && n < 100000 && n > maxSeq) maxSeq = n;
+              if (!isNaN(n) && n < 10000 && n > maxSeq) maxSeq = n;
             }
           });
           const nextSeq = maxSeq + 1;

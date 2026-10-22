@@ -539,7 +539,7 @@ export const DEFAULT_PRODUCTS = [
 // Initial Realistic Sample Orders for Admin Dashboard
 export const DEFAULT_ORDERS = [
   {
-    orderId: "SC-2026-1082",
+    orderId: "SC-2026-0003",
     createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
     customer: {
       name: "Suresh Kumar",
@@ -561,7 +561,7 @@ export const DEFAULT_ORDERS = [
     status: "Pending"
   },
   {
-    orderId: "SC-2026-1045",
+    orderId: "SC-2026-0002",
     createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
     customer: {
       name: "Priya Sundaram",
@@ -582,7 +582,7 @@ export const DEFAULT_ORDERS = [
     status: "Processing"
   },
   {
-    orderId: "SC-2026-0988",
+    orderId: "SC-2026-0001",
     createdAt: new Date(Date.now() - 3600000 * 72).toISOString(),
     customer: {
       name: "Murugan Enterprises",

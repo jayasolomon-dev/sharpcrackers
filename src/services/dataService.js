@@ -1757,7 +1757,7 @@ const DEFAULT_PRODUCTS = [
 // Initial Realistic Sample Orders for Admin Dashboard
 const DEFAULT_ORDERS = [
   {
-    orderId: "SC-2026-1082",
+    orderId: "SC-2026-0002",
     createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
     customer: {
       name: "Suresh Kumar",
@@ -1779,7 +1779,7 @@ const DEFAULT_ORDERS = [
     status: "Pending"
   },
   {
-    orderId: "SC-2026-1045",
+    orderId: "SC-2026-0001",
     createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
     customer: {
       name: "Priya Sundaram",
@@ -2417,11 +2417,13 @@ export const dataService = {
       // Automatically store expired bills into secure backup storage
       if (expiredOrders.length > 0) {
         this.archiveExpiredOrders(expiredOrders);
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(activeOrders));
-      } else if (activeOrders.length !== parsed.length) {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(activeOrders));
       }
-      return activeOrders;
+      
+      const normalized = this.normalizeOrderSequences(activeOrders);
+      if (JSON.stringify(normalized) !== JSON.stringify(parsed)) {
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(normalized));
+      }
+      return normalized;
     } catch {
       return filterActiveOrders(DEFAULT_ORDERS);
     }
@@ -2481,9 +2483,59 @@ export const dataService = {
       }
     });
 
-    return Array.from(map.values()).sort((a, b) => {
+    const unified = Array.from(map.values()).sort((a, b) => {
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
+
+    return this.normalizeOrderSequences(unified);
+  },
+
+  normalizeOrderSequences(orders) {
+    if (!Array.isArray(orders) || orders.length === 0) return [];
+
+    // Check if there are any legacy random timestamp IDs (> 9999 or non-continuous)
+    const hasLegacyIds = orders.some(o => {
+      if (!o || !o.orderId) return false;
+      const m = String(o.orderId).match(/SC-(?:\d{4}-)?(\d+)$/i);
+      return !m || parseInt(m[1], 10) > 9999;
+    });
+
+    if (!hasLegacyIds) return orders;
+
+    // Sort chronologically (oldest first) to assign continuous sequence 1, 2, 3...
+    const sorted = [...orders].sort((a, b) => {
+      return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+    });
+
+    const currentYear = new Date().getFullYear();
+    const oldIdsToPurge = [];
+    const normalized = sorted.map((o, idx) => {
+      const seq = idx + 1;
+      const cleanId = `SC-${currentYear}-${String(seq).padStart(4, '0')}`;
+      if (o.orderId && o.orderId !== cleanId && (String(o.orderId).length > 11 || !/^SC-\d{4}-\d{4}$/.test(o.orderId))) {
+        oldIdsToPurge.push(o.orderId);
+      }
+      return {
+        ...o,
+        orderId: cleanId
+      };
+    });
+
+    // Mark old random IDs as deleted so cloud sync purges them
+    if (oldIdsToPurge.length > 0 && typeof window !== 'undefined') {
+      try {
+        const deleted = this.getDeletedOrderIds();
+        const mergedDeleted = Array.from(new Set([...deleted, ...oldIdsToPurge]));
+        localStorage.setItem(STORAGE_KEYS.DELETED_ORDERS, JSON.stringify(mergedDeleted));
+      } catch {}
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sharp_crackers_invoice_counter', String(sorted.length));
+    }
+
+    // Return in reverse chronological order (newest first for display)
+    return normalized.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   },
 
   async fetchOrders() {
@@ -2546,13 +2598,13 @@ export const dataService = {
     const currentYear = new Date().getFullYear();
     let maxSeq = 0;
 
-    // 1. Check all existing active orders
+    // 1. Check all existing active orders (strictly sequences <= 9999)
     orders.forEach(o => {
       if (!o || !o.orderId) return;
-      const match = String(o.orderId).match(/SC-(?:\d{4}-)?(\d+)/i);
+      const match = String(o.orderId).match(/SC-(?:\d{4}-)?(\d{1,4})$/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num < 100000 && num > maxSeq) {
+        if (!isNaN(num) && num < 10000 && num > maxSeq) {
           maxSeq = num;
         }
       }
@@ -2563,7 +2615,7 @@ export const dataService = {
       const storedSeq = typeof window !== 'undefined' ? localStorage.getItem('sharp_crackers_invoice_counter') : null;
       if (storedSeq) {
         const parsed = parseInt(storedSeq, 10);
-        if (!isNaN(parsed) && parsed > maxSeq) {
+        if (!isNaN(parsed) && parsed < 10000 && parsed > maxSeq) {
           maxSeq = parsed;
         }
       }
