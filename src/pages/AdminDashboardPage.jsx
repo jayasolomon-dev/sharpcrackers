@@ -883,14 +883,79 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
             {/* Orders Table */}
             <div className="table-container card">
               {filteredOrders.length === 0 ? (
-                <div className="empty-filter-state p-5 text-center">
-                  <AlertCircle size={48} className="text-muted mb-2" />
-                  <h4>No Customer Orders Found</h4>
-                  <p className="text-muted">
-                    {orderSearch || orderStatusFilter !== 'all'
-                      ? "Try clearing your search query or status filter to see all orders."
-                      : "When customers place orders from the website, they will appear here in real time."}
-                  </p>
+                <div className="modern-empty-orders-state">
+                  <div className="empty-ambient-backdrop"></div>
+                  
+                  {/* Glowing Iconic Focal Point */}
+                  <div className="empty-icon-capsule">
+                    <div className="empty-icon-pulse-ring"></div>
+                    <div className="empty-icon-core">
+                      <FileText size={34} style={{ color: '#ea580c' }} />
+                      <div className="empty-sparkle-dot">
+                        <Sparkles size={14} style={{ color: '#ffb703' }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Real-time Status Live Pill */}
+                  <div className="empty-live-status-pill">
+                    <span className="live-pulse-dot"></span>
+                    <span>Live Sivakasi Desk Sync Active</span>
+                  </div>
+
+                  {/* Content Header */}
+                  {orderSearch || orderStatusFilter !== 'all' ? (
+                    <>
+                      <h3 className="empty-state-title">No Orders Match Your Filter</h3>
+                      <p className="empty-state-desc">
+                        No customer orders found matching your search query or status filter. Try clearing your filters to view all orders.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          setOrderSearch('');
+                          setOrderStatusFilter('all');
+                        }}
+                        className="btn btn-outline-dark btn-sm empty-clear-btn"
+                      >
+                        <X size={15} />
+                        <span>Clear Search & Filters</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="empty-state-title">
+                        Ready to Receive Customer Orders!
+                      </h3>
+                      <p className="empty-state-ta-subtitle">
+                        வாடிக்கையாளர்கள் இணையதளத்தில் ஆர்டர் செய்யும் போது, இங்கு தானாகவே தோன்றும்.
+                      </p>
+                      <p className="empty-state-desc">
+                        When customers submit their cracker order sheet on the website, new bills will appear here in real time with instant audio alerts and 30-day cloud backup.
+                      </p>
+                      <div className="empty-action-buttons-group">
+                        <button 
+                          onClick={() => {
+                            dataService.fetchOrders();
+                            setToastMessage({ type: 'success', text: 'Checked Cloudflare D1 database: 0 pending orders.' });
+                            setTimeout(() => setToastMessage(null), 2500);
+                          }}
+                          className="btn btn-outline-dark btn-sm"
+                        >
+                          <RefreshCw size={14} />
+                          <span>Check Live Sync</span>
+                        </button>
+                        <a 
+                          href="/products" 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="btn btn-primary btn-sm empty-test-order-btn"
+                        >
+                          <ExternalLink size={14} />
+                          <span>Open Customer Store to Test</span>
+                        </a>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="table-responsive-wrapper">
@@ -2716,6 +2781,166 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           border-color: #94a3b8 !important;
         }
 
+        /* =============================================================
+           MODERN EMPTY ORDERS STATE (Festive & Ultra-Clean)
+           ============================================================= */
+        .modern-empty-orders-state {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 3.5rem 1.5rem;
+          background: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+          border-radius: var(--radius-lg);
+          border: 1.5px dashed #fed7aa;
+          margin: 1rem 0;
+          overflow: hidden;
+        }
+
+        .empty-ambient-backdrop {
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 380px;
+          height: 180px;
+          background: radial-gradient(ellipse, rgba(255, 111, 0, 0.12) 0%, rgba(255, 183, 3, 0.04) 55%, rgba(255, 255, 255, 0) 75%);
+          pointer-events: none;
+        }
+
+        .empty-icon-capsule {
+          position: relative;
+          width: 80px;
+          height: 80px;
+          margin-bottom: 1.25rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .empty-icon-pulse-ring {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: linear-gradient(135deg, rgba(255, 111, 0, 0.22), rgba(255, 183, 3, 0.28));
+          animation: emptyRingPulse 3s infinite ease-in-out;
+        }
+
+        @keyframes emptyRingPulse {
+          0%, 100% {
+            transform: scale(0.92);
+            opacity: 0.65;
+          }
+          50% {
+            transform: scale(1.15);
+            opacity: 0.2;
+          }
+        }
+
+        .empty-icon-core {
+          position: relative;
+          width: 64px;
+          height: 64px;
+          border-radius: 18px;
+          background: #ffffff;
+          border: 1.5px solid #fed7aa;
+          box-shadow: 0 8px 24px rgba(255, 111, 0, 0.14);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+        }
+
+        .empty-sparkle-dot {
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #0f172a;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .empty-live-status-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          color: #065f46;
+          font-size: 0.78rem;
+          font-weight: 700;
+          padding: 0.35rem 0.85rem;
+          border-radius: 999px;
+          margin-bottom: 1rem;
+          letter-spacing: 0.3px;
+        }
+
+        .live-pulse-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+          animation: livePulse 1.8s infinite ease-in-out;
+        }
+
+        @keyframes livePulse {
+          0%, 100% {
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
+          }
+          50% {
+            box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+          }
+        }
+
+        .empty-state-title {
+          font-size: 1.45rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 0.35rem;
+          font-family: var(--font-display);
+        }
+
+        .empty-state-ta-subtitle {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #ea580c;
+          margin-bottom: 0.5rem;
+          font-family: 'Mukta Malar', 'Noto Sans Tamil', system-ui, sans-serif;
+        }
+
+        .empty-state-desc {
+          font-size: 0.9rem;
+          color: #64748b;
+          max-width: 520px;
+          line-height: 1.55;
+          margin-bottom: 1.5rem;
+        }
+
+        .empty-action-buttons-group {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .empty-test-order-btn {
+          box-shadow: 0 4px 14px rgba(255, 111, 0, 0.3);
+        }
+
+        .empty-clear-btn {
+          margin-top: 0.5rem;
+        }
+
         /* Catalog Sub-tabs Switcher */
         .catalog-header-actions-row {
           display: flex;
@@ -4445,6 +4670,22 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           .status-filter-group .custom-select-wrapper {
             flex: 1;
             width: 100%;
+          }
+          .modern-empty-orders-state {
+            padding: 2.5rem 1rem;
+            margin: 0.5rem 0;
+          }
+          .empty-state-title {
+            font-size: 1.25rem;
+          }
+          .empty-action-buttons-group {
+            width: 100%;
+            flex-direction: column;
+            gap: 0.65rem;
+          }
+          .empty-action-buttons-group .btn {
+            width: 100%;
+            justify-content: center;
           }
           .form-grid-2, .form-grid-3 {
             grid-template-columns: 1fr;
