@@ -73,13 +73,38 @@ export default {
       return handleApiRequest(request, env, url);
     }
 
-    // 3. Static Assets & SPA Routing (fall back to / for client-side routing like /admin)
+    // 3. Static Assets & SPA Routing with Aggressive Edge Caching
     if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
-      const response = await env.ASSETS.fetch(request);
+      let response = await env.ASSETS.fetch(request);
+
+      // SPA Fallback for client routes (/admin, /products, /cart, /orders, etc.)
       if (response.status === 404 && !url.pathname.includes('.')) {
         const indexUrl = new URL('/', request.url);
-        return env.ASSETS.fetch(new Request(indexUrl, request));
+        response = await env.ASSETS.fetch(new Request(indexUrl, request));
+        const htmlHeaders = new Headers(response.headers);
+        htmlHeaders.set('Cache-Control', 'public, max-age=0, must-revalidate');
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: htmlHeaders
+        });
       }
+
+      // Instant Edge & Browser caching for all images, media, fonts & static bundles
+      if (response.ok) {
+        if (url.pathname.match(/\.(png|jpe?g|webp|svg|gif|ico|woff2?|ttf|css|js)$/i)) {
+          const assetHeaders = new Headers(response.headers);
+          assetHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+          assetHeaders.set('CDN-Cache-Control', 'public, max-age=31536000, immutable');
+          assetHeaders.set('Cloudflare-CDN-Cache-Control', 'public, max-age=31536000, immutable');
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: assetHeaders
+          });
+        }
+      }
+
       return response;
     }
 

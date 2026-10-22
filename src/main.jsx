@@ -12,10 +12,13 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       console.warn('[ServiceWorker] Registration skipped:', err);
     });
 
-    // In-memory image pre-warming (loads images into browser RAM instantly)
+    // In-memory image pre-warming (loads critical images into browser RAM instantly)
     const criticalImages = [
       '/images/sharp_crackers_brand_logo.jpg',
-      '/images/sharp_celebration_hero_banner.jpg',
+      '/images/sharp_crackers_logo_final.png',
+      '/images/home_hero_bg.jpg',
+      '/images/about_hero_bg.jpg',
+      '/images/contact_hero_bg.jpg',
       '/images/product_sparkler_1791567639029.jpg',
       '/images/product_flowerpots.jpg',
       '/images/product_chakkars.jpg',

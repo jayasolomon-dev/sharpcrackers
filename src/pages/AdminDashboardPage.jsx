@@ -1139,6 +1139,8 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                                     src={p.image} 
                                     alt={p.name} 
                                     className="table-row-thumb" 
+                                    loading="lazy"
+                                    decoding="async"
                                     onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
                                   />
                                 </div>
@@ -1223,6 +1225,8 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                             src={cat.image || '/images/products/sparkler_10cm_colour.png'} 
                             alt={cat.name}
                             className="cat-admin-img"
+                            loading="lazy"
+                            decoding="async"
                             onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
                           />
                           <span className="cat-product-count-badge">

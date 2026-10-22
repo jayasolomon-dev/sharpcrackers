@@ -4,11 +4,12 @@
 // Delivers sub-millisecond instant visual rendering from device CacheStorage
 // ============================================================================
 
-const CACHE_NAME = 'sharp-crackers-v8-video';
+const CACHE_NAME = 'sharp-crackers-v9-instant';
 
 const CORE_ASSETS = [
   '/',
   '/index.html',
+  '/images/home_hero_bg.jpg',
   '/images/sharp_celebration_hero_banner.jpg',
   '/images/hero_banner_1791567625102.jpg',
   '/images/product_chakkars.jpg',

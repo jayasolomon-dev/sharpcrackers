@@ -27,16 +27,7 @@ import {
 export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
   const { products, settings } = useCart();
   const scrollRef = useRef(null);
-  const videoRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.defaultMuted = true;
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(() => {});
-    }
-  }, []);
 
   const handleCategoryClick = (categoryId) => {
     if (setSelectedCategory) setSelectedCategory(categoryId);
@@ -117,26 +108,11 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
 
   return (
     <div className="homepage-wrapper">
-      {/* 1. HERO BANNER SECTION WITH AMBIENT VIDEO BACKGROUND */}
+      {/* 1. HERO BANNER SECTION WITH INSTANT CRISP BACKGROUND */}
       <section className="hero-section">
-        <video 
-          ref={videoRef}
-          className="hero-video-bg"
-          autoPlay 
-          loop 
-          muted 
-          playsInline
-          webkit-playsinline="true"
-          preload="auto"
-          poster="/images/home_hero_bg_4k.webp"
-        >
-          <source src="/videos/hero_bg_wp.mp4" type="video/mp4" />
-          <source src="/videos/hero_fireworks_bg.mp4" type="video/mp4" />
-          <source src="/videos/cracker_wp_enhance.mp4" type="video/mp4" />
-        </video>
         <div 
           className="hero-backdrop" 
-          style={{ backgroundImage: `url('/images/home_hero_bg_4k.webp')` }}
+          style={{ backgroundImage: `url('/images/home_hero_bg.jpg')` }}
         />
         <div className="hero-overlay" />
 

@@ -475,6 +475,7 @@ export const ProductsPage = ({
                                   src={product.image} 
                                   alt={product.name} 
                                   className="product-thumb" 
+                                  loading="lazy"
                                   decoding="async"
                                   onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
                                 />
@@ -597,6 +598,7 @@ export const ProductsPage = ({
                               src={product.image} 
                               alt={product.name} 
                               className="mobile-thumb-img" 
+                              loading="lazy"
                               decoding="async"
                               onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
                             />
