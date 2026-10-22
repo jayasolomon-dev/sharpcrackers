@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
-  const { products, settings } = useCart();
+  const { products, settings, isProductOutOfStock } = useCart();
   const scrollRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -274,6 +274,7 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
             >
               {bestSellers.map((product) => {
                 const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
+                const isOutOfStock = isProductOutOfStock(product);
 
                 return (
                   <div 
@@ -300,10 +301,16 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                         onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
                       />
 
-                      <div className="slide-star-badge">
-                        <Star size={11} fill="#ffb703" color="#ffb703" />
-                        <span>Best Seller</span>
-                      </div>
+                      {isOutOfStock ? (
+                        <div className="slide-out-tag">
+                          <span>Out of Stock / இருப்பு இல்லை</span>
+                        </div>
+                      ) : (
+                        <div className="slide-star-badge">
+                          <Star size={11} fill="#ffb703" color="#ffb703" />
+                          <span>Best Seller</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="slide-card-details">
@@ -326,17 +333,27 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                       </div>
 
                       <div className="slide-card-action">
-                        <button 
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleProductCardClick(product);
-                          }}
-                          className="btn btn-primary btn-block slide-action-btn"
-                        >
-                          <ShoppingCart size={14} />
-                          <span>Order Item</span>
-                        </button>
+                        {isOutOfStock ? (
+                          <button 
+                            type="button"
+                            disabled
+                            className="btn btn-secondary btn-block slide-action-btn slide-action-disabled"
+                          >
+                            <span>Out of Stock</span>
+                          </button>
+                        ) : (
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProductCardClick(product);
+                            }}
+                            className="btn btn-primary btn-block slide-action-btn"
+                          >
+                            <ShoppingCart size={14} />
+                            <span>Order Item</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -371,6 +388,8 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           <div className="gift-boxes-grid">
             {giftBoxes.map((box) => {
               const discount = Math.round(((box.mrp - box.unitPrice) / box.mrp) * 100);
+              const isOutOfStock = isProductOutOfStock(box);
+
               return (
                 <div
                   key={box.id}
@@ -395,7 +414,11 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                       onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
                     />
 
-                    <span className="gift-festive-tag">Diwali Special</span>
+                    {isOutOfStock ? (
+                      <span className="gift-out-tag">Out of Stock / இருப்பு இல்லை</span>
+                    ) : (
+                      <span className="gift-festive-tag">Diwali Special</span>
+                    )}
                   </div>
 
                   <div className="gift-card-body">
@@ -412,17 +435,27 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                         <div className="gift-price-current">₹{box.unitPrice}</div>
                         <div className="gift-price-mrp">MRP ₹{box.mrp}</div>
                       </div>
-                      <button 
-                        type="button" 
-                        className="btn btn-primary btn-sm gift-order-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProductCardClick(box);
-                        }}
-                      >
-                        <span>Order Box</span>
-                        <ArrowRight size={14} />
-                      </button>
+                      {isOutOfStock ? (
+                        <button 
+                          type="button" 
+                          disabled
+                          className="btn btn-secondary btn-sm gift-order-btn gift-order-disabled"
+                        >
+                          <span>Out of Stock</span>
+                        </button>
+                      ) : (
+                        <button 
+                          type="button" 
+                          className="btn btn-primary btn-sm gift-order-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleProductCardClick(box);
+                          }}
+                        >
+                          <span>Order Box</span>
+                          <ArrowRight size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1602,6 +1635,55 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
             flex-direction: row;
             align-items: center;
           }
+        }
+
+        /* Out of Stock Badges & Disabled Controls */
+        .slide-out-tag {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background: rgba(220, 38, 38, 0.92);
+          color: #ffffff;
+          padding: 0.25rem 0.65rem;
+          border-radius: var(--radius-full);
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.3px;
+          box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+          backdrop-filter: blur(4px);
+        }
+
+        .slide-action-disabled {
+          background: #e2e8f0 !important;
+          color: #64748b !important;
+          border-color: #cbd5e1 !important;
+          cursor: not-allowed !important;
+          opacity: 0.85;
+          box-shadow: none !important;
+        }
+
+        .gift-out-tag {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background: rgba(220, 38, 38, 0.92);
+          color: #ffffff;
+          padding: 0.25rem 0.65rem;
+          border-radius: var(--radius-full);
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.3px;
+          box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+          backdrop-filter: blur(4px);
+        }
+
+        .gift-order-disabled {
+          background: #e2e8f0 !important;
+          color: #64748b !important;
+          border-color: #cbd5e1 !important;
+          cursor: not-allowed !important;
+          opacity: 0.85;
+          box-shadow: none !important;
         }
       `}</style>
     </div>

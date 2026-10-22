@@ -28,7 +28,8 @@ import {
   Package,
   Receipt,
   ArrowRight,
-  MessageSquare
+  MessageSquare,
+  AlertCircle
 } from 'lucide-react';
 
 export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
@@ -42,7 +43,8 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     cartSubtotal, 
     deliveryCharge,
     cartGrandTotal,
-    settings 
+    settings,
+    hasOutOfStockItems 
   } = useCart();
 
   // Simplified Form State: Name, Phone, optional Email, Notes
@@ -81,6 +83,10 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
   // Submit Order
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
+    if (hasOutOfStockItems) {
+      alert("Your order contains Out of Stock products! Please remove them from your order list before submitting.");
+      return;
+    }
     if (!validateForm()) return;
     if (cartItems.length === 0) {
       alert("Your order sheet is empty. Please select products before submitting.");
@@ -571,6 +577,17 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                 </button>
               </div>
 
+              {/* Out of Stock Warning Banner */}
+              {hasOutOfStockItems && (
+                <div className="cart-out-warning-banner">
+                  <AlertCircle size={22} className="text-red flex-shrink-0" />
+                  <div className="cart-out-warning-text">
+                    <strong>Attention: Some items are currently Out of Stock! / சில பொருட்கள் இருப்பு இல்லை</strong>
+                    <p>Please remove the out-of-stock items highlighted below from your cart to proceed with submitting your order.</p>
+                  </div>
+                </div>
+              )}
+
               {/* Desktop Table View (> 768px) */}
               <div className="desktop-cart-table table-responsive-wrapper">
                 <table className="cart-review-table">
@@ -587,7 +604,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   </thead>
                   <tbody>
                     {cartItems.map((item, idx) => (
-                      <tr key={item.id}>
+                      <tr key={item.id} className={item.isOutOfStock ? 'cart-row-out' : ''}>
                         <td className="text-center col-sno">
                           <span className="cart-sno-badge">{item.sno ? String(parseInt(item.sno, 10)).padStart(3, '0') : String(idx + 1).padStart(3, '0')}</span>
                         </td>
@@ -598,6 +615,9 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                           <div className="cart-prod-code">{item.code}</div>
                           <div className="cart-prod-name">
                             {item.name}
+                            {item.isOutOfStock && (
+                              <span className="cart-out-tag">Out of Stock / இருப்பு இல்லை</span>
+                            )}
                           </div>
                           <div className="cart-prod-pack">{item.packDetails}</div>
                         </td>
@@ -614,6 +634,8 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                             <button 
                               onClick={() => updateQuantity(item.id, 1)}
                               className="cart-qbtn"
+                              disabled={item.isOutOfStock}
+                              title={item.isOutOfStock ? "Product is Out of Stock" : "Increase quantity"}
                             >
                               <Plus size={12} />
                             </button>
@@ -640,14 +662,17 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
               {/* Mobile Cart Items List (<= 768px) */}
               <div className="mobile-cart-items-list">
                 {cartItems.map((item, idx) => (
-                  <div key={item.id} className="mobile-cart-card">
+                  <div key={item.id} className={`mobile-cart-card ${item.isOutOfStock ? 'm-cart-card-out' : ''}`}>
                     <div className="m-cart-top">
                       <img src={item.image} alt={item.name} className="m-cart-thumb" />
                       <div className="m-cart-info">
                         <div className="m-cart-header-line">
-                          <div className="d-flex align-items-center gap-1">
+                          <div className="d-flex align-items-center gap-1 flex-wrap">
                             <span className="m-cart-sno">#{item.sno ? String(parseInt(item.sno, 10)).padStart(3, '0') : '001'}</span>
                             <span className="m-cart-code">{item.code}</span>
+                            {item.isOutOfStock && (
+                              <span className="cart-out-tag">Out of Stock</span>
+                            )}
                           </div>
                           <button 
                             onClick={() => removeFromCart(item.id)}
@@ -677,6 +702,8 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                         <button 
                           onClick={() => updateQuantity(item.id, 1)}
                           className="m-c-btn plus"
+                          disabled={item.isOutOfStock}
+                          title={item.isOutOfStock ? "Product is Out of Stock" : "Increase quantity"}
                         >
                           <Plus size={13} />
                         </button>
@@ -799,10 +826,18 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   <button 
                     type="submit" 
                     className="btn btn-primary btn-block submit-order-btn"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || hasOutOfStockItems}
+                    style={hasOutOfStockItems ? { opacity: 0.75, cursor: 'not-allowed', background: '#dc2626' } : {}}
+                    title={hasOutOfStockItems ? "Please remove out of stock items first" : "Submit Order"}
                   >
                     <Send size={18} />
-                    <span>{isSubmitting ? 'Submitting Order...' : 'Submit Order'}</span>
+                    <span>
+                      {isSubmitting 
+                        ? 'Submitting Order...' 
+                        : hasOutOfStockItems 
+                          ? 'Remove Out of Stock Items to Submit' 
+                          : 'Submit Order'}
+                    </span>
                   </button>
 
                   <div className="cart-dual-doc-buttons mt-3">
@@ -1408,6 +1443,63 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           .draft-actions-dual {
             grid-template-columns: 1fr;
           }
+        }
+
+        /* Out of Stock Warning Banner & Row Highlighting */
+        .cart-out-warning-banner {
+          background: #fef2f2;
+          border: 1.5px solid #fecaca;
+          border-radius: var(--radius-lg);
+          padding: 1rem 1.25rem;
+          margin-bottom: 1.25rem;
+          display: flex;
+          align-items: flex-start;
+          gap: 0.85rem;
+          box-shadow: 0 4px 15px rgba(220, 38, 38, 0.08);
+          animation: fadeIn 0.25s ease-out;
+        }
+
+        .cart-out-warning-text strong {
+          display: block;
+          color: #991b1b;
+          font-size: 0.95rem;
+          font-weight: 800;
+          margin-bottom: 0.2rem;
+        }
+
+        .cart-out-warning-text p {
+          color: #b91c1c;
+          font-size: 0.85rem;
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .cart-row-out {
+          background-color: #fff1f2 !important;
+        }
+
+        .cart-out-tag {
+          display: inline-block;
+          margin-left: 0.45rem;
+          background: #fee2e2;
+          border: 1px solid #fca5a5;
+          color: #dc2626;
+          font-size: 0.72rem;
+          font-weight: 700;
+          padding: 0.15rem 0.5rem;
+          border-radius: var(--radius-full);
+          white-space: nowrap;
+        }
+
+        .m-cart-card-out {
+          border-color: #fca5a5 !important;
+          background-color: #fff1f2 !important;
+        }
+
+        .cart-qbtn:disabled, .m-c-btn:disabled {
+          background: #f1f5f9 !important;
+          color: #cbd5e1 !important;
+          cursor: not-allowed !important;
         }
       `}</style>
     </div>

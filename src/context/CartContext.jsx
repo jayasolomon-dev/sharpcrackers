@@ -10,6 +10,16 @@ const CartContext = createContext();
 
 const CART_STORAGE_KEY = 'sharp_crackers_cart_session';
 
+// Helper to check if a product is out of stock (can be imported directly or via useCart)
+export const isProductOutOfStock = (product) => {
+  if (!product) return false;
+  if (product.inStock === false) return true;
+  if (product.stockCount !== undefined && product.stockCount !== null && product.stockCount !== '' && Number(product.stockCount) <= 0) {
+    return true;
+  }
+  return false;
+};
+
 export const CartProvider = ({ children }) => {
   // Cart stored as { [productId]: quantity }
   const [quantities, setQuantities] = useState(() => {
@@ -78,7 +88,16 @@ export const CartProvider = ({ children }) => {
     return quantities[productId] || 0;
   };
 
+
   const updateQuantity = (productId, delta) => {
+    // If trying to increase or add an out of stock product, prevent it!
+    if (delta > 0) {
+      const product = products.find(p => p.id === productId);
+      if (isProductOutOfStock(product)) {
+        return;
+      }
+    }
+
     setQuantities(prev => {
       const current = prev[productId] || 0;
       const next = Math.max(0, current + delta);
@@ -95,6 +114,15 @@ export const CartProvider = ({ children }) => {
   const setItemQuantity = (productId, rawValue) => {
     const val = parseInt(rawValue, 10);
     const next = isNaN(val) ? 0 : Math.max(0, val);
+
+    // If trying to set positive quantity on out-of-stock product, prevent it!
+    if (next > 0) {
+      const product = products.find(p => p.id === productId);
+      if (isProductOutOfStock(product)) {
+        return;
+      }
+    }
+
     setQuantities(prev => {
       const updated = { ...prev };
       if (next === 0) {
@@ -118,16 +146,18 @@ export const CartProvider = ({ children }) => {
     setQuantities({});
   };
 
-  // Compile cart items with full product snapshots
+  // Compile cart items with full product snapshots and out-of-stock flags
   const cartItems = Object.entries(quantities)
     .filter(([_, qty]) => qty > 0)
     .map(([productId, qty]) => {
       const product = products.find(p => p.id === productId);
       if (!product) return null;
+      const isOut = isProductOutOfStock(product);
       return {
         ...product,
         quantity: qty,
-        totalPrice: Number(product.unitPrice) * qty
+        totalPrice: Number(product.unitPrice) * qty,
+        isOutOfStock: isOut
       };
     })
     .filter(Boolean);
@@ -135,6 +165,7 @@ export const CartProvider = ({ children }) => {
   const totalSelectedProducts = cartItems.length;
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const hasOutOfStockItems = cartItems.some(item => item.isOutOfStock);
 
   const deliveryCharge = 0;
   const cartGrandTotal = cartSubtotal;
@@ -143,19 +174,21 @@ export const CartProvider = ({ children }) => {
     <CartContext.Provider
       value={{
         quantities,
+        products,
+        settings,
         cartItems,
+        totalSelectedProducts,
+        totalQuantity,
+        cartSubtotal,
+        cartGrandTotal,
+        deliveryCharge,
+        hasOutOfStockItems,
+        isProductOutOfStock,
         getItemQuantity,
         updateQuantity,
         setItemQuantity,
         removeFromCart,
-        clearCart,
-        totalSelectedProducts,
-        totalQuantity,
-        cartSubtotal,
-        deliveryCharge,
-        cartGrandTotal,
-        settings,
-        products
+        clearCart
       }}
     >
       {children}

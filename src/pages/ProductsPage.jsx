@@ -52,7 +52,8 @@ export const ProductsPage = ({
     cartSubtotal, 
     deliveryCharge, 
     cartGrandTotal,
-    settings 
+    settings,
+    isProductOutOfStock 
   } = useCart();
 
   const [categories, setCategories] = useState(() => dataService.getCategories());
@@ -450,6 +451,7 @@ export const ProductsPage = ({
                     <tbody>
                       {filteredProducts.map((product, index) => {
                         const qty = getItemQuantity(product.id);
+                        const isOutOfStock = isProductOutOfStock(product);
                         const lineTotal = product.unitPrice * qty;
                         const hasSelected = qty > 0;
                         const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
@@ -457,7 +459,7 @@ export const ProductsPage = ({
                         return (
                           <tr 
                             key={product.id} 
-                            className={`product-row ${hasSelected ? 'row-selected' : ''}`}
+                            className={`product-row ${hasSelected ? 'row-selected' : ''} ${isOutOfStock ? 'row-out-of-stock' : ''}`}
                           >
                             {/* S.No (Permanent 3-Digit Serial Number) */}
                             <td className="col-sno text-center">
@@ -479,9 +481,13 @@ export const ProductsPage = ({
                                   decoding="async"
                                   onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
                                 />
-                                <div className="thumb-zoom-icon">
-                                  <Eye size={12} />
-                                </div>
+                                {isOutOfStock ? (
+                                  <div className="thumb-out-tag">SOLD OUT</div>
+                                ) : (
+                                  <div className="thumb-zoom-icon">
+                                    <Eye size={12} />
+                                  </div>
+                                )}
                               </div>
                             </td>
 
@@ -499,11 +505,20 @@ export const ProductsPage = ({
                                     <span className="table-tamil-name"> / {PRODUCT_TAMIL_NAMES[product.code] || product.tamilName}</span>
                                   )}
                                 </span>
-                                {discount > 0 && (
-                                  <span className="discount-pill">{discount}% OFF</span>
-                                )}
-                                {product.isBestseller && (
-                                  <span className="bestseller-pill">Bestseller</span>
+                                {isOutOfStock ? (
+                                  <span className="out-of-stock-pill">
+                                    <span className="out-of-stock-dot"></span>
+                                    Out of Stock / இருப்பு இல்லை
+                                  </span>
+                                ) : (
+                                  <>
+                                    {discount > 0 && (
+                                      <span className="discount-pill">{discount}% OFF</span>
+                                    )}
+                                    {product.isBestseller && (
+                                      <span className="bestseller-pill">Bestseller</span>
+                                    )}
+                                  </>
                                 )}
                               </div>
                               {product.description && (
@@ -526,44 +541,55 @@ export const ProductsPage = ({
                               </div>
                             </td>
 
-                            {/* Quantity Selector: Minus, Value, Plus */}
+                            {/* Quantity Selector: Minus, Value, Plus OR Out of Stock Badge */}
                             <td className="col-qty text-center">
-                              <div className="table-qty-control">
-                                <button
-                                  type="button"
-                                  className="table-qty-btn minus-btn"
-                                  onClick={() => updateQuantity(product.id, -1)}
-                                  disabled={qty === 0}
-                                  title="Decrease quantity"
-                                >
-                                  <Minus size={14} />
-                                </button>
+                              {isOutOfStock ? (
+                                <div className="table-out-of-stock-box" title="Currently unavailable for ordering">
+                                  <span className="badge-out-text">Out of Stock</span>
+                                  <span className="badge-out-ta">இருப்பு இல்லை</span>
+                                </div>
+                              ) : (
+                                <div className="table-qty-control">
+                                  <button
+                                    type="button"
+                                    className="table-qty-btn minus-btn"
+                                    onClick={() => updateQuantity(product.id, -1)}
+                                    disabled={qty === 0}
+                                    title="Decrease quantity"
+                                  >
+                                    <Minus size={14} />
+                                  </button>
 
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="999"
-                                  value={qty}
-                                  onChange={(e) => setItemQuantity(product.id, e.target.value)}
-                                  className={`table-qty-input ${qty > 0 ? 'active-input' : ''}`}
-                                />
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="999"
+                                    value={qty}
+                                    onChange={(e) => setItemQuantity(product.id, e.target.value)}
+                                    className={`table-qty-input ${qty > 0 ? 'active-input' : ''}`}
+                                  />
 
-                                <button
-                                  type="button"
-                                  className="table-qty-btn plus-btn"
-                                  onClick={() => updateQuantity(product.id, 1)}
-                                  title="Increase quantity"
-                                >
-                                  <Plus size={14} />
-                                </button>
-                              </div>
+                                  <button
+                                    type="button"
+                                    className="table-qty-btn plus-btn"
+                                    onClick={() => updateQuantity(product.id, 1)}
+                                    title="Increase quantity"
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+                                </div>
+                              )}
                             </td>
 
                             {/* Line Total */}
                             <td className="col-total text-right">
-                              <span className={`line-total-amount ${lineTotal > 0 ? 'text-highlight' : 'text-zero'}`}>
-                                {formatCur(lineTotal)}
-                              </span>
+                              {isOutOfStock && qty === 0 ? (
+                                <span className="line-total-amount text-zero text-out-tag">Unavailable</span>
+                              ) : (
+                                <span className={`line-total-amount ${lineTotal > 0 ? 'text-highlight' : 'text-zero'}`}>
+                                  {formatCur(lineTotal)}
+                                </span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -576,6 +602,7 @@ export const ProductsPage = ({
                 <div className="mobile-catalog-view">
                   {filteredProducts.map((product) => {
                     const qty = getItemQuantity(product.id);
+                    const isOutOfStock = isProductOutOfStock(product);
                     const lineTotal = product.unitPrice * qty;
                     const hasSelected = qty > 0;
                     const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
@@ -584,7 +611,7 @@ export const ProductsPage = ({
                     return (
                       <div 
                         key={product.id} 
-                        className={`mobile-product-card ${hasSelected ? 'card-selected' : ''}`}
+                        className={`mobile-product-card ${hasSelected ? 'card-selected' : ''} ${isOutOfStock ? 'mobile-card-out' : ''}`}
                       >
                         {/* Top Info Area: Photo + Badges + Bilingual Name + Pack */}
                         <div className="mobile-card-top-section">
@@ -602,9 +629,13 @@ export const ProductsPage = ({
                               decoding="async"
                               onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
                             />
-                            <div className="mobile-thumb-zoom-badge">
-                              <Eye size={12} />
-                            </div>
+                            {isOutOfStock ? (
+                              <div className="mobile-thumb-out-tag">Sold Out</div>
+                            ) : (
+                              <div className="mobile-thumb-zoom-badge">
+                                <Eye size={12} />
+                              </div>
+                            )}
                           </div>
 
                           {/* Right: Details */}
@@ -612,11 +643,17 @@ export const ProductsPage = ({
                             <div className="mobile-pill-row">
                               <span className="mobile-sno-badge">#{product.sno ? String(parseInt(product.sno, 10)).padStart(3, '0') : '001'}</span>
                               <span className="mobile-code-badge">{product.code}</span>
-                              {discount > 0 && (
-                                <span className="mobile-discount-badge">{discount}% OFF</span>
-                              )}
-                              {product.isBestseller && (
-                                <span className="mobile-bestseller-badge">Bestseller</span>
+                              {isOutOfStock ? (
+                                <span className="mobile-out-badge">Out of Stock / இருப்பு இல்லை</span>
+                              ) : (
+                                <>
+                                  {discount > 0 && (
+                                    <span className="mobile-discount-badge">{discount}% OFF</span>
+                                  )}
+                                  {product.isBestseller && (
+                                    <span className="mobile-bestseller-badge">Bestseller</span>
+                                  )}
+                                </>
                               )}
                             </div>
 
@@ -647,7 +684,9 @@ export const ProductsPage = ({
                               )}
                             </div>
                             <div className="mobile-status-hint">
-                              {hasSelected ? (
+                              {isOutOfStock ? (
+                                <span className="mobile-out-hint">Currently Unavailable</span>
+                              ) : hasSelected ? (
                                 <span className="mobile-subtotal-active">
                                   Total: <strong>{formatCur(lineTotal)}</strong>
                                 </span>
@@ -658,7 +697,16 @@ export const ProductsPage = ({
                           </div>
 
                           <div className="mobile-action-control">
-                            {qty === 0 ? (
+                            {isOutOfStock ? (
+                              <button
+                                type="button"
+                                className="mobile-out-btn"
+                                disabled
+                                aria-label="Out of Stock"
+                              >
+                                <span>Out of Stock</span>
+                              </button>
+                            ) : qty === 0 ? (
                               <button
                                 type="button"
                                 className="mobile-add-btn"
@@ -767,69 +815,96 @@ export const ProductsPage = ({
       </div>
 
       {/* Image Preview Lightbox Modal */}
-      {previewProduct && (
-        <div className="modal-overlay" onClick={() => setPreviewProduct(null)}>
-          <div className="modal-content product-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={() => setPreviewProduct(null)}>
-              <X size={20} />
-            </button>
-            <div className="modal-body-layout">
-              <div className="modal-img-frame">
-                <img 
-                  src={previewProduct.image} 
-                  alt={previewProduct.name} 
-                  className="modal-large-img" 
-                  loading="eager"
-                  decoding="async"
-                  onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
-                />
-              </div>
-              <div className="modal-product-info">
-                <div className="code-pill">{previewProduct.code}</div>
-                <h2>
-                  {previewProduct.name}
-                  {(PRODUCT_TAMIL_NAMES[previewProduct.code] || previewProduct.tamilName) && (
-                    <span style={{ color: '#ea580c', fontWeight: 700, fontSize: '1.2rem' }}>
-                      {' '}/ {PRODUCT_TAMIL_NAMES[previewProduct.code] || previewProduct.tamilName}
-                    </span>
-                  )}
-                </h2>
-                <div className="pack-info">Packing: <strong>{previewProduct.packDetails}</strong></div>
-                <p className="modal-desc">{previewProduct.description || "Direct from Sivakasi factory. PESO approved eco-friendly formulation."}</p>
-                <div className="modal-price-strip">
-                  <div>
-                    <div className="price-tag-big">{formatCur(previewProduct.unitPrice)}</div>
-                    <div className="mrp-strike">MRP: {formatCur(previewProduct.mrp)}</div>
-                  </div>
-                  <div className="savings-badge">
-                    Save {Math.round(((previewProduct.mrp - previewProduct.unitPrice) / previewProduct.mrp) * 100)}%
-                  </div>
-                </div>
+      {previewProduct && (() => {
+        const isPreviewOutOfStock = isProductOutOfStock(previewProduct);
 
-                <div className="modal-qty-action">
-                  <span className="qty-label">Add Quantity:</span>
-                  <div className="table-qty-control large-control">
-                    <button 
-                      onClick={() => updateQuantity(previewProduct.id, -1)} 
-                      className="table-qty-btn minus-btn"
-                      disabled={getItemQuantity(previewProduct.id) === 0}
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <span className="large-qty-num">{getItemQuantity(previewProduct.id)}</span>
-                    <button 
-                      onClick={() => updateQuantity(previewProduct.id, 1)} 
-                      className="table-qty-btn plus-btn"
-                    >
-                      <Plus size={16} />
-                    </button>
+        return (
+          <div className="modal-overlay" onClick={() => setPreviewProduct(null)}>
+            <div className="modal-content product-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close-btn" onClick={() => setPreviewProduct(null)}>
+                <X size={20} />
+              </button>
+              <div className="modal-body-layout">
+                <div className="modal-img-frame">
+                  <img 
+                    src={previewProduct.image} 
+                    alt={previewProduct.name} 
+                    className="modal-large-img" 
+                    loading="eager"
+                    decoding="async"
+                    onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                  />
+                  {isPreviewOutOfStock && (
+                    <div className="modal-img-out-tag">SOLD OUT / இருப்பு இல்லை</div>
+                  )}
+                </div>
+                <div className="modal-product-info">
+                  <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <div className="code-pill">{previewProduct.code}</div>
+                    {isPreviewOutOfStock && (
+                      <span className="out-of-stock-pill">
+                        <span className="out-of-stock-dot"></span>
+                        Out of Stock / இருப்பு இல்லை
+                      </span>
+                    )}
+                  </div>
+                  <h2>
+                    {previewProduct.name}
+                    {(PRODUCT_TAMIL_NAMES[previewProduct.code] || previewProduct.tamilName) && (
+                      <span style={{ color: '#ea580c', fontWeight: 700, fontSize: '1.2rem' }}>
+                        {' '}/ {PRODUCT_TAMIL_NAMES[previewProduct.code] || previewProduct.tamilName}
+                      </span>
+                    )}
+                  </h2>
+                  <div className="pack-info">Packing: <strong>{previewProduct.packDetails}</strong></div>
+                  <p className="modal-desc">{previewProduct.description || "Direct from Sivakasi factory. PESO approved eco-friendly formulation."}</p>
+                  <div className="modal-price-strip">
+                    <div>
+                      <div className="price-tag-big">{formatCur(previewProduct.unitPrice)}</div>
+                      <div className="mrp-strike">MRP: {formatCur(previewProduct.mrp)}</div>
+                    </div>
+                    <div className="savings-badge">
+                      Save {Math.round(((previewProduct.mrp - previewProduct.unitPrice) / previewProduct.mrp) * 100)}%
+                    </div>
+                  </div>
+
+                  <div className="modal-qty-action">
+                    {isPreviewOutOfStock ? (
+                      <div className="modal-out-banner">
+                        <AlertCircle size={20} className="text-red" />
+                        <div className="modal-out-text">
+                          <strong>Currently Out of Stock</strong>
+                          <span className="modal-out-ta">இந்த தயாரிப்பு தற்போது இருப்பு இல்லை</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="qty-label">Add Quantity:</span>
+                        <div className="table-qty-control large-control">
+                          <button 
+                            onClick={() => updateQuantity(previewProduct.id, -1)} 
+                            className="table-qty-btn minus-btn"
+                            disabled={getItemQuantity(previewProduct.id) === 0}
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="large-qty-num">{getItemQuantity(previewProduct.id)}</span>
+                          <button 
+                            onClick={() => updateQuantity(previewProduct.id, 1)} 
+                            className="table-qty-btn plus-btn"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Clear Cart Confirmation Modal */}
       {showClearConfirm && (
@@ -2690,6 +2765,199 @@ export const ProductsPage = ({
             width: 28px;
             height: 28px;
           }
+        }
+
+        /* ============================================================
+           OUT OF STOCK BADGES & CONTROLS ALIGNMENT
+           ============================================================ */
+        .row-out-of-stock {
+          background-color: #fbfbfc !important;
+          opacity: 0.92;
+        }
+
+        .row-out-of-stock:hover {
+          background-color: #f8fafc !important;
+        }
+
+        .out-of-stock-pill {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          font-size: 0.74rem;
+          font-weight: 700;
+          padding: 0.15rem 0.55rem;
+          border-radius: var(--radius-full);
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          margin-left: 0.45rem;
+          vertical-align: middle;
+          letter-spacing: 0.2px;
+          white-space: nowrap;
+        }
+
+        .out-of-stock-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #dc2626;
+          display: inline-block;
+        }
+
+        .thumb-out-tag {
+          position: absolute;
+          inset: 0;
+          background: rgba(15, 23, 42, 0.78);
+          backdrop-filter: blur(2px);
+          color: #ffffff;
+          font-size: 0.65rem;
+          font-weight: 900;
+          letter-spacing: 0.5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          text-transform: uppercase;
+          border: 1px solid rgba(239, 68, 68, 0.6);
+        }
+
+        .table-out-of-stock-box {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background: #f8fafc;
+          border: 1.5px dashed #cbd5e1;
+          border-radius: 8px;
+          padding: 0.35rem 0.65rem;
+          min-width: 110px;
+          cursor: not-allowed;
+          user-select: none;
+          box-sizing: border-box;
+        }
+
+        .table-out-of-stock-box .badge-out-text {
+          font-size: 0.76rem;
+          font-weight: 800;
+          color: #64748b;
+          letter-spacing: 0.3px;
+          text-transform: uppercase;
+          line-height: 1.2;
+        }
+
+        .table-out-of-stock-box .badge-out-ta {
+          font-size: 0.68rem;
+          font-weight: 600;
+          color: #94a3b8;
+          line-height: 1.2;
+        }
+
+        .text-out-tag {
+          color: #94a3b8 !important;
+          font-size: 0.82rem;
+          font-style: italic;
+          font-weight: 500;
+        }
+
+        /* Mobile Card Out of Stock Styles */
+        .mobile-card-out {
+          border-color: #e2e8f0;
+          background: #fafafa;
+        }
+
+        .mobile-thumb-out-tag {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: rgba(220, 38, 38, 0.92);
+          color: #ffffff;
+          font-size: 0.62rem;
+          font-weight: 800;
+          text-align: center;
+          padding: 2px 0;
+          letter-spacing: 0.4px;
+          text-transform: uppercase;
+          border-bottom-left-radius: 7px;
+          border-bottom-right-radius: 7px;
+        }
+
+        .mobile-out-badge {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          font-size: 0.68rem;
+          font-weight: 700;
+          padding: 0.15rem 0.45rem;
+          border-radius: var(--radius-full);
+          white-space: nowrap;
+        }
+
+        .mobile-out-hint {
+          color: #ef4444;
+          font-size: 0.76rem;
+          font-weight: 600;
+        }
+
+        .mobile-out-btn {
+          background: #f1f5f9;
+          border: 1.5px solid #e2e8f0;
+          color: #64748b;
+          font-size: 0.78rem;
+          font-weight: 800;
+          padding: 0.55rem 0.95rem;
+          border-radius: 8px;
+          cursor: not-allowed;
+          opacity: 0.9;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          min-height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        /* Modal Out of Stock */
+        .modal-img-out-tag {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          background: rgba(220, 38, 38, 0.95);
+          color: #ffffff;
+          padding: 0.35rem 0.85rem;
+          border-radius: var(--radius-full);
+          font-size: 0.78rem;
+          font-weight: 800;
+          letter-spacing: 0.4px;
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+          backdrop-filter: blur(4px);
+        }
+
+        .modal-out-banner {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          background: #fef2f2;
+          border: 1.5px solid #fecaca;
+          padding: 0.75rem 1rem;
+          border-radius: var(--radius-md);
+          width: 100%;
+        }
+
+        .modal-out-text strong {
+          display: block;
+          color: #b91c1c;
+          font-size: 0.95rem;
+          font-weight: 800;
+          line-height: 1.25;
+        }
+
+        .modal-out-text .modal-out-ta {
+          display: block;
+          color: #ef4444;
+          font-size: 0.82rem;
+          font-weight: 600;
+          line-height: 1.25;
         }
       `}</style>
     </div>
