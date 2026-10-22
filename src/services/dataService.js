@@ -1914,7 +1914,29 @@ export const dataService = {
   updateSettings(newSettings) {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
     notifyDataChanged({ type: 'SETTINGS_UPDATED', settings: newSettings });
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSettings)
+    }).catch(() => {});
     return newSettings;
+  },
+
+  async fetchSettings() {
+    try {
+      const res = await fetch('/api/settings', { cache: 'no-store' });
+      if (res.ok) {
+        const remote = await res.json();
+        if (remote && typeof remote === 'object' && Object.keys(remote).length > 0) {
+          const current = this.getSettings();
+          const merged = { ...current, ...remote };
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(merged));
+          notifyDataChanged({ type: 'SETTINGS_UPDATED', settings: merged });
+          return merged;
+        }
+      }
+    } catch (_) {}
+    return this.getSettings();
   },
 
   // --- CATEGORIES ---

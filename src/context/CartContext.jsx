@@ -33,21 +33,29 @@ export const CartProvider = ({ children }) => {
     window.addEventListener('sharp_data_changed', handleDataChange);
 
     // Initial remote fetch on page load from Cloudflare D1
-    dataService.fetchProducts();
-    dataService.fetchCategories();
-    dataService.fetchSettings();
+    try {
+      if (typeof dataService.fetchProducts === 'function') dataService.fetchProducts();
+      if (typeof dataService.fetchCategories === 'function') dataService.fetchCategories();
+      if (typeof dataService.fetchSettings === 'function') dataService.fetchSettings();
+    } catch (e) {
+      console.warn("Initial sync catch:", e);
+    }
 
     // Cross-device live sync: poll Cloudflare D1 every 4 seconds
     const interval = setInterval(() => {
-      dataService.fetchProducts();
-      dataService.fetchCategories();
+      try {
+        if (typeof dataService.fetchProducts === 'function') dataService.fetchProducts();
+        if (typeof dataService.fetchCategories === 'function') dataService.fetchCategories();
+      } catch (_) {}
     }, 4000);
 
     // Tab focus / screen unlock sync
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        dataService.fetchProducts();
-        dataService.fetchCategories();
+        try {
+          if (typeof dataService.fetchProducts === 'function') dataService.fetchProducts();
+          if (typeof dataService.fetchCategories === 'function') dataService.fetchCategories();
+        } catch (_) {}
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
