@@ -65,10 +65,10 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  const shopAddr = doc.splitTextToSize(settings.address || "145/2 By-Pass Road, Sivakasi", 85);
+  const shopAddr = doc.splitTextToSize(settings.address || "89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021", 85);
   doc.text(shopAddr, 14, startY + 4);
   const nextShopY = startY + 4 + (shopAddr.length * 3.5);
-  doc.text(`Phone: ${settings.phone || '+91 98421 23456'} | Email: ${settings.email || 'sales@sharpcrackers.com'}`, 14, nextShopY);
+  doc.text(`Phone: ${settings.phone || '+91 95668 86795'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}`, 14, nextShopY);
 
   // Right Column: Customer Details Box
   const boxX = 110;
@@ -154,9 +154,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   const finalY = doc.lastAutoTable.finalY + 4;
   const totalItemsCount = (order.items || []).length;
   const totalQuantity = (order.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
-  const subtotal = order.subtotal || (order.items || []).reduce((sum, it) => sum + (it.totalPrice || (it.unitPrice * it.quantity)), 0);
-  const deliveryCharge = order.deliveryCharge || 0;
-  const grandTotal = order.grandTotal || (subtotal + deliveryCharge);
+  const grandTotal = order.grandTotal || (order.items || []).reduce((sum, it) => sum + (it.totalPrice || (it.unitPrice * it.quantity)), 0);
 
   // Check if we need a new page for totals & signatures
   let summaryY = finalY;
@@ -165,37 +163,27 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
     summaryY = 20;
   }
 
-  // Summary Box on Right
+  // Summary Box on Right (Total Varieties, Total Units, Total Amount - No Delivery/Pickup)
   const summaryX = pageWidth - 80;
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(...grayBorder);
-  doc.roundedRect(summaryX, summaryY, 66, 26, 1.5, 1.5, 'FD');
+  doc.roundedRect(summaryX, summaryY, 66, 21, 1.5, 1.5, 'FD');
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Total Products: ${totalItemsCount} items`, summaryX + 4, summaryY + 5);
-  doc.text(`Total Units: ${totalQuantity} pkts`, summaryX + 4, summaryY + 9.5);
-  doc.text(`Subtotal:`, summaryX + 4, summaryY + 14);
-  doc.text(formatCur(subtotal), summaryX + 62, summaryY + 14, { align: 'right' });
+  doc.text(`Total Varieties: ${totalItemsCount} items`, summaryX + 4, summaryY + 5.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Total Units: ${totalQuantity} pkts`, summaryX + 4, summaryY + 10.5);
 
-  if (deliveryCharge > 0) {
-    doc.text(`Delivery Charge:`, summaryX + 4, summaryY + 18);
-    doc.text(formatCur(deliveryCharge), summaryX + 62, summaryY + 18, { align: 'right' });
-  } else {
-    doc.text(`Delivery:`, summaryX + 4, summaryY + 18);
-    doc.setTextColor(5, 150, 105);
-    doc.text("FREE / Pickup", summaryX + 62, summaryY + 18, { align: 'right' });
-  }
-
-  // Grand Total Highlight
+  // Total Amount Highlight
   doc.setFillColor(...accentColor);
-  doc.rect(summaryX, summaryY + 21, 66, 7, 'F');
+  doc.rect(summaryX, summaryY + 14, 66, 7, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text("GRAND TOTAL:", summaryX + 4, summaryY + 25.5);
-  doc.text(formatCur(grandTotal), summaryX + 62, summaryY + 25.5, { align: 'right' });
+  doc.text("TOTAL AMOUNT:", summaryX + 4, summaryY + 18.5);
+  doc.text(formatCur(grandTotal), summaryX + 62, summaryY + 18.5, { align: 'right' });
 
   // Left side notes & instructions
   doc.setFont('helvetica', 'bold');
@@ -209,7 +197,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   const terms = [
     "• 100% Genuine Sivakasi Green Crackers with authorized safety labels.",
     "• Please ignite outdoors under adult supervision and keep a bucket of water handy.",
-    "• Check all packages at time of delivery/pickup before signoff."
+    "• Please inspect and verify all packages before signoff."
   ];
   terms.forEach((t, i) => {
     doc.text(t, 14, summaryY + 9 + (i * 4));
@@ -258,9 +246,7 @@ export const printOrderDocument = (order, settings) => {
 
   const formatCur = (num) => `₹${Number(num || 0).toLocaleString('en-IN')}`;
   const totalQuantity = (order.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
-  const subtotal = order.subtotal || (order.items || []).reduce((sum, it) => sum + ((it.unitPrice || 0) * (it.quantity || 0)), 0);
-  const deliveryCharge = order.deliveryCharge || 0;
-  const grandTotal = order.grandTotal || (subtotal + deliveryCharge);
+  const grandTotal = order.grandTotal || (order.items || []).reduce((sum, it) => sum + ((it.unitPrice || 0) * (it.quantity || 0)), 0);
 
   const html = `
     <!DOCTYPE html>
@@ -296,8 +282,8 @@ export const printOrderDocument = (order, settings) => {
             <div class="logo-title">${settings.shopName || 'SHARP CRACKERS'}</div>
             <div class="tagline">${settings.tagline || 'Direct Sivakasi Fireworks Sales'}</div>
             <div style="font-size: 11px; color: #475569; margin-top: 4px;">
-              ${settings.address || 'Sivakasi - 626123, Tamil Nadu'}<br/>
-              Phone: ${settings.phone || '+91 98421 23456'} | Email: ${settings.email || 'sales@sharpcrackers.com'}
+              ${settings.address || '89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021'}<br/>
+              Phone: ${settings.phone || '+91 95668 86795'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}
             </div>
           </div>
           <div class="doc-title">
@@ -352,8 +338,12 @@ export const printOrderDocument = (order, settings) => {
         <div class="clearfix">
           <div class="summary-box">
             <div class="summary-row">
-              <span>Total Items / Qty:</span>
-              <strong>${(order.items || []).length} items / ${totalQuantity} pkts</strong>
+              <span>Total Varieties:</span>
+              <strong>${(order.items || []).length} items</strong>
+            </div>
+            <div class="summary-row">
+              <span>Total Units / Quantity:</span>
+              <strong>${totalQuantity} boxes/pkts</strong>
             </div>
             <div class="summary-row grand-total">
               <span>Total Order Amount:</span>

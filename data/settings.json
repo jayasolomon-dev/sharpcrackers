@@ -1,1 +1,19 @@
-null
+{
+  "shopName": "SHARP CRACKERS",
+  "tagline": "Light Up Your Celebrations!",
+  "subtitle": "100% Genuine Green Crackers • Retail & Online",
+  "phone": "+91 95668 86795",
+  "altPhone": "",
+  "whatsapp": "919566886795",
+  "email": "sharpcrackars@gmail.com",
+  "address": "89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu",
+  "branchAddress": "",
+  "businessHours": "8:00 AM – 10:00 PM (Monday – Sunday)",
+  "currencySymbol": "₹",
+  "minOrderAmount": 1500,
+  "deliveryCharge": 0,
+  "freeDeliveryThreshold": 0,
+  "promoBannerText": "💥 DIWALI 2026 SPECIAL OFFER: Flat Direct Sourcing with Heavy Savings! Order online now for guaranteed express booking! 🎆",
+  "logoUrl": "/images/sharp_crackers_brand_logo.jpg",
+  "heroBannerUrl": "/images/sharp_celebration_hero_banner.jpg"
+}

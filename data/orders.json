@@ -1,1 +1,31 @@
-[]
+[
+  {
+    "orderId": "SC-2026-313562",
+    "createdAt": "2026-10-22T14:28:33.562Z",
+    "updatedAt": "2026-10-22T14:28:33.562Z",
+    "customer": {
+      "name": "test",
+      "phone": "9999999999",
+      "email": "",
+      "deliveryType": "standard",
+      "address": "",
+      "notes": ""
+    },
+    "items": [
+      {
+        "id": "prod-1",
+        "code": "SC-SP01",
+        "name": "10 CM ELECTRIC SPARKLER",
+        "packDetails": "1 Box",
+        "unitPrice": 20,
+        "quantity": 1,
+        "totalPrice": 20,
+        "image": "/images/products/sparkler_10cm_electric.jpg"
+      }
+    ],
+    "subtotal": 20,
+    "deliveryCharge": 0,
+    "grandTotal": 20,
+    "status": "Pending"
+  }
+]

@@ -46,7 +46,7 @@ export const ContactUsPage = () => {
     if (!cleanPhone) {
       errs.phone = 'Please enter your mobile number';
     } else if (!/^(\+?\d{1,4})?[6-9]\d{9}$/.test(cleanPhone) && !/^\+?\d{10,15}$/.test(cleanPhone)) {
-      errs.phone = 'Please enter a valid mobile number (e.g. 9842123456 or +91 9842123456)';
+      errs.phone = 'Please enter a valid mobile number (e.g. 9566886795 or +91 9566886795)';
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       errs.email = 'Please enter a valid email address';
@@ -72,7 +72,7 @@ export const ContactUsPage = () => {
       });
 
       // 2. Prepare WhatsApp message content
-      const whatsappNumber = (settings.whatsapp || '919842123456').replace(/\D/g, '');
+      const whatsappNumber = (settings.whatsapp || '919566886795').replace(/\D/g, '');
       const whatsappText = 
         `💥 *SHARP CRACKERS - NEW ENQUIRY* 💥\n\n` +
         `👤 *Name:* ${formData.name.trim()}\n` +
@@ -80,7 +80,7 @@ export const ContactUsPage = () => {
         (formData.email.trim() ? `📧 *Email:* ${formData.email.trim()}\n` : '') +
         (formData.subject.trim() ? `📋 *Subject:* ${formData.subject.trim()}\n` : '') +
         `\n💬 *Message:*\n${formData.message.trim()}\n\n` +
-        `📍 _Direct Sivakasi Showroom Enquiry_`;
+        `📍 _Direct Showroom Enquiry_`;
 
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
       setSubmittedWhatsappUrl(whatsappUrl);
@@ -101,16 +101,18 @@ export const ContactUsPage = () => {
     <div className="contact-page-wrapper">
       {/* 1. Hero Banner */}
       <section className="contact-hero">
-        <div className="contact-container text-center">
+        <div className="contact-hero-backdrop" />
+        <div className="contact-hero-overlay" />
+        <div className="contact-container text-center contact-hero-content">
           <div className="contact-pill">
             <Sparkles size={14} className="text-gold" />
-            <span>DIRECT SIVAKASI HELPLINE • 24/7 CUSTOMER SUPPORT</span>
+            <span>DIRECT HELPLINE • 24/7 CUSTOMER SUPPORT</span>
           </div>
           <h1 className="contact-hero-title">
             Contact <span className="highlight-hero-brand">{settings.shopName || "SHARP CRACKERS"}</span>
           </h1>
           <p className="contact-hero-lead">
-            Have questions about cracker pricing, festive orders, transport arrangements, or special discounts? Reach out to our Sivakasi showroom team anytime.
+            Have questions about cracker pricing, festive orders, transport arrangements, or special discounts? Reach out to our customer support team anytime.
           </p>
         </div>
       </section>
@@ -125,11 +127,11 @@ export const ContactUsPage = () => {
               <div className="contact-section-intro">
                 <div className="section-subtitle-badge">
                   <Building size={14} className="text-orange" />
-                  <span>SIVAKASI HEADQUARTERS</span>
+                  <span>COIMBATORE SHOWROOM</span>
                 </div>
-                <h2 className="info-main-title">Showroom & Factory Dispatch</h2>
+                <h2 className="info-main-title">Showroom & Order Dispatch</h2>
                 <p className="info-main-desc">
-                  Visit our Sivakasi fireworks showroom or connect with our sales team via phone and email for immediate quotations and priority order dispatch.
+                  Visit our fireworks showroom in Coimbatore or connect with our sales team via phone, WhatsApp, and email for immediate quotations and priority order dispatch.
                 </p>
               </div>
 
@@ -140,9 +142,9 @@ export const ContactUsPage = () => {
                     <MapPin size={24} className="text-orange" />
                   </div>
                   <div className="info-text-group">
-                    <h4 className="info-card-label">Main Showroom & Dispatch Unit</h4>
+                    <h4 className="info-card-label">Main Showroom & Office</h4>
                     <p className="info-card-value">
-                      {settings.address || "145/2, By-Pass Road, Near New Bus Stand, Sivakasi - 626123, Tamil Nadu, India"}
+                      {settings.address || "89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu"}
                     </p>
                     {settings.branchAddress && (
                       <div className="branch-info-pill">
@@ -158,19 +160,11 @@ export const ContactUsPage = () => {
                     <Phone size={24} className="text-gold-dark" />
                   </div>
                   <div className="info-text-group">
-                    <h4 className="info-card-label">Direct Phone & Bulk Orders</h4>
+                    <h4 className="info-card-label">Direct Phone & WhatsApp</h4>
                     <div className="phone-links-wrap">
-                      <a href={`tel:${settings.phone}`} className="phone-call-link">
-                        {settings.phone || "+91 98421 23456"}
+                      <a href={`tel:${settings.phone || '9566886795'}`} className="phone-call-link">
+                        {settings.phone || "+91 95668 86795"}
                       </a>
-                      {settings.altPhone && (
-                        <>
-                          <span className="phone-link-divider">•</span>
-                          <a href={`tel:${settings.altPhone}`} className="phone-call-link">
-                            {settings.altPhone}
-                          </a>
-                        </>
-                      )}
                     </div>
                     <p className="info-card-hint">Available 8:00 AM – 10:00 PM for instant order assistance.</p>
                   </div>
@@ -183,8 +177,8 @@ export const ContactUsPage = () => {
                   </div>
                   <div className="info-text-group">
                     <h4 className="info-card-label">Official Email Support</h4>
-                    <a href={`mailto:${settings.email}`} className="email-link">
-                      {settings.email || "sales@sharpcrackers.com"}
+                    <a href={`mailto:${settings.email || 'sharpcrackars@gmail.com'}`} className="email-link">
+                      {settings.email || "sharpcrackars@gmail.com"}
                     </a>
                     <p className="info-card-hint">Send purchase orders, corporate inquiries, or quotation requests.</p>
                   </div>
@@ -203,7 +197,7 @@ export const ContactUsPage = () => {
                 </div>
               </div>
 
-              {/* Sivakasi Factory Direct Assistance Card */}
+              {/* Assistance Card */}
               <div className="help-callout-card">
                 <div className="help-callout-content">
                   <div className="help-icon-large">
@@ -211,15 +205,15 @@ export const ContactUsPage = () => {
                   </div>
                   <div>
                     <h3 className="help-callout-heading">Need Fast Price Quotes?</h3>
-                    <p className="help-callout-text">Call directly with our Sivakasi showroom desk for custom pricing and seasonal festive packages.</p>
+                    <p className="help-callout-text">Call directly with our customer desk for custom pricing and seasonal festive packages.</p>
                   </div>
                 </div>
                 <a 
-                  href={`tel:${settings.phone || '9842123456'}`}
+                  href={`tel:${settings.phone || '9566886795'}`}
                   className="btn btn-call-direct"
                 >
                   <Phone size={18} />
-                  <span>Call {settings.phone || '+91 98421 23456'}</span>
+                  <span>Call {settings.phone || '+91 95668 86795'}</span>
                 </a>
               </div>
             </div>
@@ -404,18 +398,18 @@ export const ContactUsPage = () => {
           <div className="section-header text-center">
             <div className="section-subtitle-badge">
               <MapPin size={14} className="text-orange" />
-              <span>FIND US IN SIVAKASI</span>
+              <span>FIND US IN COIMBATORE</span>
             </div>
-            <h2 className="section-title">Showroom & Factory Location</h2>
+            <h2 className="section-title">Showroom Location</h2>
             <p className="section-desc">
-              Conveniently located on Sivakasi Bypass Road. Spacious parking for delivery trucks, commercial vans, and family visitors.
+              89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu.
             </p>
           </div>
 
           <div className="map-frame-wrapper">
             <iframe 
-              title="Sharp Crackers Sivakasi Map"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31484.5828731333!2d77.7818456!3d9.4533035!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b06cee1a6bfad4b%3A0x6b75f5664cb9ce64!2sSivakasi%2C%20Tamil%20Nadu!5e0!3m2!1sen!2sin!4v1697200000000!5m2!1sen!2sin"
+              title="Sharp Crackers Coimbatore Location Map"
+              src="https://maps.google.com/maps?q=Echanari%2C%20Chettipalayam%20Road%2C%20Coimbatore%2C%20Tamil%20Nadu%20641021&t=&z=15&ie=UTF8&iwloc=&output=embed"
               width="100%" 
               height="440" 
               style={{ border: 0 }} 
@@ -445,11 +439,38 @@ export const ContactUsPage = () => {
 
         /* Hero */
         .contact-hero {
-          background: linear-gradient(135deg, #050a18 0%, #0a1329 50%, #15254d 100%);
-          color: #ffffff;
-          padding: 5rem 0 4.5rem;
-          border-bottom: 3px solid #ff6f00;
           position: relative;
+          color: #ffffff;
+          padding: 5.5rem 0 5rem;
+          border-bottom: 3px solid #ff6f00;
+          overflow: hidden;
+        }
+
+        .contact-hero-backdrop {
+          position: absolute;
+          inset: 0;
+          background-image: url('/images/contact_hero_bg.jpg?v=3');
+          background-size: cover;
+          background-position: center center;
+          background-repeat: no-repeat;
+          z-index: 1;
+        }
+
+        .contact-hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            135deg,
+            rgba(5, 10, 24, 0.90) 0%,
+            rgba(10, 19, 41, 0.82) 50%,
+            rgba(21, 37, 77, 0.78) 100%
+          );
+          z-index: 2;
+        }
+
+        .contact-hero-content {
+          position: relative;
+          z-index: 3;
         }
 
         .contact-hero::after {
@@ -462,6 +483,7 @@ export const ContactUsPage = () => {
           height: 3px;
           background: #ffb703;
           box-shadow: 0 0 15px #ffb703;
+          z-index: 4;
         }
 
         .contact-pill {

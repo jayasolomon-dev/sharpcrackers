@@ -23,21 +23,24 @@ export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setLoading(true);
 
-    setTimeout(() => {
-      const res = dataService.adminLogin(username.trim(), password.trim());
+    try {
+      const res = await dataService.adminLogin(username.trim(), password.trim());
       if (res.success) {
         if (onLoginSuccess) onLoginSuccess();
         setCurrentPage('admin-dashboard');
       } else {
         setErrorMsg(res.message);
       }
+    } catch (err) {
+      setErrorMsg('Login failed. Please check your credentials.');
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (
@@ -50,7 +53,11 @@ export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
         <div className="login-card card">
           <div className="login-header">
             <div className="login-logo-box">
-              <Flame size={28} color="#ffb703" />
+              <img 
+                src="/images/sharp_crackers_brand_logo.jpg" 
+                alt="Sharp Crackers Official Logo" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
             </div>
             <h1 className="login-title">SHARP CRACKERS</h1>
             <p className="login-sub">Authorized Store Owner & Dispatch Portal</p>
@@ -157,16 +164,17 @@ export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
         }
 
         .login-logo-box {
-          width: 56px;
-          height: 56px;
-          border-radius: 14px;
-          background: #0a1329;
+          width: 72px;
+          height: 72px;
+          border-radius: 16px;
+          background: #ffffff;
           border: 2px solid #ffb703;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0 auto 1rem;
-          box-shadow: 0 4px 15px rgba(255, 183, 3, 0.3);
+          margin: 0 auto 1.25rem;
+          box-shadow: 0 4px 18px rgba(255, 111, 0, 0.35);
+          overflow: hidden;
         }
 
         .login-title {

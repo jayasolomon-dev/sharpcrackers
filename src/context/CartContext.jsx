@@ -103,10 +103,8 @@ export const CartProvider = ({ children }) => {
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
-  const deliveryCharge = (cartSubtotal > 0 && cartSubtotal < (Number(settings.freeDeliveryThreshold) || 5000))
-    ? (Number(settings.deliveryCharge) || 0)
-    : 0;
-  const cartGrandTotal = cartSubtotal + deliveryCharge;
+  const deliveryCharge = 0;
+  const cartGrandTotal = cartSubtotal;
 
   return (
     <CartContext.Provider

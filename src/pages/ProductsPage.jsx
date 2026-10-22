@@ -6,7 +6,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { dataService, PRODUCT_TAMIL_NAMES, CATEGORY_TAMIL_NAMES } from '../services/dataService';
-import { generateOrderPdf, printOrderDocument } from '../utils/pdfGenerator';
+import CreativeActionButton from '../components/CreativeActionButton';
 import { 
   Search, 
   Filter, 
@@ -62,7 +62,6 @@ export const ProductsPage = ({
   const [previewProduct, setPreviewProduct] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSampleReceipt, setShowSampleReceipt] = useState(false);
-  const [showAllCatGrid, setShowAllCatGrid] = useState(false);
 
   // Sync with prop if changed from Navbar/Home
   useEffect(() => {
@@ -71,16 +70,31 @@ export const ProductsPage = ({
     }
   }, [selectedCategory]);
 
-  // Listen to category updates
+  // Listen to category updates and keep active category & preview modal synced
   useEffect(() => {
     const handleDataChange = () => {
-      setCategories(dataService.getCategories());
+      const updatedCats = dataService.getCategories();
+      setCategories(updatedCats);
+      setActiveCategory(prev => {
+        if (prev !== 'all' && !updatedCats.some(c => c.id === prev)) {
+          return 'all';
+        }
+        return prev;
+      });
+      if (previewProduct) {
+        const fresh = dataService.getProductById(previewProduct.id);
+        if (fresh) {
+          setPreviewProduct(fresh);
+        } else {
+          setPreviewProduct(null);
+        }
+      }
     };
     window.addEventListener('sharp_data_changed', handleDataChange);
     return () => {
       window.removeEventListener('sharp_data_changed', handleDataChange);
     };
-  }, []);
+  }, [previewProduct]);
 
   const handleCategorySelect = (catId) => {
     setActiveCategory(catId);
@@ -267,7 +281,6 @@ export const ProductsPage = ({
                 className={`category-item-btn ${activeCategory === 'all' ? 'active' : ''}`}
                 onClick={() => handleCategorySelect('all')}
               >
-                <span className="cat-icon">✨</span>
                 <div className="cat-text-col">
                   <span className="cat-name-en">All Products</span>
                   <span className="cat-name-ta">அனைத்து ரகங்கள்</span>
@@ -288,7 +301,6 @@ export const ProductsPage = ({
                       className={`category-item-btn ${isActive ? 'active' : ''}`}
                       onClick={() => handleCategorySelect(cat.id)}
                     >
-                      <span className="cat-icon">{cat.icon || '🎆'}</span>
                       <div className="cat-text-col">
                         <span className="cat-name-en">{cat.name}</span>
                         {tamilName && <span className="cat-name-ta">{tamilName}</span>}
@@ -352,101 +364,57 @@ export const ProductsPage = ({
               </div>
             </div>
 
-            {/* Dedicated Mobile Categories (Sleek Horizontal Pill Bar + Expandable Grid) */}
+            {/* Dedicated Mobile 2-Column Categories Grid (Visible on Mobile <= 768px) */}
             <div className="mobile-categories-section">
               <div className="mobile-cat-header">
                 <div className="mobile-cat-header-title">
                   <Filter size={14} className="text-orange" />
                   <span>Categories / வகைகள்</span>
                 </div>
-                <div className="mobile-cat-header-right">
-                  <button 
-                    type="button" 
-                    onClick={() => setShowAllCatGrid(!showAllCatGrid)} 
-                    className="mobile-cat-toggle-btn"
-                  >
-                    <span>{showAllCatGrid ? 'Collapse' : 'All Categories'}</span>
-                    <ChevronDown size={14} style={{ transform: showAllCatGrid ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
-                  </button>
-                </div>
+                <span className="mobile-cat-badge-current">
+                  {categories.find(c => c.id === activeCategory)?.name || 'All Products'}
+                  {CATEGORY_TAMIL_NAMES[activeCategory] && (
+                    <> / {CATEGORY_TAMIL_NAMES[activeCategory]}</>
+                  )}
+                </span>
               </div>
 
-              {!showAllCatGrid ? (
-                /* 1. Sleek Horizontal Pill Bar (Default - saves 400px of vertical space) */
-                <div className="mobile-cat-pill-strip">
-                  <button
-                    type="button"
-                    className={`mobile-cat-pill-btn ${activeCategory === 'all' ? 'active' : ''}`}
-                    onClick={() => handleCategorySelect('all')}
-                  >
-                    <span>✨ All Products ({products.length})</span>
-                  </button>
-                  {categories
-                    .filter(c => c.id !== 'all' && c.active !== false)
-                    .map((cat) => {
-                      const count = products.filter(p => p.category === cat.id).length;
-                      const isActive = activeCategory === cat.id;
+              <div className="mobile-categories-2col-grid">
+                <button
+                  type="button"
+                  className={`mobile-cat-card-btn ${activeCategory === 'all' ? 'active' : ''}`}
+                  onClick={() => handleCategorySelect('all')}
+                >
+                  <div className="m-cat-text">
+                    <span className="m-cat-name-en">All Products</span>
+                    <span className="m-cat-name-ta">அனைத்து ரகங்கள்</span>
+                  </div>
+                  <span className="m-cat-count-badge">{products.length}</span>
+                </button>
 
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          className={`mobile-cat-pill-btn ${isActive ? 'active' : ''}`}
-                          onClick={() => handleCategorySelect(cat.id)}
-                        >
-                          <span className="m-pill-icon">{cat.icon || '🎆'}</span>
-                          <span className="m-pill-text">{cat.name} ({count})</span>
-                        </button>
-                      );
-                    })}
-                </div>
-              ) : (
-                /* 2. Expanded 2-Column Grid (when user taps All Categories) */
-                <div className="mobile-categories-2col-grid">
-                  <button
-                    type="button"
-                    className={`mobile-cat-card-btn ${activeCategory === 'all' ? 'active' : ''}`}
-                    onClick={() => {
-                      handleCategorySelect('all');
-                      setShowAllCatGrid(false);
-                    }}
-                  >
-                    <span className="m-cat-icon">✨</span>
-                    <div className="m-cat-text">
-                      <span className="m-cat-name-en">All Products</span>
-                      <span className="m-cat-name-ta">அனைத்து ரகங்கள்</span>
-                    </div>
-                    <span className="m-cat-count-badge">{products.length}</span>
-                  </button>
+                {categories
+                  .filter(c => c.id !== 'all' && c.active !== false)
+                  .map((cat) => {
+                    const count = products.filter(p => p.category === cat.id).length;
+                    const isActive = activeCategory === cat.id;
+                    const tamilCat = CATEGORY_TAMIL_NAMES[cat.id] || cat.ta || '';
 
-                  {categories
-                    .filter(c => c.id !== 'all' && c.active !== false)
-                    .map((cat) => {
-                      const count = products.filter(p => p.category === cat.id).length;
-                      const isActive = activeCategory === cat.id;
-                      const tamilCat = CATEGORY_TAMIL_NAMES[cat.id] || cat.ta || '';
-
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          className={`mobile-cat-card-btn ${isActive ? 'active' : ''}`}
-                          onClick={() => {
-                            handleCategorySelect(cat.id);
-                            setShowAllCatGrid(false);
-                          }}
-                        >
-                          <span className="m-cat-icon">{cat.icon || '🎆'}</span>
-                          <div className="m-cat-text">
-                            <span className="m-cat-name-en">{cat.name}</span>
-                            {tamilCat && <span className="m-cat-name-ta">{tamilCat}</span>}
-                          </div>
-                          <span className="m-cat-count-badge">{count}</span>
-                        </button>
-                      );
-                    })}
-                </div>
-              )}
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        className={`mobile-cat-card-btn ${isActive ? 'active' : ''}`}
+                        onClick={() => handleCategorySelect(cat.id)}
+                      >
+                        <div className="m-cat-text">
+                          <span className="m-cat-name-en">{cat.name}</span>
+                          {tamilCat && <span className="m-cat-name-ta">{tamilCat}</span>}
+                        </div>
+                        <span className="m-cat-count-badge">{count}</span>
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
 
             {/* Wholesale Order Table */}
@@ -507,7 +475,6 @@ export const ProductsPage = ({
                                   src={product.image} 
                                   alt={product.name} 
                                   className="product-thumb" 
-                                  loading="lazy"
                                   decoding="async"
                                   onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
                                 />
@@ -630,7 +597,6 @@ export const ProductsPage = ({
                               src={product.image} 
                               alt={product.name} 
                               className="mobile-thumb-img" 
-                              loading="lazy"
                               decoding="async"
                               onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
                             />
@@ -958,20 +924,18 @@ export const ProductsPage = ({
                   <span>We will reach you within 24 hours at <strong>{lastOrderPlaced.customer?.phone}</strong></span>
                 </div>
                 <div className="document-buttons-row">
-                  <button 
+                  <CreativeActionButton 
+                    variant="print"
                     onClick={() => printOrderDocument(lastOrderPlaced, settings)}
-                    className="btn btn-outline-dark"
-                  >
-                    <Printer size={16} />
-                    <span>Print Receipt</span>
-                  </button>
-                  <button 
+                    label="Print Receipt"
+                    size="md"
+                  />
+                  <CreativeActionButton 
+                    variant="pdf"
                     onClick={() => generateOrderPdf(lastOrderPlaced, settings, true)}
-                    className="btn btn-primary"
-                  >
-                    <FileText size={16} />
-                    <span>Download PDF</span>
-                  </button>
+                    label="Download PDF"
+                    size="md"
+                  />
                 </div>
               </div>
             </div>
@@ -1159,6 +1123,31 @@ export const ProductsPage = ({
           justify-content: space-between;
           flex-wrap: wrap;
           gap: 1.5rem;
+        }
+
+        .catalog-header-brand-wrap {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          flex: 1;
+          min-width: 280px;
+        }
+
+        .catalog-header-logo-frame {
+          width: 76px;
+          height: 76px;
+          border-radius: 16px;
+          overflow: hidden;
+          background: #ffffff;
+          border: 2px solid #ffb703;
+          box-shadow: 0 4px 18px rgba(255, 111, 0, 0.4);
+          flex-shrink: 0;
+        }
+
+        .catalog-header-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
 
         .catalog-pill {
@@ -1442,20 +1431,10 @@ export const ProductsPage = ({
         .table-responsive-wrapper {
           overflow-x: auto;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-          scrollbar-width: thin;
-        }
-
-        .table-responsive-wrapper::-webkit-scrollbar {
-          height: 6px;
-        }
-        .table-responsive-wrapper::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
         }
 
         .wholesale-order-table {
           width: 100%;
-          min-width: 820px;
           border-collapse: separate;
           border-spacing: 0;
           font-size: 0.92rem;
@@ -1527,16 +1506,21 @@ export const ProductsPage = ({
           height: 50px;
           border-radius: var(--radius-sm);
           overflow: hidden;
-          background: #0a1329;
+          background: #ffffff;
           border: 1px solid #cbd5e1;
           position: relative;
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .product-thumb {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
+          background: #ffffff;
+          padding: 2px;
           transition: transform 0.2s ease;
         }
 
@@ -1825,14 +1809,22 @@ export const ProductsPage = ({
         .modal-img-frame {
           border-radius: var(--radius-lg);
           overflow: hidden;
-          background: #0a1329;
-          height: 280px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          height: 320px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem;
         }
 
         .modal-large-img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
+          background: #ffffff;
+          image-rendering: -webkit-optimize-contrast;
+          filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.05));
         }
 
         .modal-product-info {
@@ -1970,6 +1962,42 @@ export const ProductsPage = ({
         }
 
         /* Responsive Styles */
+        /* Laptops and Medium Displays (993px - 1366px) */
+        @media (min-width: 993px) and (max-width: 1366px) {
+          .catalog-header-bar {
+            padding: 1.4rem 0;
+          }
+
+          .catalog-title {
+            font-size: 1.7rem;
+            margin-bottom: 0.25rem;
+          }
+
+          .catalog-desc {
+            font-size: 0.88rem;
+            max-width: 520px;
+          }
+
+          .catalog-workspace {
+            margin-top: 1.25rem;
+          }
+
+          .catalog-grid-layout {
+            grid-template-columns: 240px 1fr;
+            gap: 1.25rem;
+          }
+
+          .category-sidebar {
+            padding: 1rem;
+            top: 75px;
+          }
+
+          .category-item-btn {
+            padding: 0.45rem 0.65rem;
+            font-size: 0.88rem;
+          }
+        }
+
         @media (max-width: 992px) {
           .catalog-grid-layout {
             grid-template-columns: 1fr;
@@ -2099,63 +2127,6 @@ export const ProductsPage = ({
             color: #0f172a;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-          }
-
-          .mobile-cat-toggle-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            font-size: 0.76rem;
-            font-weight: 700;
-            color: #c2410c;
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
-            padding: 0.25rem 0.6rem;
-            border-radius: 99px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-          }
-          .mobile-cat-toggle-btn:active {
-            transform: scale(0.96);
-          }
-
-          .mobile-cat-pill-strip {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            overflow-x: auto;
-            padding: 0.25rem 0.15rem 0.5rem;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            width: 100%;
-            box-sizing: border-box;
-          }
-          .mobile-cat-pill-strip::-webkit-scrollbar {
-            display: none;
-          }
-
-          .mobile-cat-pill-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.45rem 0.85rem;
-            border-radius: 99px;
-            background: #ffffff;
-            border: 1.5px solid #cbd5e1;
-            color: #334155;
-            font-size: 0.82rem;
-            font-weight: 700;
-            white-space: nowrap;
-            flex-shrink: 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease;
-          }
-
-          .mobile-cat-pill-btn.active {
-            background: linear-gradient(135deg, #ff6f00 0%, #ea580c 100%);
-            border-color: #ff6f00;
-            color: #ffffff;
-            box-shadow: 0 3px 10px rgba(255, 111, 0, 0.3);
           }
 
           .mobile-cat-badge-current {
@@ -2355,17 +2326,22 @@ export const ProductsPage = ({
             height: 76px;
             border-radius: 10px;
             overflow: hidden;
-            background: #0a1329;
+            background: #ffffff;
             border: 1.5px solid #cbd5e1;
             position: relative;
             flex-shrink: 0;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .mobile-thumb-img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background: #ffffff;
+            padding: 3px;
           }
 
           .mobile-thumb-zoom-badge {
@@ -2660,17 +2636,57 @@ export const ProductsPage = ({
           }
 
           /* Lightbox Modal on Mobile */
-          .modal-body-layout {
-            grid-template-columns: 1fr;
-            gap: 1.25rem;
+          .product-modal {
+            padding: 1rem 1rem 1.25rem;
+            max-height: 92dvh;
+            max-height: 92vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: var(--radius-lg);
           }
 
-          .product-modal {
-            padding: 1.5rem 1.25rem;
+          .modal-body-layout {
+            grid-template-columns: 1fr;
+            gap: 0.85rem;
           }
 
           .modal-img-frame {
-            height: 220px;
+            height: 180px;
+          }
+
+          .modal-product-info h2 {
+            font-size: 1.15rem;
+            margin-bottom: 0.3rem;
+          }
+
+          .pack-info {
+            font-size: 0.82rem;
+            margin-bottom: 0.5rem;
+          }
+
+          .modal-desc {
+            font-size: 0.82rem;
+            margin-bottom: 0.85rem;
+          }
+
+          .modal-price-strip {
+            padding: 0.6rem 0.85rem;
+            margin-bottom: 1rem;
+          }
+
+          .price-tag-big {
+            font-size: 1.3rem;
+          }
+
+          .modal-qty-action {
+            gap: 0.75rem;
+          }
+
+          .modal-close-btn {
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
           }
         }
       `}</style>

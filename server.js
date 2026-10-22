@@ -269,6 +269,14 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/sync' && req.method === 'POST') {
     try {
       const payload = await parseRequestBody(req);
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid sync payload: expected an object' }));
+        return;
+      }
+      const clientOrders = Array.isArray(payload.orders) ? payload.orders : [];
+      const clientDeletedIds = Array.isArray(payload.deletedOrderIds) ? payload.deletedOrderIds : [];
+
       // Read current server state and prune bills older than 30 days
       const now = Date.now();
       let serverOrders = pruneExpiredOrders(readJsonFile(ORDERS_FILE, INITIAL_ORDERS), now);
@@ -438,6 +446,11 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/orders' && req.method === 'POST') {
     try {
       const newOrder = await parseRequestBody(req);
+      if (!newOrder || typeof newOrder !== 'object' || Array.isArray(newOrder)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid order data: expected object' }));
+        return;
+      }
       const rawOrders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
       const orders = pruneExpiredOrders(rawOrders);
 
@@ -473,6 +486,11 @@ const server = http.createServer(async (req, res) => {
     const orderId = pathname.replace('/api/orders/', '');
     try {
       const updates = await parseRequestBody(req);
+      if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid updates payload: expected object' }));
+        return;
+      }
       const orders = readJsonFile(ORDERS_FILE, INITIAL_ORDERS);
       const idx = orders.findIndex(o => o.orderId === orderId);
       if (idx >= 0) {
@@ -520,6 +538,16 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/enquiries' && req.method === 'POST') {
     try {
       const newEnquiry = await parseRequestBody(req);
+      if (!newEnquiry || typeof newEnquiry !== 'object' || Array.isArray(newEnquiry)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid enquiry data: expected object' }));
+        return;
+      }
+      if (!newEnquiry.name || !newEnquiry.phone) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Name and phone are required fields' }));
+        return;
+      }
       const enquiries = readJsonFile(ENQUIRIES_FILE, []);
 
       if (!newEnquiry.id) {
@@ -574,6 +602,34 @@ const server = http.createServer(async (req, res) => {
       writeJsonFile(SETTINGS_FILE, newSettings);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(newSettings));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ------------------------------------------------------------------------
+  // 3.1 ADMIN AUTHENTICATION API (/api/auth/login)
+  // ------------------------------------------------------------------------
+  if (pathname === '/api/auth/login' && req.method === 'POST') {
+    try {
+      const body = await parseRequestBody(req);
+      const user = (body.username || '').trim().toLowerCase();
+      const pass = (body.password || '').trim();
+      const adminPass = process.env.ADMIN_PASSWORD || 'sharp2026!';
+
+      if ((user === 'admin' || user === 'sharp') && pass === adminPass) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          user: user === 'admin' ? 'Admin Manager' : 'Store Admin',
+          token: `sharp_adm_${Date.now()}_${Math.random().toString(36).substring(2)}`
+        }));
+      } else {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid username or password' }));
+      }
     } catch (err) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
@@ -639,8 +695,15 @@ const server = http.createServer(async (req, res) => {
   // ------------------------------------------------------------------------
   // STATIC ASSET SERVING & SPA FALLBACK (dist/)
   // ------------------------------------------------------------------------
-  let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-  let filePath = path.join(DIST_DIR, safePath);
+  const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
+  let filePath = path.resolve(DIST_DIR, '.' + safePath);
+
+  // Security: Prevent Directory/Path Traversal
+  if (!filePath.startsWith(DIST_DIR)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('403 Forbidden: Invalid file path');
+    return;
+  }
 
   // If path is root or a directory, look for index.html
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {

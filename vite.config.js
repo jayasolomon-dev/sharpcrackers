@@ -12,6 +12,8 @@ const DELETED_ORDERS_FILE = path.join(DATA_DIR, 'deleted_orders.json')
 const BACKUP_ORDERS_FILE = path.join(DATA_DIR, 'orders_backup.json')
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json')
 const ENQUIRIES_FILE = path.join(DATA_DIR, 'enquiries.json')
+const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json')
+const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json')
 
 // 30-Day Bill Retention & Backup Archive System
 const ORDER_RETENTION_DAYS = 30
@@ -227,11 +229,25 @@ function apiDevPlugin() {
               writeJsonFile(SETTINGS_FILE, serverSettings)
             }
 
+            let serverProducts = readJsonFile(PRODUCTS_FILE, null)
+            if (Array.isArray(payload.products) && payload.products.length > 0) {
+              serverProducts = payload.products
+              writeJsonFile(PRODUCTS_FILE, serverProducts)
+            }
+
+            let serverCategories = readJsonFile(CATEGORIES_FILE, null)
+            if (Array.isArray(payload.categories) && payload.categories.length > 0) {
+              serverCategories = payload.categories
+              writeJsonFile(CATEGORIES_FILE, serverCategories)
+            }
+
             res.statusCode = 200
             res.end(JSON.stringify({
               orders: mergedOrders,
               enquiries: serverEnquiries,
               settings: serverSettings || {},
+              products: serverProducts,
+              categories: serverCategories,
               deletedOrderIds: mergedDeletedList
             }))
           } catch (e) {
@@ -423,6 +439,118 @@ function apiDevPlugin() {
             res.end(JSON.stringify(newSettings))
           } catch (e) {
             res.statusCode = 400
+            res.end(JSON.stringify({ error: e.message }))
+          }
+          return
+        }
+
+        // 5. PRODUCTS API
+        if (pathname === '/api/products' && req.method === 'GET') {
+          const products = readJsonFile(PRODUCTS_FILE, null)
+          if (products) {
+            res.end(JSON.stringify(products))
+          } else {
+            res.statusCode = 404
+            res.end(JSON.stringify({ error: 'No products saved yet' }))
+          }
+          return
+        }
+
+        if (pathname === '/api/products' && req.method === 'POST') {
+          try {
+            const products = await parseBody(req)
+            if (Array.isArray(products)) {
+              writeJsonFile(PRODUCTS_FILE, products)
+              res.statusCode = 200
+              res.end(JSON.stringify({ success: true, count: products.length }))
+            } else {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Expected array of products' }))
+            }
+          } catch (e) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: e.message }))
+          }
+          return
+        }
+
+        // 6. CATEGORIES API
+        if (pathname === '/api/categories' && req.method === 'GET') {
+          const categories = readJsonFile(CATEGORIES_FILE, null)
+          if (categories) {
+            res.end(JSON.stringify(categories))
+          } else {
+            res.statusCode = 404
+            res.end(JSON.stringify({ error: 'No categories saved yet' }))
+          }
+          return
+        }
+
+        if (pathname === '/api/categories' && req.method === 'POST') {
+          try {
+            const categories = await parseBody(req)
+            if (Array.isArray(categories)) {
+              writeJsonFile(CATEGORIES_FILE, categories)
+              res.statusCode = 200
+              res.end(JSON.stringify({ success: true, count: categories.length }))
+            } else {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Expected array of categories' }))
+            }
+          } catch (e) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: e.message }))
+          }
+          return
+        }
+
+        // 7. IMAGE UPLOAD API (Local Device File Upload to /images/products/)
+        if (pathname === '/api/upload' && req.method === 'POST') {
+          try {
+            const body = await parseBody(req)
+            if (!body || !body.data) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Missing image data' }))
+              return
+            }
+            
+            const rawData = String(body.data)
+            let ext = 'jpg'
+            let cleanBase64 = rawData
+
+            if (rawData.includes(';base64,')) {
+              const parts = rawData.split(';base64,')
+              const mime = parts[0].replace('data:', '')
+              ext = mime.split('/')[1] || 'jpg'
+              cleanBase64 = parts[1]
+            }
+
+            if (ext === 'jpeg') ext = 'jpg'
+
+            const buffer = Buffer.from(cleanBase64, 'base64')
+            const rawName = (body.filename || `product_${Date.now()}`)
+              .toLowerCase()
+              .replace(/[^a-z0-9_.-]/g, '_')
+              .replace(/\.[^/.]+$/, '')
+
+            const safeFilename = `${rawName}_${Date.now()}.${ext}`
+
+            const targetDirPublic = path.join(__dirname, 'public', 'images', 'products')
+            const targetDirSrc = path.join(__dirname, 'images', 'products')
+
+            if (!fs.existsSync(targetDirPublic)) fs.mkdirSync(targetDirPublic, { recursive: true })
+            if (!fs.existsSync(targetDirSrc)) fs.mkdirSync(targetDirSrc, { recursive: true })
+
+            fs.writeFileSync(path.join(targetDirPublic, safeFilename), buffer)
+            try { fs.writeFileSync(path.join(targetDirSrc, safeFilename), buffer) } catch (_) {}
+
+            const relativeUrl = `/images/products/${safeFilename}`
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ success: true, url: relativeUrl, filename: safeFilename }))
+          } catch (e) {
+            res.statusCode = 500
+            res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ error: e.message }))
           }
           return

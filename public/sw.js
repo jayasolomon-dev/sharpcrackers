@@ -4,13 +4,12 @@
 // Delivers sub-millisecond instant visual rendering from device CacheStorage
 // ============================================================================
 
-const CACHE_NAME = 'sharp-crackers-v2-instant';
+const CACHE_NAME = 'sharp-crackers-v8-video';
 
 const CORE_ASSETS = [
   '/',
   '/index.html',
-  '/images/beats_crackers_logo.jpg',
-  '/images/beats_crackers_logo.png',
+  '/images/sharp_celebration_hero_banner.jpg',
   '/images/hero_banner_1791567625102.jpg',
   '/images/product_chakkars.jpg',
   '/images/product_flowerpots.jpg',
@@ -18,12 +17,9 @@ const CORE_ASSETS = [
   '/images/product_garland.jpg',
   '/images/product_giftpack_1791567665442.jpg',
   '/images/product_rockets.jpg',
-  '/images/product_sparkler_1791567639029.jpg',
-  '/images/sharp_crackers_festive_logo.jpg',
-  '/images/sharp_crackers_logo.jpg',
-  '/images/sharp_crackers_logo.png',
+  '/images/sharp_crackers_brand_logo.jpg',
   '/images/sharp_crackers_logo_final.png',
-  '/images/sharp_crackers_logo_transparent.png'
+  '/images/sharp_crackers_transparent_logo.png'
 ];
 
 // Install: Pre-cache all heavy product images immediately in device storage

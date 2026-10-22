@@ -5,29 +5,23 @@
 
 import React from 'react';
 import { useCart } from '../context/CartContext';
-import { 
-  Flame, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Clock, 
-  ShieldCheck, 
-  ChevronRight, 
+import {
+  Flame,
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  ShieldCheck,
+  ChevronRight,
   Sparkles,
   Lock
 } from 'lucide-react';
 
-export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
+export const Footer = ({ setCurrentPage }) => {
   const { settings } = useCart();
 
   const handleNav = (page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleCategoryNav = (categoryId) => {
-    if (setSelectedCategory) setSelectedCategory(categoryId);
-    setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -75,11 +69,12 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
           <div className="footer-col brand-col">
             <div className="footer-brand" onClick={() => handleNav('home')}>
               <div className="footer-logo-frame">
-                <img 
-                  src={settings.logoUrl || "/images/sharp_crackers_logo_final.png"} 
-                  alt="Sharp Crackers" 
+                <img
+                  src={settings.logoUrl || "/images/sharp_crackers_brand_logo.jpg"}
+                  alt="Sharp Crackers"
                   className="footer-logo-img"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
                 />
               </div>
               <div>
@@ -138,32 +133,32 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
             <h4 className="footer-heading">Top Categories</h4>
             <ul className="footer-links-list">
               <li>
-                <button onClick={() => handleCategoryNav('sparklers')} className="footer-link-btn">
+                <button onClick={() => handleNav('products')} className="footer-link-btn">
                   <ChevronRight size={14} /> Electric & Color Sparklers
                 </button>
               </li>
               <li>
-                <button onClick={() => handleCategoryNav('flower-pots')} className="footer-link-btn">
+                <button onClick={() => handleNav('products')} className="footer-link-btn">
                   <ChevronRight size={14} /> Deluxe Flower Pots & Asoka
                 </button>
               </li>
               <li>
-                <button onClick={() => handleCategoryNav('ground-chakkars')} className="footer-link-btn">
+                <button onClick={() => handleNav('products')} className="footer-link-btn">
                   <ChevronRight size={14} /> High-Speed Ground Chakkars
                 </button>
               </li>
               <li>
-                <button onClick={() => handleCategoryNav('fancy-crackers')} className="footer-link-btn">
+                <button onClick={() => handleNav('products')} className="footer-link-btn">
                   <ChevronRight size={14} /> Sky Shots & Dancing Fountains
                 </button>
               </li>
               <li>
-                <button onClick={() => handleCategoryNav('sound-crackers')} className="footer-link-btn">
+                <button onClick={() => handleNav('products')} className="footer-link-btn">
                   <ChevronRight size={14} /> 1000 to 5000 Wala Garlands
                 </button>
               </li>
               <li>
-                <button onClick={() => handleCategoryNav('gift-boxes')} className="footer-link-btn">
+                <button onClick={() => handleNav('products')} className="footer-link-btn">
                   <ChevronRight size={14} /> Diwali Family Gift Mega Packs
                 </button>
               </li>
@@ -172,22 +167,22 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
 
           {/* Column 4: Contact & Showroom Address */}
           <div className="footer-col">
-            <h4 className="footer-heading">Showroom & Factory</h4>
+            <h4 className="footer-heading">Showroom & Office</h4>
             <div className="footer-contact-block">
               <div className="contact-line">
                 <MapPin size={18} className="contact-icon text-orange" />
-                <span>{settings.address || '145/2, By-Pass Road, Sivakasi - 626123, Tamil Nadu'}</span>
+                <span>{settings.address || '89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu'}</span>
               </div>
               <div className="contact-line">
                 <Phone size={18} className="contact-icon text-gold" />
                 <div>
-                  <a href={`tel:${settings.phone}`}>{settings.phone}</a>
+                  <a href={`tel:${settings.phone || '9566886795'}`}>{settings.phone || '+91 95668 86795'}</a>
                   {settings.altPhone && <span>, <a href={`tel:${settings.altPhone}`}>{settings.altPhone}</a></span>}
                 </div>
               </div>
               <div className="contact-line">
                 <Mail size={18} className="contact-icon text-orange" />
-                <a href={`mailto:${settings.email}`}>{settings.email}</a>
+                <a href={`mailto:${settings.email || 'sharpcrackars@gmail.com'}`}>{settings.email || 'sharpcrackars@gmail.com'}</a>
               </div>
             </div>
           </div>
@@ -198,10 +193,10 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
       <div className="footer-bottom">
         <div className="container bottom-content">
           <div>
-            © {new Date().getFullYear()} <strong>SHARP CRACKERS</strong>. All Rights Reserved. Manufactured and marketed in Sivakasi, India.
+            © {new Date().getFullYear()} <strong>SHARP CRACKERS</strong>. All Rights Reserved. Manufactured and marketed in Sivakasi, India. | Designed & Developed by <strong style={{ color: '#ffd166' }}>GEN-Z WORKS</strong>, Coimbatore Tamil Nadu India.
           </div>
           <div className="bottom-safety-badge">
-            <span>🎆 Always follow standard firework safety precautions. Light responsibly.</span>
+            <span>Always follow standard firework safety precautions. Light responsibly.</span>
           </div>
         </div>
       </div>
@@ -280,9 +275,9 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
         }
 
         .footer-logo-frame {
-          width: 48px;
-          height: 48px;
-          border-radius: 10px;
+          width: 64px;
+          height: 64px;
+          border-radius: 14px;
           background: #ffffff;
           border: 2px solid #ffb703;
           display: flex;
@@ -290,6 +285,7 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
           justify-content: center;
           overflow: hidden;
           flex-shrink: 0;
+          box-shadow: 0 4px 16px rgba(255, 111, 0, 0.35);
         }
 
         .footer-brand-title {

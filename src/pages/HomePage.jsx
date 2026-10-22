@@ -1,10 +1,12 @@
 // ==========================================================================
 // SHARP CRACKERS - HOMEPAGE COMPONENT
-// Festive hero banner, categories, bestsellers, value propositions, and promos
+// Festive hero banner, complete 14-category collections, auto-scrolling bestsellers,
+// dedicated 5-pack gift box showcase, and genuine Sivakasi product visuals.
 // ==========================================================================
 
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
+import { dataService } from '../services/dataService';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -16,13 +18,25 @@ import {
   Tag, 
   Package, 
   Star,
-  Plus,
-  Minus,
+  ChevronLeft,
+  ChevronRight,
+  Gift,
   ShoppingCart
 } from 'lucide-react';
 
 export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
-  const { products, settings, getItemQuantity, updateQuantity } = useCart();
+  const { products, settings } = useCart();
+  const scrollRef = useRef(null);
+  const videoRef = useRef(null);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
 
   const handleCategoryClick = (categoryId) => {
     if (setSelectedCategory) setSelectedCategory(categoryId);
@@ -46,51 +60,91 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Curated Featured Categories with Bilingual Names
-  const featuredCategories = [
-    { id: 'sparklers', name: 'Sparklers', ta: 'கம்பி மத்தாப்பு', count: '4 Varieties', desc: 'Electric, Golden & Multi-color rods', image: '/images/product_sparkler_1791567639029.jpg' },
-    { id: 'flower-pots', name: 'Flower Pots', ta: 'பூந்தொட்டி', count: '3 Varieties', desc: 'Dense golden sparks & Asoka towers', image: '/images/product_flowerpots.jpg' },
-    { id: 'ground-chakkars', name: 'Ground Chakkars', ta: 'தரை சக்கரம்', count: '3 Varieties', desc: 'High-speed spinning wheels & spinners', image: '/images/product_chakkars.jpg' },
-    { id: 'rockets', name: 'Rockets & Aerial', ta: 'வான வெடி & ராக்கெட்', count: '3 Varieties', desc: 'Whistling sky rockets with parachute drops', image: '/images/product_rockets.jpg' },
-    { id: 'fancy-crackers', name: 'Fancy Fountains', ta: 'ஃபேசி வெடிகள்', count: '4 Varieties', desc: 'Multi-shot repeaters & dancing peacock', image: '/images/product_fountain_1791567652291.jpg' },
-    { id: 'gift-boxes', name: 'Diwali Gift Boxes', ta: 'தீபாவளி கிப்ட் பாக்ஸ்', count: '3 Packs', desc: 'Complete family celebration hampers', image: '/images/product_giftpack_1791567665442.jpg' },
-  ];
+  // Live synced categories from dataService
+  const [categories, setCategories] = useState(() => dataService.getCategories());
 
-  // Best-selling products
-  const bestSellers = products.filter(p => p.isBestseller).slice(0, 4);
+  useEffect(() => {
+    const handleDataChange = () => {
+      setCategories(dataService.getCategories());
+    };
+    window.addEventListener('sharp_data_changed', handleDataChange);
+    return () => {
+      window.removeEventListener('sharp_data_changed', handleDataChange);
+    };
+  }, []);
+
+  // Best-selling products (wide catalog selection)
+  const bestSellers = products.filter(p => p.isBestseller);
+
+  // Dedicated 5 Gift Boxes from Catalog
+  const giftBoxes = products
+    .filter(p => p.category === 'gift-boxes')
+    .sort((a, b) => (Number(a.unitPrice) || 0) - (Number(b.unitPrice) || 0));
+
+  // Gentle horizontal auto-scroll animation for Bestsellers
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let animId;
+    let lastTime = performance.now();
+
+    const step = (time) => {
+      const delta = time - lastTime;
+      lastTime = time;
+
+      if (!isHovered && el) {
+        // Slow, gentle, buttery drift (~35px per second)
+        el.scrollLeft += delta * 0.035;
+        // Loop back seamlessly when near the end
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 5) {
+          el.scrollLeft = 0;
+        }
+      }
+      animId = requestAnimationFrame(step);
+    };
+
+    animId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animId);
+  }, [isHovered]);
+
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const offset = direction === 'left' ? -320 : 320;
+      scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="homepage-wrapper">
-      {/* 1. HERO BANNER SECTION */}
+      {/* 1. HERO BANNER SECTION WITH AMBIENT VIDEO BACKGROUND */}
       <section className="hero-section">
-        <div className="hero-backdrop" style={{ backgroundImage: `url(${settings.heroBannerUrl || '/images/hero_banner_1791567625102.jpg'})` }}>
-          <div className="hero-overlay"></div>
-        </div>
+        <video 
+          ref={videoRef}
+          className="hero-video-bg"
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          webkit-playsinline="true"
+          preload="auto"
+          poster="/images/home_hero_bg_4k.webp"
+        >
+          <source src="/videos/hero_bg_wp.mp4" type="video/mp4" />
+          <source src="/videos/hero_fireworks_bg.mp4" type="video/mp4" />
+          <source src="/videos/cracker_wp_enhance.mp4" type="video/mp4" />
+        </video>
+        <div 
+          className="hero-backdrop" 
+          style={{ backgroundImage: `url('/images/home_hero_bg_4k.webp')` }}
+        />
+        <div className="hero-overlay" />
 
         <div className="container hero-container">
           <div className="hero-content">
-            <div className="hero-header-stack">
-              <div className="hero-brand-block">
-                <div className="hero-brand-logo-frame">
-                  <img 
-                    src={settings.logoUrl || "/images/sharp_crackers_logo_final.png"} 
-                    alt="Sharp Crackers Official Logo" 
-                    className="hero-brand-logo-img" 
-                    loading="eager"
-                    decoding="async"
-                    onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
-                  />
-                </div>
-                <div className="hero-brand-text-wrap">
-                  <div className="hero-brand-callout">SHARP CRACKERS</div>
-                  <div className="hero-brand-subline">DIRECT SIVAKASI FIREWORKS</div>
-                </div>
-              </div>
-
-              <div className="hero-pill-badge">
-                <Sparkles size={15} className="text-gold" />
-                <span>Direct From Sivakasi • Best Price Guarantee</span>
-              </div>
+            <div className="hero-pill-badge">
+              <Sparkles size={16} className="text-gold" />
+              <span>Direct From Sivakasi • Best Price Guarantee</span>
             </div>
 
             <h1 className="hero-main-title">
@@ -128,158 +182,271 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
         </div>
       </section>
 
-      {/* 2. FEATURED CATEGORIES SECTION */}
+      {/* 2. POPULAR CRACKER COLLECTIONS (ALL 14 CATEGORIES WITH GENUINE UPLOADED PRODUCT IMAGES) */}
       <section id="featured-categories" className="section-padding bg-cream">
         <div className="container">
           <div className="section-header text-center">
-            <div className="section-subtitle">EXPLORE BY CATEGORY</div>
-            <h2 className="section-title">Popular Cracker Collections</h2>
+            <div className="section-subtitle">
+              EXPLORE BY CATEGORY
+            </div>
+            <h2 className="section-title">
+              Popular Cracker Collections
+            </h2>
             <p className="section-desc">
-              Browse our diverse collection of sparkling firecrackers designed for festive safety, vivid illumination, and joyous festivities.
+              Browse our diverse collection of {categories.length} genuine Sivakasi firecracker categories designed for festive safety, vivid illumination, and joyous festivities.
             </p>
           </div>
 
           <div className="categories-grid">
-            {featuredCategories.map((cat) => (
-              <div 
-                key={cat.id} 
-                className="category-card"
-                onClick={() => handleCategoryClick(cat.id)}
-              >
-                <div className="cat-img-wrapper">
-                  <img 
-                    src={cat.image} 
-                    alt={cat.name} 
-                    className="cat-img" 
-                    loading="eager"
-                    decoding="async"
-                    onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
-                  />
-                  <span className="cat-badge">{cat.count}</span>
-                </div>
-                <div className="cat-info">
-                  <h3 className="cat-title">
-                    <span className="cat-title-en">{cat.name}</span>
-                    {cat.ta && (
-                      <>
-                        <span className="cat-title-sep"> / </span>
-                        <span className="cat-title-ta">{cat.ta}</span>
-                      </>
-                    )}
-                  </h3>
-                  <p className="cat-desc">{cat.desc}</p>
-                  <button className="cat-btn" type="button">
-                    <span>View Products</span>
-                    <ArrowRight size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. BEST-SELLING PRODUCTS SECTION */}
-      <section className="section-padding bg-white">
-        <div className="container">
-          <div className="section-header-flex">
-            <div>
-              <div className="section-subtitle">FAVORITES OF THE SEASON</div>
-              <h2 className="section-title">Best-Selling Fireworks</h2>
-              <p className="section-desc">Hand-picked by thousands of happy families across India.</p>
-            </div>
-            <button onClick={handleExploreClick} className="btn btn-outline-dark">
-              <span>View Full Catalog</span>
-              <ArrowRight size={16} />
-            </button>
-          </div>
-
-          <div className="bestsellers-grid">
-            {bestSellers.map((product) => {
-              const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
-              const qty = getItemQuantity(product.id);
-
+            {categories.filter(c => c.active !== false).map((cat, idx) => {
+              const count = products.filter(p => p.category === cat.id).length;
               return (
-                <div 
-                  key={product.id} 
-                  className={`product-showcase-card clickable-bestseller-card ${qty > 0 ? 'card-has-items' : ''}`}
-                  onClick={() => handleProductCardClick(product)}
+                <div
+                  key={cat.id}
+                  className="category-card"
+                  style={{ transitionDelay: `${(idx % 4) * 0.07}s` }}
+                  onClick={() => handleCategoryClick(cat.id)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      handleProductCardClick(product);
+                      handleCategoryClick(cat.id);
                     }
                   }}
-                  title={`Click to view ${product.name} in Products catalog`}
+                  title={`Click to view ${cat.name} collection`}
                 >
-                  <div className="product-card-media">
-                    <img 
-                      src={product.image} 
-                      alt={product.name} 
-                      className="product-card-img" 
+                  <div className="cat-img-wrapper">
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="cat-img"
                       loading="eager"
                       decoding="async"
-                      onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_logo_final.png'; }}
+                      onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
                     />
-                    <span className="discount-tag">{discount}% OFF</span>
-                    <div className="bestseller-star-badge">
-                      <Star size={12} fill="#ffb703" color="#ffb703" />
-                      <span>Best Seller</span>
-                    </div>
+                    <span className="cat-badge">{count > 0 ? `${count} Varieties` : 'Explore'}</span>
                   </div>
-
-                  <div className="product-card-details">
-                    <div className="product-code-row">
-                      <span className="product-sno-tag">#{product.sno ? String(parseInt(product.sno, 10)).padStart(3, '0') : '001'}</span>
-                      <span className="product-code-label">{product.code}</span>
-                    </div>
-                    <h3 className="product-card-title">
-                      <span className="prod-title-en">{product.name}</span>
+                  <div className="cat-info">
+                    <h3 className="cat-title">
+                      <span className="cat-title-en">{cat.name}</span>
+                      <span className="cat-title-sep"> / </span>
+                      <span className="cat-title-ta">{cat.ta}</span>
                     </h3>
-                    <div className="product-pack-tag">{product.packDetails}</div>
-                    <p className="product-short-desc">{product.description}</p>
+                    <p className="cat-desc">{cat.desc}</p>
+                    <button className="cat-btn" type="button">
+                      <span>View Products</span>
+                      <ArrowRight size={15} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
-                    <div className="product-price-block">
-                      <div className="price-primary">₹{product.unitPrice}</div>
-                      <div className="price-strike">₹{product.mrp}</div>
+      {/* 3. BEST-SELLING FIREWORKS (SMOOTH HORIZONTAL AUTO-SCROLLING SHOWCASE) */}
+      <section className="section-padding bg-white bestsellers-showcase-section">
+        <div className="container">
+          <div className="section-header-flex">
+            <div>
+              <div className="section-subtitle">
+                FAVORITES OF THE SEASON
+              </div>
+              <h2 className="section-title">
+                Best-Selling Fireworks
+              </h2>
+              <p className="section-desc">
+                Hand-picked trending festive favorites continuously moving — swipe or use arrows to explore all {bestSellers.length} bestsellers!
+              </p>
+            </div>
+            <div className="slider-action-controls">
+              <button 
+                type="button"
+                className="slider-nav-btn" 
+                onClick={() => handleScroll('left')} 
+                title="Scroll previous"
+                aria-label="Scroll left"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button 
+                type="button"
+                className="slider-nav-btn" 
+                onClick={() => handleScroll('right')} 
+                title="Scroll next"
+                aria-label="Scroll right"
+              >
+                <ChevronRight size={20} />
+              </button>
+              <button onClick={handleExploreClick} className="btn btn-outline-dark btn-sm">
+                <span>Full Catalog</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="bestsellers-scroll-wrapper">
+            <div 
+              className="bestsellers-scroll-track" 
+              ref={scrollRef}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onTouchStart={() => setIsHovered(true)}
+              onTouchEnd={() => setIsHovered(false)}
+            >
+              {bestSellers.map((product) => {
+                const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
+
+                return (
+                  <div 
+                    key={product.id} 
+                    className="bestseller-slide-card"
+                    onClick={() => handleProductCardClick(product)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleProductCardClick(product);
+                      }
+                    }}
+                    title={`Click to view ${product.name} in Products catalog`}
+                  >
+                    <div className="slide-card-media">
+                      <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="slide-card-img" 
+                        loading="eager"
+                        decoding="async"
+                        onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
+                      />
+
+                      <div className="slide-star-badge">
+                        <Star size={11} fill="#ffb703" color="#ffb703" />
+                        <span>Best Seller</span>
+                      </div>
                     </div>
 
-                    <div className="product-card-action">
-                      {qty === 0 ? (
+                    <div className="slide-card-details">
+                      <div className="slide-code-row">
+                        <span className="slide-sno-tag">#{product.sno ? String(parseInt(product.sno, 10)).padStart(3, '0') : '001'}</span>
+                        <span className="slide-code-label">{product.code}</span>
+                      </div>
+                      <h3 className="slide-card-title">
+                        <span className="slide-title-en">{product.name}</span>
+                        {product.tamilName && (
+                          <span className="slide-title-ta">{product.tamilName}</span>
+                        )}
+                      </h3>
+                      <div className="slide-pack-tag">{product.packDetails}</div>
+                      <p className="slide-short-desc">{product.description}</p>
+
+                      <div className="slide-price-block">
+                        <div className="slide-price-primary">₹{product.unitPrice}</div>
+                        <div className="slide-price-strike">₹{product.mrp}</div>
+                      </div>
+
+                      <div className="slide-card-action">
                         <button 
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            updateQuantity(product.id, 1);
+                            handleProductCardClick(product);
                           }}
-                          className="btn btn-primary btn-block add-bestseller-btn"
+                          className="btn btn-primary btn-block slide-action-btn"
                         >
-                          <Plus size={16} />
-                          <span>Add to Order</span>
+                          <ShoppingCart size={14} />
+                          <span>Order Item</span>
                         </button>
-                      ) : (
-                        <div className="bestseller-stepper-control" onClick={(e) => e.stopPropagation()}>
-                          <button 
-                            type="button"
-                            onClick={() => updateQuantity(product.id, -1)}
-                            className="bestseller-stepper-btn minus"
-                            title="Decrease quantity"
-                          >
-                            <Minus size={15} />
-                          </button>
-                          <span className="bestseller-stepper-val">{qty} in Order</span>
-                          <button 
-                            type="button"
-                            onClick={() => updateQuantity(product.id, 1)}
-                            className="bestseller-stepper-btn plus"
-                            title="Increase quantity"
-                          >
-                            <Plus size={15} />
-                          </button>
-                        </div>
-                      )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. DEDICATED DIWALI GIFT BOXES SHOWCASE (ALL 5 GIFT PACKS IN CLEAN RESPONSIVE LINE) */}
+      <section id="gift-boxes-section" className="section-padding bg-cream gift-boxes-section">
+        <div className="container">
+          <div className="section-header-flex">
+            <div>
+              <div className="section-subtitle">
+                FESTIVE FAMILY PACKS • 75% SAVINGS
+              </div>
+              <h2 className="section-title">
+                Diwali Special Gift Boxes
+              </h2>
+              <p className="section-desc">
+                Specially curated family gift hampers packed with classic sparklers, flowerpots, chakkars, rockets, and sound crackers for complete festive joy.
+              </p>
+            </div>
+            <button onClick={() => handleCategoryClick('gift-boxes')} className="btn btn-gold btn-sm">
+              <Gift size={15} />
+              <span>Explore All Gift Packs</span>
+            </button>
+          </div>
+
+          <div className="gift-boxes-grid">
+            {giftBoxes.map((box) => {
+              const discount = Math.round(((box.mrp - box.unitPrice) / box.mrp) * 100);
+              return (
+                <div
+                  key={box.id}
+                  className="gift-box-card"
+                  onClick={() => handleProductCardClick(box)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleProductCardClick(box);
+                    }
+                  }}
+                  title={`Click to view ${box.name}`}
+                >
+                  <div className="gift-card-media">
+                    <img 
+                      src={box.image} 
+                      alt={box.name} 
+                      className="gift-card-img" 
+                      loading="eager"
+                      onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
+                    />
+
+                    <span className="gift-festive-tag">Diwali Special</span>
+                  </div>
+
+                  <div className="gift-card-body">
+                    <div className="gift-code-tag">#{box.sno || '064'} • {box.code}</div>
+                    <h3 className="gift-card-name">
+                      <span className="gift-name-en">{box.name}</span>
+                      <span className="gift-name-ta">{box.tamilName}</span>
+                    </h3>
+                    <div className="gift-pack-badge">{box.packDetails}</div>
+                    <p className="gift-short-desc">{box.description}</p>
+
+                    <div className="gift-price-row">
+                      <div>
+                        <div className="gift-price-current">₹{box.unitPrice}</div>
+                        <div className="gift-price-mrp">MRP ₹{box.mrp}</div>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="btn btn-primary btn-sm gift-order-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProductCardClick(box);
+                        }}
+                      >
+                        <span>Order Box</span>
+                        <ArrowRight size={14} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -289,88 +456,48 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
         </div>
       </section>
 
-      {/* 4. WHY CHOOSE SHARP CRACKERS */}
+      {/* 5. WHY CHOOSE SHARP CRACKERS */}
       <section className="section-padding bg-navy text-white">
         <div className="container">
           <div className="section-header text-center">
-            <div className="section-subtitle text-gold">TRUSTED SIVAKASI TRADITION</div>
-            <h2 className="section-title text-white">Why Choose SHARP CRACKERS?</h2>
+            <div className="section-subtitle text-gold">
+              TRUSTED SIVAKASI TRADITION
+            </div>
+            <h2 className="section-title text-white">
+              Why Choose SHARP CRACKERS?
+            </h2>
             <p className="section-desc text-muted-light">
               We make fireworks shopping simple, transparent, and completely worry-free for families and celebration events alike.
             </p>
           </div>
 
           <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon-box">
-                <Package size={28} className="text-orange" />
+            {[
+              { icon: <Package size={28} className="text-orange" />, title: 'Wide Variety of Products', text: 'Over 90+ verified items spanning classic sparklers, soaring rockets, dancing fountains, high-burst repeaters, and curated family gift boxes.' },
+              { icon: <CheckCircle2 size={28} className="text-emerald" />, title: 'Easy Product Selection', text: 'Browse our one-stop order catalog table. Add quantities with single-click plus/minus controls without navigating back and forth.' },
+              { icon: <Tag size={28} className="text-gold" />, title: 'Transparent Pricing', text: 'Honest factory rates direct from Sivakasi with clear pack details, no hidden surcharges, and real-time order total calculations.' },
+              { icon: <Award size={28} className="text-orange" />, title: 'Convenient Order Management', text: 'Instant computer-generated PDF invoices, print-ready order sheets, and real-time order tracking via our automated system.' },
+              { icon: <ShieldCheck size={28} className="text-gold" />, title: 'Customer-Friendly Service', text: 'Dedicated direct phone assistance, festive guidance, and transparent fulfillment updates ensure your festive deliveries arrive intact and on schedule.' },
+            ].map((feat) => (
+              <div key={feat.title} className="feature-card">
+                <div className="feature-icon-box">{feat.icon}</div>
+                <h3 className="feature-title">{feat.title}</h3>
+                <p className="feature-text">{feat.text}</p>
               </div>
-              <h3 className="feature-title">Wide Variety of Products</h3>
-              <p className="feature-text">
-                Over 100+ items spanning classic sparklers, soaring rockets, dancing fountains, high-burst repeaters, and curated family gift boxes.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-box">
-                <CheckCircle2 size={28} className="text-emerald" />
-              </div>
-              <h3 className="feature-title">Easy Product Selection</h3>
-              <p className="feature-text">
-                Browse our one-stop order catalog table. Add quantities with single-click plus/minus controls without navigating back and forth.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-box">
-                <Tag size={28} className="text-gold" />
-              </div>
-              <h3 className="feature-title">Transparent Pricing</h3>
-              <p className="feature-text">
-                Honest factory rates direct from Sivakasi with clear pack details, no hidden surcharges, and real-time order total calculations.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-box">
-                <Award size={28} className="text-orange" />
-              </div>
-              <h3 className="feature-title">Instant PDF & Order Sheets</h3>
-              <p className="feature-text">
-                Generate computer invoices instantly, print paper order sheets, and forward orders directly to our Sivakasi desk with 1-click WhatsApp.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-box">
-                <ShieldCheck size={28} className="text-gold" />
-              </div>
-              <h3 className="feature-title">Customer-Friendly Service</h3>
-              <p className="feature-text">
-                Dedicated direct phone assistance, festive guidance, and transparent fulfillment updates ensure your festive deliveries arrive intact and on schedule.
-              </p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-box">
-                <Sparkles size={28} className="text-emerald" />
-              </div>
-              <h3 className="feature-title">100% Legal Green Crackers</h3>
-              <p className="feature-text">
-                CSIR-NEERI and PESO compliant fireworks formulated without harmful barium compounds, generating 30% lower smoke and crisp celebrations.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 5. FESTIVE PROMOTIONAL BANNER */}
+      {/* 6. FESTIVE PROMOTIONAL BANNER WITH GENUINE UPLOADED SIVAKASI PRODUCT IMAGE */}
       <section className="section-padding promo-section">
         <div className="container">
           <div className="promo-banner-card">
             <div className="promo-content">
               <span className="badge badge-festive promo-badge">FESTIVAL SPECIAL</span>
-              <h2 className="promo-title">Plan Your Festival Early & Save Big!</h2>
+              <h2 className="promo-title">
+                Plan Your Festival Early & Save Big!
+              </h2>
               <p className="promo-text">
                 Direct Sivakasi bookings for Diwali 2026 are officially open. Enjoy verified stock availability, factory-level price advantages, and stress-free early dispatch.
               </p>
@@ -393,9 +520,10 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
             </div>
             <div className="promo-visual">
               <img 
-                src="/images/product_giftpack_1791567665442.jpg" 
-                alt="Sharp Crackers Gift Pack" 
+                src="/images/products/gift_box_60_items_v1.jpg" 
+                alt="Sharp Crackers Royal Celebration Hamper" 
                 className="promo-img"
+                onError={(e) => { e.currentTarget.src = '/images/products/gift_box_35_items_v1.jpg'; }}
               />
             </div>
           </div>
@@ -409,46 +537,52 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           display: flex;
           align-items: center;
           padding: 5rem 0;
-          color: #ffffff;
           overflow: hidden;
+          background: #050a18;
+        }
+
+        .hero-video-bg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          z-index: 1;
+          pointer-events: none;
         }
 
         .hero-backdrop {
           position: absolute;
           inset: 0;
           background-size: cover;
-          background-position: center;
+          background-position: center bottom;
           background-repeat: no-repeat;
-          z-index: 1;
+          z-index: 2;
+          opacity: 0.85;
+          pointer-events: none;
         }
 
         .hero-overlay {
           position: absolute;
           inset: 0;
           background: linear-gradient(
-            90deg, 
-            rgba(5, 10, 24, 0.98) 0%, 
-            rgba(10, 19, 41, 0.92) 55%, 
-            rgba(5, 10, 24, 0.82) 100%
+            to right,
+            rgba(5, 10, 24, 0.94) 0%,
+            rgba(5, 10, 24, 0.72) 48%,
+            rgba(5, 10, 24, 0.35) 100%
           );
-          backdrop-filter: blur(2px);
+          z-index: 3;
+          pointer-events: none;
         }
 
         .hero-container {
           position: relative;
-          z-index: 2;
+          z-index: 4;
         }
 
         .hero-content {
           max-width: 680px;
-        }
-
-        .hero-header-stack {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.85rem;
-          margin-bottom: 1.5rem;
+          color: #ffffff;
         }
 
         .hero-pill-badge {
@@ -462,69 +596,8 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           border-radius: var(--radius-full);
           font-size: 0.85rem;
           font-weight: 700;
-          margin-bottom: 0;
+          margin-bottom: 1.25rem;
           backdrop-filter: blur(8px);
-        }
-
-        .hero-brand-block {
-          display: inline-flex;
-          align-items: center;
-          gap: 1.25rem;
-          margin-bottom: 0;
-          background: rgba(10, 19, 41, 0.75);
-          padding: 0.6rem 1.4rem 0.6rem 0.6rem;
-          border-radius: 20px;
-          border: 1.5px solid rgba(255, 183, 3, 0.45);
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(255, 111, 0, 0.25);
-          backdrop-filter: blur(10px);
-        }
-
-        .hero-brand-logo-frame {
-          width: 90px;
-          height: 90px;
-          border-radius: 16px;
-          overflow: hidden;
-          background: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 2.5px solid #ffb703;
-          box-shadow: 0 4px 18px rgba(255, 183, 3, 0.5);
-          flex-shrink: 0;
-          transition: transform 0.25s ease;
-        }
-
-        .hero-brand-block:hover .hero-brand-logo-frame {
-          transform: scale(1.06) rotate(2deg);
-        }
-
-        .hero-brand-logo-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .hero-brand-text-wrap {
-          display: flex;
-          flex-direction: column;
-          gap: 0.2rem;
-        }
-
-        .hero-brand-callout {
-          font-family: var(--font-display);
-          font-size: 1.65rem;
-          font-weight: 900;
-          letter-spacing: 2px;
-          color: #ff6f00;
-          line-height: 1.1;
-          margin-bottom: 0;
-        }
-
-        .hero-brand-subline {
-          font-size: 0.72rem;
-          font-weight: 800;
-          letter-spacing: 2px;
-          color: #ffb703;
         }
 
         .hero-main-title {
@@ -612,7 +685,7 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           display: flex;
           align-items: flex-end;
           justify-content: space-between;
-          margin-bottom: 3rem;
+          margin-bottom: 2.5rem;
           flex-wrap: wrap;
           gap: 1.5rem;
         }
@@ -651,87 +724,208 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
         /* Categories Grid */
         .categories-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 1.75rem;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 1.85rem;
+          perspective: 1000px;
         }
 
         .category-card {
+          grid-column: span 2;
+          position: relative;
           background: #ffffff;
           border-radius: var(--radius-lg);
           overflow: hidden;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 24px rgba(255, 111, 0, 0.14), 0 1px 6px rgba(15, 23, 42, 0.07), inset 0 0 0 1.5px rgba(255, 145, 0, 0.18);
+          border: 2px solid #ffb347;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          display: flex;
+          flex-direction: column;
+          isolation: isolate;
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                      box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                      border-color 0.35s ease;
         }
 
-        .category-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 15px 30px rgba(255, 111, 0, 0.15);
-          border-color: #ffb703;
+        .category-card:nth-child(13) {
+          grid-column: 2 / span 2;
+        }
+
+        .category-card:nth-child(14) {
+          grid-column: 4 / span 2;
+        }
+
+        /* Classy Glass / Specular Holographic Reflection Beam (Sheen Sweep) */
+        .category-card::before {
+          content: '';
+          position: absolute;
+          top: -65%;
+          left: -80%;
+          width: 75%;
+          height: 230%;
+          background: linear-gradient(
+            115deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.15) 30%,
+            rgba(255, 255, 255, 0.75) 48%,
+            rgba(255, 215, 0, 0.7) 52%,
+            rgba(255, 255, 255, 0.9) 56%,
+            rgba(255, 255, 255, 0.15) 70%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          transform: rotate(26deg);
+          pointer-events: none;
+          z-index: 10;
+          opacity: 0;
+          filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.45));
+        }
+
+        /* Hover & Touch Reflection Trigger */
+        .category-card:hover::before,
+        .category-card:active::before {
+          animation: cardReflectionSweep 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes cardReflectionSweep {
+          0% {
+            transform: rotate(26deg) translate(-130%, 0);
+            opacity: 0;
+          }
+          15% {
+            opacity: 1;
+          }
+          85% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: rotate(26deg) translate(390%, 0);
+            opacity: 0;
+          }
+        }
+
+        /* Smooth Hover & Touch Elevation (overriding scroll reveal defaults cleanly) */
+        .category-card:hover,
+        .category-card.is-revealed:hover {
+          transform: translateY(-8px) scale(1.015) !important;
+          box-shadow: 0 20px 48px -8px rgba(255, 111, 0, 0.32), 
+                      0 0 0 2.5px #ff9100,
+                      0 0 32px rgba(255, 183, 3, 0.22), 
+                      0 4px 12px rgba(0, 0, 0, 0.06);
+          border-color: #ff6f00;
+        }
+
+        .category-card:active,
+        .category-card.is-revealed:active {
+          transform: translateY(-3px) scale(0.995) !important;
+          box-shadow: 0 10px 24px -6px rgba(255, 111, 0, 0.3), 0 0 0 2px #ff9100;
         }
 
         .cat-img-wrapper {
           position: relative;
-          height: 190px;
+          height: 205px;
+          background: radial-gradient(circle at 50% 35%, #ffffff 0%, #f9fafb 70%, #f1f5f9 100%);
           overflow: hidden;
-          background: #0a1329;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          border-bottom: 1px solid #f1f5f9;
+        }
+
+        /* Ambient Glass Surface Sheen on the Image Area */
+        .cat-img-wrapper::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.5) 0%,
+            rgba(255, 255, 255, 0) 50%,
+            rgba(255, 183, 3, 0.04) 100%
+          );
+          pointer-events: none;
+          transition: background 0.4s ease, opacity 0.4s ease;
+        }
+
+        .category-card:hover .cat-img-wrapper::after {
+          background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 215, 0, 0.15) 30%,
+            rgba(255, 255, 255, 0) 70%
+          );
         }
 
         .cat-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.5s ease;
+          max-width: 88%;
+          max-height: 88%;
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.07));
+          transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                      filter 0.5s ease;
         }
 
         .category-card:hover .cat-img {
-          transform: scale(1.08);
+          transform: scale(1.08) translateY(-3px);
+          filter: drop-shadow(0 12px 22px rgba(255, 111, 0, 0.24));
         }
 
         .cat-badge {
           position: absolute;
-          top: 12px;
-          right: 12px;
-          background: rgba(5, 10, 24, 0.85);
+          top: 0.85rem;
+          right: 0.85rem;
+          background: rgba(10, 19, 41, 0.82);
           color: #ffd166;
-          font-size: 0.75rem;
-          font-weight: 700;
-          padding: 0.25rem 0.65rem;
+          font-size: 0.72rem;
+          font-weight: 800;
+          padding: 0.28rem 0.75rem;
           border-radius: var(--radius-full);
-          border: 1px solid rgba(255, 183, 3, 0.4);
-          backdrop-filter: blur(4px);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 183, 3, 0.35);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          letter-spacing: 0.4px;
+          transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+          z-index: 6;
+        }
+
+        .category-card:hover .cat-badge {
+          background: #ff6f00;
+          color: #ffffff;
+          border-color: #ffd166;
+          transform: scale(1.05);
+          box-shadow: 0 4px 14px rgba(255, 111, 0, 0.4);
         }
 
         .cat-info {
-          padding: 1.4rem;
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+          flex-grow: 1;
+          background: #ffffff;
         }
 
         .cat-title {
-          font-size: 1.15rem;
+          font-size: 1.2rem;
           font-weight: 700;
           color: #0f172a;
-          margin-bottom: 0.35rem;
-          display: flex;
-          align-items: baseline;
-          flex-wrap: wrap;
-          gap: 0.25rem;
+          margin-bottom: 0.5rem;
+          line-height: 1.3;
         }
 
         .cat-title-en {
           font-weight: 800;
-          color: #0f172a;
+          letter-spacing: -0.2px;
         }
 
         .cat-title-sep {
           color: #ff6f00;
-          font-weight: 700;
-          font-size: 0.95rem;
         }
 
         .cat-title-ta {
-          font-size: 0.92rem;
-          color: #64748b;
+          font-size: 1rem;
+          color: #ea580c;
           font-family: 'Mukta Malar', 'Noto Sans Tamil', system-ui, sans-serif;
           font-weight: 600;
         }
@@ -739,84 +933,162 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
         .cat-desc {
           font-size: 0.85rem;
           color: #64748b;
-          margin-bottom: 1.1rem;
           line-height: 1.5;
+          margin-bottom: 1.25rem;
+          flex-grow: 1;
         }
 
         .cat-btn {
           display: inline-flex;
           align-items: center;
-          gap: 0.4rem;
-          color: #ff6f00;
+          gap: 0.5rem;
+          font-size: 0.86rem;
           font-weight: 700;
-          font-size: 0.9rem;
+          color: #ff6f00;
+          background: rgba(255, 111, 0, 0.08);
+          border: 1px solid rgba(255, 111, 0, 0.22);
+          padding: 0.45rem 0.95rem;
+          border-radius: var(--radius-full);
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          width: fit-content;
         }
 
         .category-card:hover .cat-btn {
-          color: #d90429;
-          gap: 0.6rem;
+          background: linear-gradient(135deg, #ff6f00 0%, #d90429 100%);
+          color: #ffffff;
+          border-color: transparent;
+          box-shadow: 0 4px 15px rgba(255, 111, 0, 0.35);
+          gap: 0.75rem;
+          transform: translateX(3px);
         }
 
-        /* Bestsellers Grid */
-        .bestsellers-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-          gap: 2rem;
+        /* 3. Bestsellers Horizontal Smooth Scroller */
+        .slider-action-controls {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
         }
 
-        .product-showcase-card {
+        .slider-nav-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
           background: #ffffff;
-          border: 1px solid #e2e8f0;
+          border: 1.5px solid #cbd5e1;
+          color: #0f172a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          transition: all 0.2s ease;
+        }
+
+        .slider-nav-btn:hover {
+          background: #ff6f00;
+          color: #ffffff;
+          border-color: #ff6f00;
+          transform: scale(1.08);
+        }
+
+        .bestsellers-scroll-wrapper {
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+        }
+
+        .bestsellers-scroll-track {
+          display: flex;
+          gap: 1.5rem;
+          overflow-x: auto;
+          scroll-behavior: smooth;
+          padding: 0.75rem 0.5rem 1.75rem;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .bestsellers-scroll-track::-webkit-scrollbar {
+          height: 6px;
+        }
+
+        .bestsellers-scroll-track::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 999px;
+        }
+
+        .bestsellers-scroll-track::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 999px;
+        }
+
+        .bestseller-slide-card {
+          min-width: 275px;
+          max-width: 275px;
+          flex-shrink: 0;
+          background: #ffffff;
           border-radius: var(--radius-lg);
           overflow: hidden;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+          box-shadow: 0 4px 20px rgba(255, 111, 0, 0.13), 0 1px 4px rgba(15, 23, 42, 0.06);
+          border: 2px solid #ffa040;
           display: flex;
           flex-direction: column;
-          transition: all 0.3s ease;
+          cursor: pointer;
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
         }
 
-        .product-showcase-card:hover {
-          box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
-          border-color: #cbd5e1;
+        .bestseller-slide-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 18px 40px rgba(255, 111, 0, 0.22), 0 0 0 2.5px #ff6f00, 0 0 28px rgba(255, 183, 3, 0.18);
+          border-color: #ff6f00;
         }
 
-        .product-card-media {
+        .slide-card-media {
           position: relative;
-          height: 200px;
-          background: #0a1329;
+          aspect-ratio: 1.15;
+          background: #ffffff;
           overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.65rem;
+          border-bottom: 1px solid #f1f5f9;
         }
 
-        .product-card-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+        .slide-card-img {
+          max-width: 100%;
+          max-height: 100%;
+          width: auto;
+          height: auto;
+          object-fit: contain;
           transition: transform 0.4s ease;
         }
 
-        .product-showcase-card:hover .product-card-img {
-          transform: scale(1.05);
+        .bestseller-slide-card:hover .slide-card-img {
+          transform: scale(1.08);
         }
 
-        .discount-tag {
+        .slide-discount-tag {
           position: absolute;
-          top: 10px;
-          left: 10px;
+          top: 0.75rem;
+          left: 0.75rem;
           background: #d90429;
           color: #ffffff;
-          font-size: 0.72rem;
+          font-size: 0.75rem;
           font-weight: 800;
-          padding: 0.2rem 0.55rem;
-          border-radius: var(--radius-sm);
+          padding: 0.25rem 0.6rem;
+          border-radius: var(--radius-full);
+          box-shadow: 0 2px 8px rgba(217, 4, 41, 0.35);
         }
 
-        .bestseller-star-badge {
+        .slide-star-badge {
           position: absolute;
-          top: 10px;
-          right: 10px;
-          background: rgba(10, 19, 41, 0.9);
+          top: 0.75rem;
+          right: 0.75rem;
+          background: rgba(10, 19, 41, 0.85);
           color: #ffd166;
-          font-size: 0.72rem;
+          font-size: 0.7rem;
           font-weight: 700;
           display: flex;
           align-items: center;
@@ -824,193 +1096,291 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           padding: 0.2rem 0.55rem;
           border-radius: var(--radius-full);
           border: 1px solid rgba(255, 183, 3, 0.3);
+          backdrop-filter: blur(4px);
         }
 
-        .product-card-details {
-          padding: 1.4rem;
+        .slide-card-details {
+          padding: 1.25rem;
           display: flex;
           flex-direction: column;
           flex-grow: 1;
         }
 
-        .product-code-row {
+        .slide-code-row {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          margin-bottom: 0.4rem;
+          margin-bottom: 0.35rem;
         }
 
-        .product-sno-tag {
+        .slide-sno-tag {
           font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-          font-size: 0.75rem;
+          font-size: 0.72rem;
           font-weight: 800;
           color: #c2410c;
           background: #fff7ed;
           border: 1px solid #fed7aa;
           padding: 0.12rem 0.45rem;
           border-radius: 4px;
-          letter-spacing: 0.5px;
         }
 
-        .product-code-label {
-          font-size: 0.75rem;
+        .slide-code-label {
+          font-size: 0.72rem;
           font-weight: 700;
           color: #94a3b8;
           text-transform: uppercase;
         }
 
-        .product-card-title {
-          font-size: 1.1rem;
-          font-weight: 700;
+        .slide-card-title {
+          font-size: 1.05rem;
+          font-weight: 800;
           color: #0f172a;
           margin-bottom: 0.35rem;
-          line-height: 1.35;
+          line-height: 1.3;
         }
 
-        .prod-title-en {
-          font-weight: 700;
-          color: #0f172a;
+        .slide-title-en {
+          display: block;
         }
 
-        .prod-title-sep {
-          color: #ff6f00;
-          font-weight: 700;
-        }
-
-        .prod-title-ta {
-          font-size: 0.92rem;
+        .slide-title-ta {
+          display: block;
+          font-size: 0.85rem;
           color: #ea580c;
           font-family: 'Mukta Malar', 'Noto Sans Tamil', system-ui, sans-serif;
           font-weight: 600;
+          margin-top: 0.15rem;
         }
 
-        .product-pack-tag {
-          font-size: 0.8rem;
+        .slide-pack-tag {
+          font-size: 0.75rem;
           color: #ff6f00;
-          font-weight: 600;
-          margin-bottom: 0.6rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
         }
 
-        .product-short-desc {
-          font-size: 0.82rem;
+        .slide-short-desc {
+          font-size: 0.78rem;
           color: #64748b;
-          line-height: 1.5;
-          margin-bottom: 1.2rem;
+          line-height: 1.45;
+          margin-bottom: 1rem;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
           flex-grow: 1;
         }
 
-        .product-price-block {
+        .slide-price-block {
           display: flex;
           align-items: baseline;
-          gap: 0.75rem;
-          margin-bottom: 1.25rem;
+          gap: 0.65rem;
+          margin-bottom: 1rem;
         }
 
-        .price-primary {
-          font-size: 1.45rem;
+        .slide-price-primary {
+          font-size: 1.35rem;
           font-weight: 800;
           color: #d90429;
           font-family: var(--font-display);
         }
 
-        .price-strike {
-          font-size: 0.95rem;
+        .slide-price-strike {
+          font-size: 0.85rem;
           color: #94a3b8;
           text-decoration: line-through;
         }
 
-        .product-card-action {
-          margin-top: auto;
-        }
-
-        .btn-block {
-          width: 100%;
-        }
-
-        .clickable-bestseller-card {
-          cursor: pointer;
-        }
-
-        .clickable-bestseller-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 16px 32px rgba(255, 111, 0, 0.12), 0 4px 14px rgba(0, 0, 0, 0.08);
-          border-color: #ff6f00;
-        }
-
-        .card-has-items {
-          border-color: #ff6f00 !important;
-          box-shadow: 0 8px 24px rgba(255, 111, 0, 0.18) !important;
-        }
-
-        .add-bestseller-btn {
+        .slide-action-btn {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.5rem;
-          background: linear-gradient(135deg, #ff6f00 0%, #ea580c 100%);
-          color: #ffffff;
-          padding: 0.65rem 1rem;
-          border-radius: var(--radius-md);
+          gap: 0.45rem;
+          font-size: 0.88rem;
           font-weight: 700;
-          font-size: 0.92rem;
-          box-shadow: 0 4px 12px rgba(255, 111, 0, 0.25);
-          transition: all 0.2s ease;
-          width: 100%;
+          padding: 0.6rem 1rem;
+          border-radius: var(--radius-md);
         }
 
-        .add-bestseller-btn:hover {
-          background: linear-gradient(135deg, #ff8500 0%, #ff6f00 100%);
-          box-shadow: 0 6px 18px rgba(255, 111, 0, 0.4);
-          transform: translateY(-1px);
+        /* 4. Gift Boxes Showcase */
+        .gift-boxes-section {
+          background: #fffdfa;
+          border-top: 1px solid #f1f5f9;
+          border-bottom: 1px solid #f1f5f9;
         }
 
-        .bestseller-stepper-control {
+        .gift-boxes-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 1.5rem;
+        }
+
+        .gift-box-card {
+          background: #ffffff;
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(255, 145, 0, 0.15), 0 1px 5px rgba(15, 23, 42, 0.06);
+          border: 2px solid #ffb347;
+          display: flex;
+          flex-direction: column;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .gift-box-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 18px 40px rgba(255, 111, 0, 0.22), 0 0 0 2.5px #ffb703, 0 0 28px rgba(255, 183, 3, 0.2);
+          border-color: #ffb703;
+        }
+
+        .gift-card-media {
+          position: relative;
+          aspect-ratio: 1.15;
+          background: #ffffff;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.65rem;
+          border-bottom: 1px solid #fed7aa;
+        }
+
+        .gift-card-img {
+          max-width: 100%;
+          max-height: 100%;
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          transition: transform 0.4s ease;
+        }
+
+        .gift-box-card:hover .gift-card-img {
+          transform: scale(1.06);
+        }
+
+        .gift-discount-pill {
+          position: absolute;
+          top: 0.75rem;
+          left: 0.75rem;
+          background: #d90429;
+          color: #ffffff;
+          font-size: 0.75rem;
+          font-weight: 800;
+          padding: 0.25rem 0.6rem;
+          border-radius: var(--radius-full);
+          box-shadow: 0 2px 8px rgba(217, 4, 41, 0.35);
+        }
+
+        .gift-festive-tag {
+          position: absolute;
+          top: 0.75rem;
+          right: 0.75rem;
+          background: rgba(10, 19, 41, 0.85);
+          color: #ffd166;
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 0.25rem 0.6rem;
+          border-radius: var(--radius-full);
+          border: 1px solid rgba(255, 183, 3, 0.4);
+          backdrop-filter: blur(4px);
+        }
+
+        .gift-card-body {
+          padding: 1.25rem;
+          display: flex;
+          flex-direction: column;
+          flex-grow: 1;
+        }
+
+        .gift-code-tag {
+          font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #c2410c;
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          padding: 0.15rem 0.5rem;
+          border-radius: 4px;
+          width: fit-content;
+          margin-bottom: 0.5rem;
+        }
+
+        .gift-card-name {
+          margin-bottom: 0.35rem;
+        }
+
+        .gift-name-en {
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #0f172a;
+          display: block;
+          line-height: 1.25;
+        }
+
+        .gift-name-ta {
+          font-size: 0.85rem;
+          color: #ea580c;
+          font-family: 'Mukta Malar', 'Noto Sans Tamil', system-ui, sans-serif;
+          font-weight: 600;
+          display: block;
+          margin-top: 0.15rem;
+        }
+
+        .gift-pack-badge {
+          font-size: 0.75rem;
+          color: #ff6f00;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+
+        .gift-short-desc {
+          font-size: 0.78rem;
+          color: #64748b;
+          line-height: 1.45;
+          margin-bottom: 1rem;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          flex-grow: 1;
+        }
+
+        .gift-price-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background: #fff7ed;
-          border: 1.5px solid #ffb703;
-          border-radius: var(--radius-md);
-          padding: 0.35rem 0.65rem;
-          box-shadow: 0 2px 8px rgba(255, 111, 0, 0.15);
-          width: 100%;
-          box-sizing: border-box;
+          margin-top: auto;
+          padding-top: 0.75rem;
+          border-top: 1px dashed #e2e8f0;
+          gap: 0.5rem;
         }
 
-        .bestseller-stepper-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .bestseller-stepper-btn.minus {
-          background: #ffffff;
+        .gift-price-current {
+          font-size: 1.35rem;
+          font-weight: 900;
           color: #d90429;
-          border: 1px solid #fecaca;
+          font-family: var(--font-display);
+          line-height: 1;
         }
 
-        .bestseller-stepper-btn.plus {
-          background: #ff6f00;
-          color: #ffffff;
+        .gift-price-mrp {
+          font-size: 0.82rem;
+          color: #94a3b8;
+          text-decoration: line-through;
+          margin-top: 0.15rem;
         }
 
-        .bestseller-stepper-btn:hover {
-          transform: scale(1.08);
+        .gift-order-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.45rem 0.85rem;
+          font-size: 0.82rem;
+          border-radius: 8px;
+          flex-shrink: 0;
         }
 
-        .bestseller-stepper-val {
-          font-weight: 800;
-          font-size: 0.88rem;
-          color: #c2410c;
-        }
-
-        /* Why Choose Us Features */
+        /* 5. Features Grid */
         .features-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1056,7 +1426,7 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           line-height: 1.6;
         }
 
-        /* Promo Section */
+        /* 6. Promo Section */
         .promo-section {
           background: #fdfbf7;
         }
@@ -1119,12 +1489,27 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           height: 100%;
           min-height: 320px;
           background: #050a18;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
         }
 
         .promo-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          transition: transform 0.5s ease;
+        }
+
+        .promo-banner-card:hover .promo-img {
+          transform: scale(1.05);
+        }
+
+        @media (max-width: 1200px) {
+          .gift-boxes-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
         }
 
         @media (max-width: 992px) {
@@ -1137,41 +1522,31 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           .promo-content {
             padding: 2.5rem 1.5rem;
           }
-          .features-grid {
+          .categories-grid {
             grid-template-columns: repeat(2, 1fr);
+            gap: 1.25rem;
+          }
+          .category-card,
+          .category-card:nth-child(13),
+          .category-card:nth-child(14) {
+            grid-column: auto !important;
           }
         }
 
         @media (max-width: 768px) {
-          .hero-header-stack {
-            align-items: flex-start;
-            gap: 0.65rem;
-            margin-bottom: 1rem;
-          }
-          .hero-brand-block {
-            gap: 0.85rem;
-            padding: 0.5rem 1rem 0.5rem 0.5rem;
-            margin-bottom: 0;
-          }
-          .hero-brand-logo-frame {
-            width: 65px;
-            height: 65px;
-            border-radius: 12px;
-          }
-          .hero-brand-callout {
-            font-size: 1.25rem;
-            letter-spacing: 1px;
-          }
-          .hero-brand-subline {
-            font-size: 0.62rem;
-          }
           .hero-section {
-            padding: 3rem 0;
-            min-height: auto;
+            padding: 4.5rem 0 3.5rem;
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
           }
           .hero-main-title {
-            font-size: 2.1rem;
-            line-height: 1.2;
+            font-size: 2.15rem;
+            line-height: 1.18;
+          }
+          .hero-description {
+            font-size: 0.96rem;
+            margin-bottom: 1.5rem;
           }
           .section-title {
             font-size: 1.75rem;
@@ -1179,6 +1554,7 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
           .hero-cta-group {
             flex-direction: column;
             gap: 0.75rem;
+            width: 100%;
           }
           .hero-btn-primary, .hero-btn-secondary {
             width: 100%;
@@ -1188,36 +1564,67 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
             gap: 0.5rem;
           }
           .categories-grid {
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 1.25rem;
           }
-          .bestsellers-grid {
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 1.25rem;
+          .category-card,
+          .category-card:nth-child(13),
+          .category-card:nth-child(14) {
+            grid-column: auto !important;
+          }
+          .category-card:active {
+            transform: scale(0.985) !important;
+            box-shadow: 0 10px 24px rgba(255, 111, 0, 0.28), 0 0 0 2px #ff9100 !important;
+            border-color: #ff6f00 !important;
+          }
+          .category-card:active::before {
+            animation: cardReflectionSweep 0.75s ease-out forwards;
+          }
+          .gift-boxes-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+          }
+          .gift-card-body {
+            padding: 1rem;
+          }
+          .gift-name-en {
+            font-size: 0.95rem;
+          }
+          .bestseller-slide-card {
+            min-width: 235px;
+            max-width: 235px;
+            border: 2px solid #ffa040;
+          }
+          .features-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
           }
           .section-header-flex {
             flex-direction: column;
             align-items: flex-start;
             gap: 1rem;
           }
+          .slider-action-controls {
+            width: 100%;
+            justify-content: space-between;
+          }
         }
 
-        @media (max-width: 540px) {
+        @media (max-width: 520px) {
           .categories-grid {
             grid-template-columns: 1fr;
+            gap: 1.15rem;
           }
-          .bestsellers-grid {
+          .gift-boxes-grid {
             grid-template-columns: 1fr;
+            gap: 1.25rem;
           }
-          .features-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
+          .gift-card-media {
+            aspect-ratio: 1.2;
           }
-          .hero-main-title {
-            font-size: 1.85rem;
-          }
-          .hero-description {
-            font-size: 0.95rem;
+          .gift-price-row {
+            flex-direction: row;
+            align-items: center;
           }
         }
       `}</style>

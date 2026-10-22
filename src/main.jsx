@@ -14,8 +14,8 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
 
     // In-memory image pre-warming (loads images into browser RAM instantly)
     const criticalImages = [
-      '/images/sharp_crackers_logo_final.png',
-      '/images/hero_banner_1791567625102.jpg',
+      '/images/sharp_crackers_brand_logo.jpg',
+      '/images/sharp_celebration_hero_banner.jpg',
       '/images/product_sparkler_1791567639029.jpg',
       '/images/product_flowerpots.jpg',
       '/images/product_chakkars.jpg',

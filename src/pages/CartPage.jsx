@@ -10,6 +10,7 @@ import { useCart } from '../context/CartContext';
 import { dataService } from '../services/dataService';
 import { generateOrderPdf, printOrderDocument } from '../utils/pdfGenerator';
 import confetti from 'canvas-confetti';
+import CreativeActionButton from '../components/CreativeActionButton';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -68,7 +69,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     if (!cleanPhone) {
       errors.phone = 'Please enter your mobile number';
     } else if (!/^(\+?\d{1,4})?[6-9]\d{9}$/.test(cleanPhone) && !/^\+?\d{10,15}$/.test(cleanPhone)) {
-      errors.phone = 'Please enter a valid mobile number (e.g. 9842123456 or +91 9842123456)';
+      errors.phone = 'Please enter a valid mobile number (e.g. 9566886795 or +91 9566886795)';
     }
     if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim())) {
       errors.email = 'Please enter a valid email address';
@@ -163,13 +164,13 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
   // Forward Order Summary to WhatsApp
   const handleSendOrderToWhatsApp = () => {
     if (!submittedOrder) return;
-    const whatsappNumber = (settings.whatsapp || '919842123456').replace(/\D/g, '');
+    const whatsappNumber = (settings.whatsapp || '919566886795').replace(/\D/g, '');
     const itemsText = (submittedOrder.items || [])
       .map((it, idx) => `${idx + 1}. ${it.name} (${it.packDetails || '1 box'}) x ${it.quantity} = ₹${it.totalPrice}`)
       .join('\n');
 
     const text =
-      `💥 *NEW ORDER - SHARP CRACKERS SIVAKASI* 💥\n\n` +
+      `💥 *NEW ORDER - SHARP CRACKERS* 💥\n\n` +
       `📋 *Order ID:* #${submittedOrder.orderId}\n` +
       `👤 *Customer Name:* ${submittedOrder.customer.name}\n` +
       `📱 *Mobile:* ${submittedOrder.customer.phone}\n` +
@@ -246,33 +247,42 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
 
             {/* Optional Sample Receipt Print / PDF / WhatsApp for customer reference */}
             <div className="sample-receipt-actions">
-              <span className="sample-receipt-hint">Order Copy & Options</span>
-              <div className="d-flex gap-2 justify-content-center flex-wrap">
+              <span className="sample-receipt-hint">Download or Print Your Order Copy</span>
+              <div className="d-flex gap-2 justify-content-center flex-wrap align-items-center mt-2">
+                <CreativeActionButton
+                  variant="pdf"
+                  onClick={handleDownloadPdf}
+                  label="Download PDF"
+                  size="md"
+                />
+                <CreativeActionButton
+                  variant="print"
+                  onClick={handlePrintReceipt}
+                  label="Print Receipt"
+                  size="md"
+                />
                 <button 
+                  type="button"
                   onClick={handleSendOrderToWhatsApp} 
-                  className="btn btn-sm"
+                  className="btn btn-md"
                   style={{
-                    background: '#25D366',
+                    background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
                     color: '#ffffff',
                     fontWeight: 700,
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.4rem',
+                    gap: '0.45rem',
                     border: 'none',
-                    padding: '0.45rem 0.9rem',
-                    borderRadius: '6px'
+                    padding: '0.65rem 1.15rem',
+                    borderRadius: '9px',
+                    boxShadow: '0 4px 14px rgba(37, 211, 102, 0.35)',
+                    cursor: 'pointer',
+                    fontSize: '0.94rem',
+                    minHeight: '48px'
                   }}
                 >
-                  <MessageSquare size={15} />
-                  <span>Send to WhatsApp</span>
-                </button>
-                <button onClick={handlePrintReceipt} className="btn btn-outline-dark btn-sm">
-                  <Printer size={15} />
-                  <span>Print Receipt</span>
-                </button>
-                <button onClick={handleDownloadPdf} className="btn btn-outline-dark btn-sm">
-                  <FileText size={15} />
-                  <span>PDF</span>
+                  <MessageSquare size={17} />
+                  <span>WhatsApp</span>
                 </button>
               </div>
             </div>
@@ -684,24 +694,13 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
               {/* Order Calculations Bar */}
               <div className="cart-calculation-block">
                 <div className="calc-row">
-                  <span>Total Ordered Products:</span>
-                  <strong>{totalSelectedProducts} Varieties ({totalQuantity} Boxes)</strong>
+                  <span>Total Varieties:</span>
+                  <strong>{totalSelectedProducts} Products</strong>
                 </div>
                 <div className="calc-row">
-                  <span>Cart Subtotal:</span>
-                  <strong>{formatCur(cartSubtotal)}</strong>
+                  <span>Total Units:</span>
+                  <strong>{totalQuantity} Boxes / Pkts</strong>
                 </div>
-                <div className="calc-row">
-                  <span>Delivery Charges:</span>
-                  <strong className={deliveryCharge > 0 ? "text-orange" : "text-green font-bold"}>
-                    {deliveryCharge > 0 ? formatCur(deliveryCharge) : "FREE"}
-                  </strong>
-                </div>
-                {deliveryCharge > 0 && settings.freeDeliveryThreshold && (
-                  <div className="calc-sub-hint text-muted" style={{ fontSize: '0.8rem', textAlign: 'right' }}>
-                    Add {formatCur(Math.max(0, settings.freeDeliveryThreshold - cartSubtotal))} more for Free Delivery!
-                  </div>
-                )}
                 <div className="calc-row grand-total-row">
                   <span>Total Order Amount:</span>
                   <span className="grand-price">{formatCur(cartGrandTotal)}</span>
@@ -782,21 +781,16 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                 {/* Order Confirmation Summary */}
                 <div className="final-confirmation-summary">
                   <div className="confirm-row">
-                    <span>Subtotal:</span>
-                    <span>{formatCur(cartSubtotal)}</span>
+                    <span>Total Varieties:</span>
+                    <strong>{totalSelectedProducts} Products</strong>
                   </div>
                   <div className="confirm-row">
-                    <span>Delivery:</span>
-                    <span className={deliveryCharge > 0 ? "text-orange" : "text-green font-bold"}>
-                      {deliveryCharge > 0 ? formatCur(deliveryCharge) : "FREE"}
-                    </span>
+                    <span>Total Units:</span>
+                    <strong>{totalQuantity} Boxes / Pkts</strong>
                   </div>
                   <div className="confirm-row grand-total">
                     <span>Total Amount:</span>
                     <strong className="confirm-price">{formatCur(cartGrandTotal)}</strong>
-                  </div>
-                  <div className="confirm-items-line">
-                    Includes {totalSelectedProducts} selected items ({totalQuantity} total units).
                   </div>
                 </div>
 
@@ -811,9 +805,9 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                     <span>{isSubmitting ? 'Submitting Order...' : 'Submit Order'}</span>
                   </button>
 
-                  <div className="draft-actions-dual">
-                    <button 
-                      type="button" 
+                  <div className="cart-dual-doc-buttons mt-3">
+                    <CreativeActionButton 
+                      variant="pdf" 
                       onClick={() => {
                         const tempOrder = {
                           orderId: 'ESTIMATE-DRAFT',
@@ -827,14 +821,12 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                         };
                         generateOrderPdf(tempOrder, settings, true);
                       }}
-                      className="btn btn-outline-dark draft-btn"
-                    >
-                      <FileText size={16} />
-                      <span>Download PDF</span>
-                    </button>
+                      label="Download PDF"
+                      size="md"
+                    />
 
-                    <button 
-                      type="button" 
+                    <CreativeActionButton 
+                      variant="print" 
                       onClick={() => {
                         const tempOrder = {
                           orderId: 'ESTIMATE-DRAFT',
@@ -848,11 +840,9 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                         };
                         printOrderDocument(tempOrder, settings);
                       }}
-                      className="btn btn-outline-dark draft-btn"
-                    >
-                      <Printer size={16} />
-                      <span>Print Order</span>
-                    </button>
+                      label="Print Order"
+                      size="md"
+                    />
                   </div>
                 </div>
               </form>
@@ -997,9 +987,10 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           width: 44px;
           height: 44px;
           border-radius: var(--radius-sm);
-          object-fit: cover;
-          background: #0a1329;
+          object-fit: contain;
+          background: #ffffff;
           border: 1px solid #cbd5e1;
+          padding: 2px;
         }
 
         .cart-prod-code {
@@ -1196,15 +1187,11 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           box-shadow: 0 4px 15px rgba(255, 111, 0, 0.35);
         }
 
-        .draft-actions-dual {
+        .cart-dual-doc-buttons {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 0.75rem;
-        }
-
-        .draft-btn {
-          padding: 0.7rem;
-          font-size: 0.88rem;
+          gap: 0.65rem;
+          width: 100%;
         }
 
         /* Desktop vs Mobile Cart Visibility */
@@ -1282,9 +1269,10 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
             width: 68px;
             height: 68px;
             border-radius: 8px;
-            object-fit: cover;
-            background: #0a1329;
+            object-fit: contain;
+            background: #ffffff;
             border: 1px solid #cbd5e1;
+            padding: 3px;
             flex-shrink: 0;
           }
 

@@ -17,7 +17,8 @@ import {
   Clock,
   Star,
   MapPin,
-  Flame
+  Flame,
+  Truck
 } from 'lucide-react';
 
 export const AboutUsPage = ({ setCurrentPage }) => {
@@ -37,7 +38,9 @@ export const AboutUsPage = ({ setCurrentPage }) => {
     <div className="about-page-wrapper">
       {/* 1. Hero Banner */}
       <section className="about-hero">
-        <div className="about-container text-center">
+        <div className="about-hero-backdrop" />
+        <div className="about-hero-overlay" />
+        <div className="about-container text-center about-hero-content">
           <div className="about-pill">
             <Sparkles size={14} className="text-gold" />
             <span>HERITAGE OF SIVAKASI • TRADITION OF EXCELLENCE</span>
@@ -127,23 +130,43 @@ export const AboutUsPage = ({ setCurrentPage }) => {
               </div>
             </div>
 
-            {/* Visual Showcase Right */}
+            {/* Visual Showcase Right - Official Company Profile & Brand Logo */}
             <div className="story-visual-col">
               <div className="story-visual-card">
-                <div className="visual-media-wrapper">
-                  <img 
-                    src="/images/product_flowerpots.jpg" 
-                    alt="Sivakasi Flower Pots Fireworks" 
-                    className="story-visual-img"
-                  />
+                <div className="visual-media-wrapper brand-showcase-media">
+                  <div className="brand-logo-spotlight">
+                    <img 
+                      src={settings.logoUrl || "/images/sharp_crackers_brand_logo.jpg"} 
+                      alt="SHARP CRACKERS Official Brand Logo" 
+                      className="story-brand-logo-img"
+                      onError={(e) => { e.currentTarget.src = '/images/sharp_crackers_brand_logo.jpg'; }}
+                    />
+                  </div>
                   <div className="visual-floating-badge">
-                    <Star size={16} fill="#ffb703" color="#ffb703" />
-                    <span>Verified Sivakasi Quality</span>
+                    <Award size={16} className="text-gold" />
+                    <span>Official Sivakasi Brand</span>
                   </div>
                 </div>
                 <div className="visual-caption-bar">
-                  <div className="caption-title">Traditional Flower Pots & Fountains</div>
-                  <div className="caption-sub">Dense golden sparks, brilliant illumination, and child-safe festive delight.</div>
+                  <div className="caption-title">SHARP CRACKERS</div>
+                  <div className="caption-tagline">Direct Sivakasi Fireworks Showroom & Wholesale Depot</div>
+                  <div className="caption-sub">
+                    Direct factory fireworks enterprise originating from Sivakasi, Tamil Nadu. Committed to 100% legal green crackers, uncompromised safety standards, and factory-direct savings across Tamil Nadu & Pan-India.
+                  </div>
+                  <div className="caption-trust-pills">
+                    <span className="caption-trust-pill">
+                      <ShieldCheck size={14} className="text-emerald" />
+                      <span>100% Green Certified</span>
+                    </span>
+                    <span className="caption-trust-pill">
+                      <Award size={14} className="text-gold" />
+                      <span>Factory Direct Prices</span>
+                    </span>
+                    <span className="caption-trust-pill">
+                      <Truck size={14} className="text-orange" />
+                      <span>Safe Pan-India Transport</span>
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -153,8 +176,8 @@ export const AboutUsPage = ({ setCurrentPage }) => {
                   <MapPin size={22} className="text-orange" />
                 </div>
                 <div className="qc-details">
-                  <div className="qc-title">Located at Sivakasi, Tamil Nadu</div>
-                  <div className="qc-desc">{settings.address || "145/2, By-Pass Road, Sivakasi - 626123"}</div>
+                  <div className="qc-title">Located at Coimbatore, Tamil Nadu</div>
+                  <div className="qc-desc">{settings.address || "89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021"}</div>
                 </div>
               </div>
             </div>
@@ -282,7 +305,9 @@ export const AboutUsPage = ({ setCurrentPage }) => {
       <section className="about-cta-section text-center">
         <div className="about-container">
           <div className="cta-content-wrap">
-            <div className="cta-festive-icon">🎆</div>
+            <div className="cta-festive-icon">
+              <Sparkles size={36} className="text-gold" />
+            </div>
             <h2 className="cta-heading text-white">Experience the Magic of Sivakasi Fireworks</h2>
             <p className="cta-sub text-muted-light">
               Prepare for your Diwali, wedding, or temple festival celebration with ease. Browse our live products catalog today.
@@ -319,11 +344,38 @@ export const AboutUsPage = ({ setCurrentPage }) => {
 
         /* Hero */
         .about-hero {
-          background: linear-gradient(135deg, #050a18 0%, #0a1329 50%, #15254d 100%);
-          color: #ffffff;
-          padding: 5rem 0 4.5rem;
-          border-bottom: 3px solid #ff6f00;
           position: relative;
+          color: #ffffff;
+          padding: 5.5rem 0 5rem;
+          border-bottom: 3px solid #ff6f00;
+          overflow: hidden;
+        }
+
+        .about-hero-backdrop {
+          position: absolute;
+          inset: 0;
+          background-image: url('/images/about_hero_bg.jpg?v=3');
+          background-size: cover;
+          background-position: center center;
+          background-repeat: no-repeat;
+          z-index: 1;
+        }
+
+        .about-hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            135deg,
+            rgba(5, 10, 24, 0.90) 0%,
+            rgba(10, 19, 41, 0.82) 50%,
+            rgba(21, 37, 77, 0.78) 100%
+          );
+          z-index: 2;
+        }
+
+        .about-hero-content {
+          position: relative;
+          z-index: 3;
         }
 
         .about-hero::after {
@@ -336,6 +388,7 @@ export const AboutUsPage = ({ setCurrentPage }) => {
           height: 3px;
           background: #ffb703;
           box-shadow: 0 0 15px #ffb703;
+          z-index: 4;
         }
 
         .about-pill {
@@ -529,22 +582,52 @@ export const AboutUsPage = ({ setCurrentPage }) => {
           border: 1px solid #e2e8f0;
         }
 
-        .visual-media-wrapper {
+        .brand-showcase-media {
           position: relative;
-          height: 380px;
-          background: #0a1329;
+          min-height: 340px;
+          background: radial-gradient(circle at center, #112044 0%, #0a1329 65%, #050a18 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2.5rem 1.5rem;
           overflow: hidden;
+          border-bottom: 2px solid rgba(255, 183, 3, 0.25);
         }
 
-        .story-visual-img {
+        .brand-showcase-media::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 50% 50%, rgba(255, 183, 3, 0.2) 0%, transparent 70%);
+          pointer-events: none;
+        }
+
+        .brand-logo-spotlight {
+          position: relative;
+          width: 190px;
+          height: 190px;
+          border-radius: 50%;
+          background: #ffffff;
+          padding: 8px;
+          box-shadow: 0 0 35px rgba(255, 183, 3, 0.45), 0 12px 30px rgba(0, 0, 0, 0.4);
+          border: 3.5px solid #ffb703;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+        }
+
+        .story-visual-card:hover .brand-logo-spotlight {
+          transform: scale(1.06);
+          box-shadow: 0 0 50px rgba(255, 183, 3, 0.65), 0 16px 36px rgba(0, 0, 0, 0.45);
+        }
+
+        .story-brand-logo-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.5s ease;
-        }
-
-        .story-visual-card:hover .story-visual-img {
-          transform: scale(1.04);
+          border-radius: 50%;
         }
 
         .visual-floating-badge {
@@ -563,25 +646,59 @@ export const AboutUsPage = ({ setCurrentPage }) => {
           gap: 0.45rem;
           backdrop-filter: blur(8px);
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+          z-index: 3;
         }
 
         .visual-caption-bar {
-          padding: 1.5rem;
+          padding: 1.75rem;
           background: #ffffff;
           border-top: 1px solid #f1f5f9;
         }
 
         .caption-title {
-          font-size: 1.15rem;
-          font-weight: 800;
+          font-size: 1.35rem;
+          font-weight: 900;
           color: #0f172a;
-          margin-bottom: 0.35rem;
+          margin-bottom: 0.25rem;
+          letter-spacing: -0.2px;
+        }
+
+        .caption-tagline {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #ff6f00;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          margin-bottom: 0.75rem;
         }
 
         .caption-sub {
-          font-size: 0.88rem;
+          font-size: 0.9rem;
           color: #64748b;
-          line-height: 1.5;
+          line-height: 1.6;
+        }
+
+        .caption-trust-pills {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          flex-wrap: wrap;
+          margin-top: 1.15rem;
+          padding-top: 1rem;
+          border-top: 1px dashed #e2e8f0;
+        }
+
+        .caption-trust-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 0.76rem;
+          font-weight: 700;
+          color: #1e293b;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          padding: 0.32rem 0.7rem;
+          border-radius: var(--radius-full);
         }
 
         .story-quick-contact {
@@ -859,6 +976,21 @@ export const AboutUsPage = ({ setCurrentPage }) => {
         @media (max-width: 640px) {
           .about-hero {
             padding: 3.5rem 0 3rem;
+          }
+          .brand-showcase-media {
+            min-height: 250px;
+            padding: 1.5rem 1rem;
+          }
+          .brand-logo-spotlight {
+            width: 145px;
+            height: 145px;
+            padding: 6px;
+          }
+          .caption-title {
+            font-size: 1.18rem;
+          }
+          .visual-caption-bar {
+            padding: 1.25rem;
           }
           .pillars-grid {
             grid-template-columns: 1fr;
