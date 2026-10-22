@@ -4,7 +4,7 @@
 // Delivers sub-millisecond instant visual rendering from device CacheStorage
 // ============================================================================
 
-const CACHE_NAME = 'sharp-crackers-v9-instant';
+const CACHE_NAME = 'sharp-crackers-v10-audit-release';
 
 const CORE_ASSETS = [
   '/',

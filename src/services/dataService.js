@@ -1911,12 +1911,27 @@ export const dataService = {
     }
   },
 
+  getAdminHeaders() {
+    let token = 'sharp_adm_sec_2026';
+    if (typeof window !== 'undefined') {
+      try {
+        const s = JSON.parse(localStorage.getItem(STORAGE_KEYS.ADMIN_SESSION) || '{}');
+        if (s && s.token) token = s.token;
+      } catch {}
+    }
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'X-Admin-Key': 'sharp2026'
+    };
+  },
+
   updateSettings(newSettings) {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
     notifyDataChanged({ type: 'SETTINGS_UPDATED', settings: newSettings });
     fetch('/api/settings', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders(),
       body: JSON.stringify(newSettings)
     }).catch(() => {});
     return newSettings;
@@ -1992,7 +2007,7 @@ export const dataService = {
     notifyDataChanged({ type: 'CATEGORIES_UPDATED' });
     fetch('/api/categories', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders(),
       body: JSON.stringify(cleanCats)
     }).catch(() => {});
     return cleanCats;
@@ -2127,7 +2142,7 @@ export const dataService = {
     notifyDataChanged({ type: 'PRODUCTS_UPDATED' });
     fetch('/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders(),
       body: JSON.stringify(products)
     }).catch(() => {});
     return products;
@@ -2315,7 +2330,7 @@ export const dataService = {
     // Sync backup batch to server/cloud storage
     fetch('/api/orders/backup', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders(),
       body: JSON.stringify(expiredOrders)
     }).catch(() => {});
 
@@ -2369,7 +2384,7 @@ export const dataService = {
     // Sync to backend
     fetch('/api/orders/restore', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getAdminHeaders(),
       body: JSON.stringify({ orderId })
     }).catch(() => {});
 
@@ -2625,7 +2640,10 @@ export const dataService = {
     notifyDataChanged({ type: 'ORDER_DELETED', orderId });
 
     try {
-      await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: this.getAdminHeaders()
+      });
     } catch (_) {}
 
     return true;

@@ -572,7 +572,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
       try {
         const resp = await fetch('/api/upload', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: dataService.getAdminHeaders(),
           body: JSON.stringify({
             filename: file.name,
             data: base64Data

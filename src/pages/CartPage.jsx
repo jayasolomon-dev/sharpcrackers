@@ -62,6 +62,11 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
 
   const formatCur = (num) => `₹${Number(num || 0).toLocaleString('en-IN')}`;
 
+  // Enforce Minimum Wholesale Order Value from Settings
+  const minOrderAmount = Number(settings?.minOrderAmount || 1500);
+  const isBelowMinOrder = cartGrandTotal > 0 && cartGrandTotal < minOrderAmount;
+  const amountNeeded = Math.max(0, minOrderAmount - cartGrandTotal);
+
   const validateForm = () => {
     const errors = {};
     if (!customer.name.trim()) {
@@ -90,6 +95,10 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     if (!validateForm()) return;
     if (cartItems.length === 0) {
       alert("Your order sheet is empty. Please select products before submitting.");
+      return;
+    }
+    if (isBelowMinOrder) {
+      alert(`Minimum Sivakasi wholesale order amount is ₹${minOrderAmount.toLocaleString('en-IN')}. Please add items worth ₹${amountNeeded.toLocaleString('en-IN')} more to confirm your order.`);
       return;
     }
 
@@ -187,7 +196,14 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
       `📍 _Direct Order from Sharp Crackers Website_`;
 
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank') || (window.location.href = url);
+    try {
+      const opened = window.open(url, '_blank');
+      if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+        window.location.href = url;
+      }
+    } catch {
+      window.location.href = url;
+    }
   };
 
   // -------------------------------------------------------------
@@ -821,14 +837,39 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   </div>
                 </div>
 
+                {/* Minimum Order Warning Banner */}
+                {isBelowMinOrder && (
+                  <div className="min-order-alert-banner">
+                    <AlertCircle size={22} className="min-order-alert-icon" />
+                    <div>
+                      <div className="min-order-alert-title">Minimum Order Requirement: {formatCur(minOrderAmount)}</div>
+                      <div className="min-order-alert-desc">
+                        Please add crackers worth <strong>{formatCur(amountNeeded)}</strong> more to place your Sivakasi wholesale order.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Submit Order Button */}
                 <div className="two-action-buttons">
                   <button 
                     type="submit" 
                     className="btn btn-primary btn-block submit-order-btn"
-                    disabled={isSubmitting || hasOutOfStockItems}
-                    style={hasOutOfStockItems ? { opacity: 0.75, cursor: 'not-allowed', background: '#dc2626' } : {}}
-                    title={hasOutOfStockItems ? "Please remove out of stock items first" : "Submit Order"}
+                    disabled={isSubmitting || hasOutOfStockItems || isBelowMinOrder}
+                    style={
+                      hasOutOfStockItems 
+                        ? { opacity: 0.75, cursor: 'not-allowed', background: '#dc2626' } 
+                        : isBelowMinOrder
+                          ? { opacity: 0.8, cursor: 'not-allowed', background: 'linear-gradient(135deg, #d97706, #b45309)' }
+                          : {}
+                    }
+                    title={
+                      hasOutOfStockItems 
+                        ? "Please remove out of stock items first" 
+                        : isBelowMinOrder 
+                          ? `Minimum wholesale order value is ${formatCur(minOrderAmount)}`
+                          : "Submit Order"
+                    }
                   >
                     <Send size={18} />
                     <span>
@@ -836,7 +877,9 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                         ? 'Submitting Order...' 
                         : hasOutOfStockItems 
                           ? 'Remove Out of Stock Items to Submit' 
-                          : 'Submit Order'}
+                          : isBelowMinOrder
+                            ? `Min Order ${formatCur(minOrderAmount)} Required`
+                            : 'Submit Order'}
                     </span>
                   </button>
 
@@ -1214,6 +1257,45 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           flex-direction: column;
           gap: 0.85rem;
           margin-top: 0.5rem;
+        }
+
+        .min-order-alert-banner {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.85rem;
+          background: #fffbeb;
+          border: 1.5px solid #fde68a;
+          color: #92400e;
+          padding: 0.9rem 1.1rem;
+          border-radius: var(--radius-md);
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+          box-shadow: 0 2px 8px rgba(217, 119, 6, 0.08);
+          animation: fadeInMinOrder 0.3s ease;
+        }
+
+        @keyframes fadeInMinOrder {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .min-order-alert-icon {
+          color: #d97706;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .min-order-alert-title {
+          font-weight: 700;
+          color: #b45309;
+          font-size: 0.92rem;
+          margin-bottom: 0.2rem;
+        }
+
+        .min-order-alert-desc {
+          color: #78350f;
+          font-size: 0.84rem;
+          line-height: 1.45;
         }
 
         .submit-order-btn {
