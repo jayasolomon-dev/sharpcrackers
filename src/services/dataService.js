@@ -2117,12 +2117,25 @@ export const dataService = {
       if (res.ok) {
         const remote = await res.json();
         if (Array.isArray(remote) && remote.length > 0) {
-          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(remote));
-          notifyDataChanged({ type: 'PRODUCTS_UPDATED' });
+          const localStr = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.PRODUCTS) : null;
+          const remoteStr = JSON.stringify(remote);
+          if (localStr !== remoteStr) {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(STORAGE_KEYS.PRODUCTS, remoteStr);
+            }
+            notifyDataChanged({ type: 'PRODUCTS_UPDATED' });
+          }
           return remote;
+        } else if (remote === null) {
+          // Auto-seed Cloudflare D1 database with default catalog on first boot
+          const local = this.getProducts();
+          this.saveProducts(local);
+          return local;
         }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn("fetchProducts error:", err);
+    }
     return this.getProducts();
   },
 
@@ -2132,12 +2145,26 @@ export const dataService = {
       if (res.ok) {
         const remote = await res.json();
         if (Array.isArray(remote) && remote.length > 0) {
-          localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(remote));
-          notifyDataChanged({ type: 'CATEGORIES_UPDATED' });
-          return remote;
+          const cleanRemote = remote.filter(c => c && c.id !== 'all');
+          const localStr = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.CATEGORIES) : null;
+          const remoteStr = JSON.stringify(cleanRemote);
+          if (localStr !== remoteStr) {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(STORAGE_KEYS.CATEGORIES, remoteStr);
+            }
+            notifyDataChanged({ type: 'CATEGORIES_UPDATED' });
+          }
+          return cleanRemote;
+        } else if (remote === null) {
+          // Auto-seed Cloudflare D1 database with clean default categories on first boot
+          const local = this.getCategories();
+          this.saveCategories(local);
+          return local;
         }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn("fetchCategories error:", err);
+    }
     return this.getCategories();
   },
 

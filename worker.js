@@ -450,6 +450,65 @@ async function handleApiRequest(request, env, url) {
     }
 
     // -------------------------------------------------------------
+    // /api/products (GET all, POST update catalog in Cloudflare D1)
+    // -------------------------------------------------------------
+    if (pathname === '/api/products') {
+      if (method === 'GET') {
+        const row = await env.DB.prepare("SELECT value_json FROM settings WHERE key = 'products'").first();
+        if (row && row.value_json) {
+          try {
+            return jsonResponse(JSON.parse(row.value_json));
+          } catch {}
+        }
+        return jsonResponse(null);
+      }
+
+      if (method === 'POST') {
+        const products = await request.json();
+        if (!Array.isArray(products)) {
+          return jsonResponse({ error: 'Expected an array of products' }, 400);
+        }
+        const updatedAt = new Date().toISOString();
+        await env.DB.prepare(`
+          INSERT INTO settings (key, value_json, updated_at) VALUES ('products', ?, ?)
+          ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at
+        `).bind(JSON.stringify(products), updatedAt).run();
+
+        return jsonResponse({ success: true, count: products.length, updatedAt });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // /api/categories (GET all, POST update categories in Cloudflare D1)
+    // -------------------------------------------------------------
+    if (pathname === '/api/categories') {
+      if (method === 'GET') {
+        const row = await env.DB.prepare("SELECT value_json FROM settings WHERE key = 'categories'").first();
+        if (row && row.value_json) {
+          try {
+            return jsonResponse(JSON.parse(row.value_json));
+          } catch {}
+        }
+        return jsonResponse(null);
+      }
+
+      if (method === 'POST') {
+        const categories = await request.json();
+        if (!Array.isArray(categories)) {
+          return jsonResponse({ error: 'Expected an array of categories' }, 400);
+        }
+        const cleanCats = categories.filter(c => c && c.id !== 'all');
+        const updatedAt = new Date().toISOString();
+        await env.DB.prepare(`
+          INSERT INTO settings (key, value_json, updated_at) VALUES ('categories', ?, ?)
+          ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at
+        `).bind(JSON.stringify(cleanCats), updatedAt).run();
+
+        return jsonResponse({ success: true, count: cleanCats.length, updatedAt });
+      }
+    }
+
+    // -------------------------------------------------------------
     // /api/settings (GET, POST)
     // -------------------------------------------------------------
     if (pathname === '/api/settings') {

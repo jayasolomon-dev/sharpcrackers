@@ -24,15 +24,40 @@ export const CartProvider = ({ children }) => {
   const [products, setProducts] = useState(() => dataService.getProducts());
   const [settings, setSettings] = useState(() => dataService.getSettings());
 
-  // Listen to product/setting updates
+  // Listen to product/setting updates & trigger multi-device real-time sync with Cloudflare D1
   useEffect(() => {
     const handleDataChange = () => {
       setProducts(dataService.getProducts());
       setSettings(dataService.getSettings());
     };
     window.addEventListener('sharp_data_changed', handleDataChange);
+
+    // Initial remote fetch on page load from Cloudflare D1
+    dataService.fetchProducts();
+    dataService.fetchCategories();
+    dataService.fetchSettings();
+
+    // Cross-device live sync: poll Cloudflare D1 every 4 seconds
+    const interval = setInterval(() => {
+      dataService.fetchProducts();
+      dataService.fetchCategories();
+    }, 4000);
+
+    // Tab focus / screen unlock sync
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        dataService.fetchProducts();
+        dataService.fetchCategories();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+
     return () => {
       window.removeEventListener('sharp_data_changed', handleDataChange);
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
     };
   }, []);
 

@@ -248,8 +248,15 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
   };
 
   useEffect(() => {
+    // Initial fetch from Cloudflare D1
+    dataService.fetchProducts();
+    dataService.fetchCategories();
+    refreshOrders();
+
     const pollInterval = setInterval(() => {
       refreshOrders();
+      dataService.fetchProducts();
+      dataService.fetchCategories();
     }, 4000);
 
     const unsubscribe = dataService.subscribe((event) => {
