@@ -494,13 +494,13 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
         <div className="container text-center">
           <div className="empty-cart-card card">
             <div className="empty-icon-wrap">
-              <ShoppingCart size={48} className="text-orange" />
+              <ShoppingCart size={44} className="text-orange" />
             </div>
             <h2>Your Order Sheet is Empty</h2>
             <p>You haven't selected any fireworks yet. Head over to our products catalog to select sparklers, pots, spinners, and gift boxes.</p>
             <button 
               onClick={handleReturnToProducts} 
-              className="btn btn-primary btn-lg mt-3"
+              className="btn btn-primary btn-lg empty-explore-btn"
             >
               <span>Explore Products & Price List</span>
               <Sparkles size={18} />
@@ -510,37 +510,99 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
 
         <style>{`
           .empty-cart-page {
-            padding: 5rem 0;
+            padding: 4rem 1rem;
             min-height: 70vh;
             display: flex;
             align-items: center;
+            justify-content: center;
           }
           .empty-cart-card {
-            max-width: 550px;
+            max-width: 540px;
+            width: 100%;
             margin: 0 auto;
-            padding: 3.5rem 2rem;
+            padding: 3.5rem 2.25rem;
             display: flex;
             flex-direction: column;
             align-items: center;
+            text-align: center;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
           }
           .empty-icon-wrap {
-            width: 80px;
-            height: 80px;
+            width: 84px;
+            height: 84px;
             border-radius: 50%;
             background: #fff7ed;
+            border: 2px solid #ffedd5;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 16px rgba(255, 111, 0, 0.12);
           }
           .empty-cart-card h2 {
-            font-size: 1.8rem;
-            margin-bottom: 0.75rem;
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 0.85rem;
+            text-align: center;
+            letter-spacing: -0.02em;
           }
           .empty-cart-card p {
             color: #64748b;
             font-size: 0.95rem;
-            line-height: 1.6;
+            line-height: 1.65;
+            text-align: center;
+            max-width: 440px;
+            margin: 0 auto 2.25rem auto;
+          }
+          .empty-explore-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            padding: 0.95rem 2.25rem;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ff6f00 0%, #ea580c 100%);
+            box-shadow: 0 4px 18px rgba(234, 88, 12, 0.35);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            border: none;
+            cursor: pointer;
+          }
+          .empty-explore-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(234, 88, 12, 0.45);
+          }
+          .empty-explore-btn:active {
+            transform: scale(0.98);
+          }
+          @media (max-width: 640px) {
+            .empty-cart-page {
+              padding: 2.5rem 1rem;
+            }
+            .empty-cart-card {
+              padding: 2.5rem 1.5rem;
+              border-radius: 20px;
+            }
+            .empty-cart-card h2 {
+              font-size: 1.5rem;
+              margin-bottom: 0.75rem;
+            }
+            .empty-cart-card p {
+              font-size: 0.9rem;
+              line-height: 1.55;
+              margin-bottom: 1.85rem;
+            }
+            .empty-explore-btn {
+              width: 100%;
+              max-width: 320px;
+              padding: 0.85rem 1.5rem;
+              font-size: 0.95rem;
+            }
           }
         `}</style>
       </div>
