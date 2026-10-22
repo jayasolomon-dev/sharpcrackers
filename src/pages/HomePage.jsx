@@ -1478,23 +1478,27 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
 
         .promo-visual {
           height: 100%;
-          min-height: 320px;
-          background: #050a18;
+          min-height: 380px;
+          background: radial-gradient(circle at center, #1e293b 0%, #0a1329 100%);
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
+          padding: 1.25rem;
         }
 
         .promo-img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
-          transition: transform 0.5s ease;
+          max-height: 480px;
+          object-fit: contain;
+          border-radius: var(--radius-md);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+          transition: transform 0.4s ease;
         }
 
         .promo-banner-card:hover .promo-img {
-          transform: scale(1.05);
+          transform: scale(1.03);
         }
 
         @media (max-width: 1200px) {

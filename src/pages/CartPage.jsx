@@ -5,7 +5,7 @@
 // automatic return to Products List, sample receipt printing & instant admin sync
 // ==========================================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { dataService } from '../services/dataService';
 import { generateOrderPdf, printOrderDocument } from '../utils/pdfGenerator';
@@ -55,6 +55,12 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     notes: ''
   });
 
+  // Refs for seamless Enter-key keyboard navigation between fields
+  const nameInputRef = useRef(null);
+  const phoneInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const notesInputRef = useRef(null);
+
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState(null);
@@ -67,20 +73,59 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
   const isBelowMinOrder = cartGrandTotal > 0 && cartGrandTotal < minOrderAmount;
   const amountNeeded = Math.max(0, minOrderAmount - cartGrandTotal);
 
+  // Input Sanitizers & Handlers
+  const handleNameChange = (e) => {
+    // Restrict strictly to alphabetic characters and spaces only
+    const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+    setCustomer(prev => ({ ...prev, name: lettersOnly }));
+    if (formErrors.name) {
+      setFormErrors(prev => ({ ...prev, name: '' }));
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    // Restrict strictly to digits only, maximum 10 digits
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setCustomer(prev => ({ ...prev, phone: digitsOnly }));
+    if (formErrors.phone) {
+      setFormErrors(prev => ({ ...prev, phone: '' }));
+    }
+  };
+
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setCustomer(prev => ({ ...prev, email: val }));
+    if (formErrors.email) {
+      setFormErrors(prev => ({ ...prev, email: '' }));
+    }
+  };
+
   const validateForm = () => {
     const errors = {};
-    if (!customer.name.trim()) {
-      errors.name = 'Please enter your name';
+    const cleanName = customer.name.trim();
+    if (!cleanName) {
+      errors.name = 'Please enter your name (letters only)';
+    } else if (!/^[a-zA-Z\s]{2,50}$/.test(cleanName)) {
+      errors.name = 'Name should contain only letters and spaces (min 2 characters)';
     }
-    const cleanPhone = customer.phone.replace(/[\s-]/g, '');
+
+    const cleanPhone = customer.phone.replace(/\D/g, '');
     if (!cleanPhone) {
-      errors.phone = 'Please enter your mobile number';
-    } else if (!/^(\+?\d{1,4})?[6-9]\d{9}$/.test(cleanPhone) && !/^\+?\d{10,15}$/.test(cleanPhone)) {
-      errors.phone = 'Please enter a valid mobile number (e.g. 9566886795 or +91 9566886795)';
+      errors.phone = 'Please enter your 10-digit mobile number';
+    } else if (cleanPhone.length !== 10) {
+      errors.phone = `Mobile number must be exactly 10 digits (${cleanPhone.length}/10 entered)`;
+    } else if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      errors.phone = 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9';
     }
-    if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim())) {
-      errors.email = 'Please enter a valid email address';
+
+    const cleanEmail = customer.email ? customer.email.trim() : '';
+    if (cleanEmail) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(cleanEmail)) {
+        errors.email = 'Please enter a valid email address (e.g. name@example.com)';
+      }
     }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -833,26 +878,49 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                     Your Name <span className="req">*</span>
                   </label>
                   <input
+                    ref={nameInputRef}
                     type="text"
-                    placeholder="Enter your full name"
+                    placeholder="Enter your full name (letters only)"
                     value={customer.name}
-                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                    onChange={handleNameChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        phoneInputRef.current?.focus();
+                      }
+                    }}
                     className={`form-input ${formErrors.name ? 'error' : ''}`}
+                    autoComplete="name"
                   />
                   {formErrors.name && <span className="error-text">{formErrors.name}</span>}
                 </div>
 
                 {/* Mobile Number */}
                 <div className="form-group">
-                  <label className="form-label">
-                    Mobile Number <span className="req">*</span>
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="form-label" style={{ marginBottom: 0 }}>
+                      Mobile Number <span className="req">*</span>
+                    </label>
+                    <span style={{ fontSize: '0.75rem', color: customer.phone.length === 10 ? '#10b981' : '#94a3b8', fontWeight: 600 }}>
+                      {customer.phone.length}/10 digits
+                    </span>
+                  </div>
                   <input
+                    ref={phoneInputRef}
                     type="tel"
-                    placeholder="10-digit mobile number (or +91...)"
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="10-digit mobile number (e.g. 9876543210)"
                     value={customer.phone}
-                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value.replace(/[^\d+\s-]/g, '').slice(0, 16) })}
+                    onChange={handlePhoneChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        emailInputRef.current?.focus();
+                      }
+                    }}
                     className={`form-input ${formErrors.phone ? 'error' : ''}`}
+                    autoComplete="tel"
                   />
                   {formErrors.phone && <span className="error-text">{formErrors.phone}</span>}
                 </div>
@@ -861,11 +929,19 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                 <div className="form-group">
                   <label className="form-label">Email Address (Optional)</label>
                   <input
+                    ref={emailInputRef}
                     type="email"
                     placeholder="e.g. name@example.com (optional)"
                     value={customer.email}
-                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+                    onChange={handleEmailChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        notesInputRef.current?.focus();
+                      }
+                    }}
                     className={`form-input ${formErrors.email ? 'error' : ''}`}
+                    autoComplete="email"
                   />
                   {formErrors.email && <span className="error-text">{formErrors.email}</span>}
                 </div>
@@ -874,6 +950,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                 <div className="form-group">
                   <label className="form-label">Special Notes / Message (Optional)</label>
                   <textarea
+                    ref={notesInputRef}
                     rows="2"
                     placeholder="Any specific requests or preferred contact time..."
                     value={customer.notes}
