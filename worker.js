@@ -361,22 +361,30 @@ async function handleApiRequest(request, env, url) {
         await env.DB.prepare('DELETE FROM orders WHERE order_id = ?').bind(delId).run();
       }
 
-      // 2. Fetch all current orders from D1 (excluding expired and deleted)
-      const currentOrdersRes = await env.DB.prepare('SELECT order_id, data_json FROM orders').all();
+      // 2. Fetch all current orders from D1 (strictly sequential format SC-YYYY-0001...)
+      const currentOrdersRes = await env.DB.prepare("SELECT order_id, data_json FROM orders WHERE order_id LIKE 'SC-____-____'").all();
       const ordersMap = new Map();
       (currentOrdersRes.results || []).forEach(row => {
         try {
           const parsed = JSON.parse(row.data_json);
-          if (parsed && parsed.orderId && !allDeletedSet.has(parsed.orderId) && !isOrderExpired(parsed)) {
+          if (parsed && parsed.orderId && !allDeletedSet.has(parsed.orderId) && !isOrderExpired(parsed) && /^SC-\d{4}-\d{4}$/.test(parsed.orderId)) {
             ordersMap.set(parsed.orderId, parsed);
           }
         } catch {}
       });
 
-      // 3. Reconcile with incoming client orders (strictly within 30-day retention)
+      // 3. Reconcile with incoming client orders (strictly within 30-day retention and continuous sequential format)
       const toInsertOrUpdate = [];
       for (const co of clientOrders) {
         if (!co || !co.orderId || allDeletedSet.has(co.orderId) || isOrderExpired(co)) continue;
+
+        // Reject and purge any legacy random order IDs
+        if (String(co.orderId).length > 12 || !/^SC-\d{4}-\d{4}$/.test(co.orderId)) {
+          allDeletedSet.add(co.orderId);
+          await env.DB.prepare('DELETE FROM orders WHERE order_id = ?').bind(co.orderId).run().catch(() => {});
+          continue;
+        }
+
         const existing = ordersMap.get(co.orderId);
         if (!existing) {
           ordersMap.set(co.orderId, co);
@@ -450,10 +458,10 @@ async function handleApiRequest(request, env, url) {
         // Auto-purge expired orders before returning
         await purgeExpiredD1Orders(env);
 
-        const result = await env.DB.prepare('SELECT data_json FROM orders ORDER BY created_at DESC LIMIT 1000').all();
+        const result = await env.DB.prepare("SELECT data_json FROM orders WHERE order_id LIKE 'SC-____-____' ORDER BY created_at DESC LIMIT 1000").all();
         const orders = (result.results || []).map(row => {
           try { return JSON.parse(row.data_json); } catch { return null; }
-        }).filter(Boolean);
+        }).filter(o => o && o.orderId && /^SC-\d{4}-\d{4}$/.test(o.orderId));
         return jsonResponse(pruneExpiredOrders(orders));
       }
 
