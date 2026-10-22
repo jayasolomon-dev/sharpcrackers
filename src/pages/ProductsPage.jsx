@@ -1270,15 +1270,20 @@ export const ProductsPage = ({
           align-items: start;
         }
 
-        /* Category Sidebar */
+        /* Category Sidebar (Desktop View) */
         .category-sidebar {
           background: #ffffff;
           border-radius: var(--radius-lg);
           border: 1px solid #e2e8f0;
-          padding: 1.25rem;
+          padding: 1.25rem 1rem 1.15rem 1.25rem;
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
           position: sticky;
-          top: 90px;
+          top: 85px;
+          max-height: calc(100vh - 105px);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          z-index: 20;
         }
 
         .sidebar-header {
@@ -1288,6 +1293,7 @@ export const ProductsPage = ({
           padding-bottom: 0.85rem;
           margin-bottom: 0.75rem;
           border-bottom: 2px solid #f1f5f9;
+          flex-shrink: 0;
         }
 
         .sidebar-title-group {
@@ -1325,6 +1331,34 @@ export const ProductsPage = ({
           display: flex;
           flex-direction: column;
           gap: 0.4rem;
+          flex: 1 1 auto;
+          overflow-y: auto;
+          overflow-x: hidden;
+          overscroll-behavior: contain;
+          padding-right: 6px;
+          margin-right: -2px;
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 #f8fafc;
+        }
+
+        /* Custom Elegant Scroller for Desktop Categories */
+        .category-list-wrapper::-webkit-scrollbar {
+          width: 5px;
+        }
+
+        .category-list-wrapper::-webkit-scrollbar-track {
+          background: #f8fafc;
+          border-radius: 99px;
+        }
+
+        .category-list-wrapper::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 99px;
+          transition: background 0.2s ease;
+        }
+
+        .category-list-wrapper::-webkit-scrollbar-thumb:hover {
+          background: #ea580c;
         }
 
         .category-item-btn {
@@ -1341,6 +1375,7 @@ export const ProductsPage = ({
           background: transparent;
           border: 1px solid transparent;
           transition: all 0.2s ease;
+          flex-shrink: 0;
         }
 
         .category-item-btn:hover {
@@ -1407,15 +1442,16 @@ export const ProductsPage = ({
         }
 
         .sidebar-info-box {
-          margin-top: 1.5rem;
+          margin-top: 0.85rem;
           background: #0a1329;
           color: #f8fafc;
           border-radius: var(--radius-md);
-          padding: 0.9rem;
-          font-size: 0.8rem;
+          padding: 0.8rem 0.85rem;
+          font-size: 0.78rem;
           display: flex;
           gap: 0.65rem;
-          line-height: 1.5;
+          line-height: 1.45;
+          flex-shrink: 0;
         }
 
         /* Filter Toolbar */
