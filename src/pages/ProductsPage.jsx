@@ -100,6 +100,24 @@ export const ProductsPage = ({
   const handleCategorySelect = (catId) => {
     setActiveCategory(catId);
     if (setSelectedCategory) setSelectedCategory(catId);
+
+    // Smoothly scroll to the top of the products catalog,
+    // completely preventing the viewport from collapsing and dumping the user in the footer!
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const targetElement = isMobile 
+      ? (document.querySelector('.mobile-categories-section') || document.querySelector('.catalog-workspace'))
+      : (document.querySelector('.filter-toolbar') || document.querySelector('.catalog-workspace'));
+    
+    if (targetElement) {
+      const navOffset = isMobile ? 65 : 85;
+      const targetTop = targetElement.getBoundingClientRect().top + window.pageYOffset - navOffset;
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth'
+      });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // Filter and sort products
@@ -1299,6 +1317,11 @@ export const ProductsPage = ({
         /* Workspace Grid */
         .catalog-workspace {
           margin-top: 2rem;
+          min-height: 80vh;
+        }
+
+        .catalog-main-area {
+          min-height: 75vh;
         }
 
         .catalog-grid-layout {
