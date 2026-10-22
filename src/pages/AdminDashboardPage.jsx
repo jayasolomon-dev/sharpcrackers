@@ -325,13 +325,19 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
   // KPI Overview
   const kpiStats = useMemo(() => {
     let pendingOrdersCount = 0;
+    let processingOrdersCount = 0;
     let completedOrdersCount = 0;
+    let cancelledOrdersCount = 0;
     let totalRevenue = 0;
 
     orders.forEach(order => {
-      if (order.status === 'Pending') pendingOrdersCount++;
-      if (order.status === 'Completed') completedOrdersCount++;
-      if (order.status !== 'Cancelled') {
+      const st = (order.status || '').toLowerCase();
+      if (st === 'pending') pendingOrdersCount++;
+      else if (st === 'processing') processingOrdersCount++;
+      else if (st === 'completed') completedOrdersCount++;
+      else if (st === 'cancelled') cancelledOrdersCount++;
+
+      if (st !== 'cancelled') {
         totalRevenue += Number(order.grandTotal) || 0;
       }
     });
@@ -339,7 +345,9 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
     return {
       totalOrdersCount: orders.length,
       pendingOrdersCount,
+      processingOrdersCount,
       completedOrdersCount,
+      cancelledOrdersCount,
       totalRevenue,
       totalProductsCount: products.length,
       totalCategoriesCount: categories.length
@@ -350,9 +358,10 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
   const orderStatusOptions = useMemo(() => [
     { value: 'all', label: `All Orders (${orders.length})` },
     { value: 'Pending', label: `Pending (${kpiStats.pendingOrdersCount})` },
+    { value: 'Processing', label: `Processing (${kpiStats.processingOrdersCount})` },
     { value: 'Completed', label: `Completed (${kpiStats.completedOrdersCount})` },
-    { value: 'Cancelled', label: 'Cancelled' }
-  ], [orders.length, kpiStats.pendingOrdersCount, kpiStats.completedOrdersCount]);
+    { value: 'Cancelled', label: `Cancelled (${kpiStats.cancelledOrdersCount})` }
+  ], [orders.length, kpiStats.pendingOrdersCount, kpiStats.processingOrdersCount, kpiStats.completedOrdersCount, kpiStats.cancelledOrdersCount]);
 
   const categoryOptions = useMemo(() => {
     const list = [
@@ -373,7 +382,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
   // Filtered Orders
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
-      if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) {
+      if (orderStatusFilter !== 'all' && (order.status || '').toLowerCase() !== orderStatusFilter.toLowerCase()) {
         return false;
       }
       if (orderSearch.trim()) {
@@ -388,19 +397,27 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
   }, [orders, orderStatusFilter, orderSearch]);
 
   const handleUpdateStatus = async (orderId, newStatus) => {
+    // Instant optimistic state update
+    setOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, status: newStatus } : o));
     await dataService.updateOrderStatus(orderId, newStatus);
     if (selectedOrder && selectedOrder.orderId === orderId) {
       setSelectedOrder(prev => ({ ...prev, status: newStatus }));
     }
+    setToastMessage({ type: 'success', text: `Order #${orderId} marked as ${newStatus}.` });
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const confirmCancelOrder = async () => {
     if (!orderToCancel) return;
-    await dataService.updateOrderStatus(orderToCancel.orderId, 'Cancelled');
-    if (selectedOrder && selectedOrder.orderId === orderToCancel.orderId) {
+    const cancelId = orderToCancel.orderId;
+    setOrders(prev => prev.map(o => o.orderId === cancelId ? { ...o, status: 'Cancelled' } : o));
+    await dataService.updateOrderStatus(cancelId, 'Cancelled');
+    if (selectedOrder && selectedOrder.orderId === cancelId) {
       setSelectedOrder(prev => ({ ...prev, status: 'Cancelled' }));
     }
     setOrderToCancel(null);
+    setToastMessage({ type: 'warning', text: `Order #${cancelId} has been cancelled.` });
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const confirmDeleteOrder = async () => {
@@ -749,7 +766,11 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
       <section className="kpi-section no-print">
         <div className="container-wide">
           <div className="kpi-grid">
-            <div className="kpi-card card">
+            <div 
+              className={`kpi-card card clickable-kpi ${orderStatusFilter === 'all' && activeTab === 'orders' ? 'kpi-active' : ''}`}
+              onClick={() => { setActiveTab('orders'); setOrderStatusFilter('all'); }}
+              title="Click to view all orders"
+            >
               <div className="kpi-icon-box bg-blue-subtle">
                 <FileText size={22} className="text-blue" />
               </div>
@@ -759,7 +780,11 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               </div>
             </div>
 
-            <div className="kpi-card card">
+            <div 
+              className={`kpi-card card clickable-kpi ${orderStatusFilter === 'Pending' && activeTab === 'orders' ? 'kpi-active' : ''}`}
+              onClick={() => { setActiveTab('orders'); setOrderStatusFilter('Pending'); }}
+              title="Click to filter by Pending orders"
+            >
               <div className="kpi-icon-box bg-amber-subtle">
                 <Clock size={22} className="text-amber" />
               </div>
@@ -769,7 +794,25 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               </div>
             </div>
 
-            <div className="kpi-card card">
+            <div 
+              className={`kpi-card card clickable-kpi ${orderStatusFilter === 'Processing' && activeTab === 'orders' ? 'kpi-active' : ''}`}
+              onClick={() => { setActiveTab('orders'); setOrderStatusFilter('Processing'); }}
+              title="Click to filter by Processing orders"
+            >
+              <div className="kpi-icon-box bg-blue-subtle" style={{ background: '#eff6ff' }}>
+                <RefreshCw size={22} style={{ color: '#2563eb' }} />
+              </div>
+              <div className="kpi-data">
+                <span className="kpi-title">Processing</span>
+                <span className="kpi-value text-blue" style={{ color: '#2563eb' }}>{kpiStats.processingOrdersCount}</span>
+              </div>
+            </div>
+
+            <div 
+              className={`kpi-card card clickable-kpi ${orderStatusFilter === 'Completed' && activeTab === 'orders' ? 'kpi-active' : ''}`}
+              onClick={() => { setActiveTab('orders'); setOrderStatusFilter('Completed'); }}
+              title="Click to filter by Completed orders"
+            >
               <div className="kpi-icon-box bg-emerald-subtle">
                 <CheckCircle size={22} className="text-emerald" />
               </div>
@@ -880,6 +923,23 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               </div>
             </div>
 
+            {/* Active status filter indicator pill */}
+            {orderStatusFilter !== 'all' && (
+              <div className="active-filter-indicator-bar">
+                <span className="active-filter-badge">
+                  Filtered by: <strong>{orderStatusFilter}</strong> ({filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'})
+                  <button 
+                    type="button" 
+                    onClick={() => setOrderStatusFilter('all')} 
+                    className="clear-filter-inline-btn"
+                    title="Clear filter and view all orders"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              </div>
+            )}
+
             {/* Orders Table */}
             <div className="table-container card">
               {filteredOrders.length === 0 ? (
@@ -904,9 +964,13 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                   {/* Content Header */}
                   {orderSearch || orderStatusFilter !== 'all' ? (
                     <>
-                      <h3 className="empty-state-title">No Orders Match Your Filter</h3>
+                      <h3 className="empty-state-title">
+                        {orderStatusFilter !== 'all' ? `No ${orderStatusFilter} Orders Found` : 'No Orders Match Your Filter'}
+                      </h3>
                       <p className="empty-state-desc">
-                        No customer orders found matching your search query or status filter. Try clearing your filters to view all orders.
+                        {orderStatusFilter === 'Processing'
+                          ? 'There are currently no orders under Processing status. You can update any pending order to Processing using the status selector.'
+                          : 'No customer orders found matching your search query or status filter. Try clearing your filters to view all orders.'}
                       </p>
                       <button 
                         onClick={() => {
@@ -1050,6 +1114,26 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                             </td>
                             <td className="col-actions text-center">
                               <div className="order-actions-cell">
+                                {order.status === 'Pending' && (
+                                  <button 
+                                    onClick={() => handleUpdateStatus(order.orderId, 'Processing')} 
+                                    className="action-icon-btn-sm text-blue"
+                                    title="Quick Action: Move to Processing"
+                                    style={{ color: '#2563eb' }}
+                                  >
+                                    <RefreshCw size={14} />
+                                  </button>
+                                )}
+                                {order.status === 'Processing' && (
+                                  <button 
+                                    onClick={() => handleUpdateStatus(order.orderId, 'Completed')} 
+                                    className="action-icon-btn-sm text-emerald"
+                                    title="Quick Action: Mark as Completed"
+                                    style={{ color: '#059669' }}
+                                  >
+                                    <CheckCircle size={14} />
+                                  </button>
+                                )}
                                 <button 
                                   onClick={() => setSelectedOrder(order)} 
                                   className="action-icon-btn-sm text-blue"
@@ -2214,6 +2298,31 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                     </select>
                   </div>
                 </div>
+
+                <div className="quick-status-actions-row">
+                  {selectedOrder.status !== 'Processing' && selectedOrder.status !== 'Cancelled' && (
+                    <button 
+                      type="button"
+                      className="btn-quick-status-action btn-action-processing"
+                      onClick={() => handleUpdateStatus(selectedOrder.orderId, 'Processing')}
+                      title="Set status to Processing"
+                    >
+                      <RefreshCw size={12} />
+                      <span>Move to Processing</span>
+                    </button>
+                  )}
+                  {selectedOrder.status !== 'Completed' && selectedOrder.status !== 'Cancelled' && (
+                    <button 
+                      type="button"
+                      className="btn-quick-status-action btn-action-completed"
+                      onClick={() => handleUpdateStatus(selectedOrder.orderId, 'Completed')}
+                      title="Set status to Completed"
+                    >
+                      <CheckCircle size={12} />
+                      <span>Mark Completed</span>
+                    </button>
+                  )}
+                </div>
                 <div className="detail-info-row align-center mt-2">
                   <span className="detail-info-label">Total Amount:</span>
                   <span className="order-total-amount">
@@ -2613,6 +2722,21 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
         .kpi-card:hover {
           transform: translateY(-4px);
           box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .kpi-card.clickable-kpi {
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .kpi-card.clickable-kpi:hover {
+          border-color: #f97316;
+        }
+
+        .kpi-card.clickable-kpi.kpi-active {
+          border-color: #ea580c !important;
+          box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.22), 0 8px 20px rgba(0, 0, 0, 0.08);
+          background: #fffaf5;
         }
 
         .kpi-icon-box {
@@ -3418,6 +3542,97 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           background: #fee2e2;
           border-color: #ef4444;
           color: #ef4444;
+        }
+
+        /* Active Filter Indicator Pill */
+        .active-filter-indicator-bar {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+        }
+
+        .active-filter-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.4rem 0.85rem;
+          background: #f8fafc;
+          border: 1.5px solid #cbd5e1;
+          border-radius: 9999px;
+          font-size: 0.82rem;
+          color: #334155;
+          font-weight: 500;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        }
+
+        .active-filter-badge strong {
+          color: #0f172a;
+          font-weight: 700;
+        }
+
+        .clear-filter-inline-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #e2e8f0;
+          border: none;
+          cursor: pointer;
+          color: #475569;
+          padding: 0;
+          transition: all 0.15s ease;
+        }
+
+        .clear-filter-inline-btn:hover {
+          background: #ef4444;
+          color: #ffffff;
+        }
+
+        /* Quick Status Actions */
+        .quick-status-actions-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .btn-quick-status-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.35rem 0.75rem;
+          font-size: 0.78rem;
+          font-weight: 700;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          border: 1px solid transparent;
+        }
+
+        .btn-action-processing {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+        }
+
+        .btn-action-processing:hover {
+          background: #dbeafe;
+          transform: translateY(-1px);
+        }
+
+        .btn-action-completed {
+          background: #ecfdf5;
+          color: #047857;
+          border-color: #a7f3d0;
+        }
+
+        .btn-action-completed:hover {
+          background: #d1fae5;
+          transform: translateY(-1px);
         }
 
         /* CATEGORIES GRID VIEW */
