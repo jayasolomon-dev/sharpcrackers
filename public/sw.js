@@ -11,7 +11,6 @@ const CORE_ASSETS = [
   '/index.html',
   '/images/home_hero_bg.jpg',
   '/images/sharp_celebration_hero_banner.jpg',
-  '/images/hero_banner_1791567625102.jpg',
   '/images/product_chakkars.jpg',
   '/images/product_flowerpots.jpg',
   '/images/product_fountain_1791567652291.jpg',

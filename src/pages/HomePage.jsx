@@ -169,12 +169,12 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
               Popular Cracker Collections
             </h2>
             <p className="section-desc">
-              Browse our diverse collection of {categories.length} genuine Sivakasi firecracker categories designed for festive safety, vivid illumination, and joyous festivities.
+              Browse our diverse collection of {categories.filter(c => c.id !== 'all').length} genuine Sivakasi firecracker categories designed for festive safety, vivid illumination, and joyous festivities.
             </p>
           </div>
 
           <div className="categories-grid">
-            {categories.filter(c => c.active !== false).map((cat, idx) => {
+            {categories.filter(c => c.id !== 'all' && c.active !== false).map((cat, idx) => {
               const count = products.filter(p => p.category === cat.id).length;
               return (
                 <div

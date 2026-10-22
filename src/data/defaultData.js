@@ -19,7 +19,7 @@ export const DEFAULT_SETTINGS = {
   freeDeliveryThreshold: 5000,
   promoBannerText: "💥 DIWALI 2026 SPECIAL OFFER: Flat Direct Sourcing with Heavy Savings! Order online now for guaranteed express delivery! 🎆",
   logoUrl: "/images/sharp_crackers_logo_final.png",
-  heroBannerUrl: "/images/hero_banner_1791567625102.jpg"
+  heroBannerUrl: "/images/home_hero_bg.jpg"
 };
 
 // Permanent 3-Digit Continuous Serial Numbers across all categories (001 -> 027)
@@ -99,7 +99,6 @@ export const CATEGORY_TAMIL_NAMES = {
 
 // Default Categories
 export const DEFAULT_CATEGORIES = [
-  { id: "all", name: "All Products", ta: "அனைத்து ரகங்கள்", icon: "✨", image: "/images/hero_banner_1791567625102.jpg", active: true },
   { id: "sparklers", name: "Sparklers", ta: "கம்பி மத்தாப்பு", icon: "🪄", image: "/images/product_sparkler_1791567639029.jpg", active: true },
   { id: "flower-pots", name: "Flower Pots", ta: "பூந்தொட்டி", icon: "🪴", image: "/images/product_flowerpots.jpg", active: true },
   { id: "ground-chakkars", name: "Ground Chakkars", ta: "தரை சக்கரம்", icon: "🌀", image: "/images/product_chakkars.jpg", active: true },

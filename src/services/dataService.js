@@ -281,7 +281,6 @@ export const CATEGORY_TAMIL_NAMES = {
 
 // Default Categories
 const DEFAULT_CATEGORIES = [
-  { id: "all", name: "All Products", ta: "அனைத்து ரகங்கள்", icon: "", image: "/images/hero_banner_1791567625102.jpg", active: true },
   { id: "sparklers", name: "Sparklers", ta: "கம்பி மத்தாப்பு", icon: "", image: "/images/products/sparkler_10cm_colour.png", active: true },
   { id: "flower-pots", name: "Flower Pots", ta: "பூந்தொட்டி", icon: "", image: "/images/products/flowerpot_ashoka.jpg", active: true },
   { id: "ground-chakkars", name: "Ground Chakkars", ta: "தரை சக்கரம்", icon: "", image: "/images/products/ground_chakkars_special.jpg", active: true },
@@ -1939,7 +1938,9 @@ export const dataService = {
       return categories;
     }
 
-    let needsSave = !data;
+    // Strip out any redundant 'all' category card
+    let needsSave = !data || categories.some(c => c && c.id === 'all');
+    categories = categories.filter(c => c && c.id !== 'all');
     const defaultCatMap = {};
     DEFAULT_CATEGORIES.forEach(dc => { defaultCatMap[dc.id] = dc; });
 
@@ -1962,16 +1963,17 @@ export const dataService = {
   },
 
   saveCategories(categories) {
+    const cleanCats = (categories || []).filter(c => c && c.id !== 'all');
     if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(cleanCats));
     }
     notifyDataChanged({ type: 'CATEGORIES_UPDATED' });
     fetch('/api/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(categories)
+      body: JSON.stringify(cleanCats)
     }).catch(() => {});
-    return categories;
+    return cleanCats;
   },
 
   addCategory(category) {

@@ -1216,7 +1216,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
             {catalogSubTab === 'categories' && (
               <div className="categories-admin-section">
                 <div className="categories-admin-grid">
-                  {categories.map((cat) => {
+                  {categories.filter(cat => cat && cat.id !== 'all').map((cat) => {
                     const count = products.filter(p => p.category === cat.id).length;
                     return (
                       <div key={cat.id} className="category-admin-card card">
@@ -1347,7 +1347,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                       onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
                       className="form-input select-styled"
                     >
-                      {categories.map(c => (
+                      {categories.filter(c => c && c.id !== 'all').map(c => (
                         <option key={c.id} value={c.id}>
                           {c.name} {c.ta ? `(${c.ta})` : ''}
                         </option>
@@ -1667,7 +1667,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                       onChange={(e) => setNewProductForm({ ...newProductForm, category: e.target.value })}
                       className="form-input select-styled"
                     >
-                      {categories.map(c => (
+                      {categories.filter(c => c && c.id !== 'all').map(c => (
                         <option key={c.id} value={c.id}>
                           {c.name} {c.ta ? `(${c.ta})` : ''}
                         </option>
