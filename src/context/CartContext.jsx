@@ -112,7 +112,11 @@ export const CartProvider = ({ children }) => {
   };
 
   const setItemQuantity = (productId, rawValue) => {
-    const val = parseInt(rawValue, 10);
+    let sanitized = rawValue;
+    if (typeof rawValue === 'string') {
+      sanitized = rawValue.replace(/\D/g, '').replace(/^0+/, '');
+    }
+    const val = parseInt(sanitized, 10);
     const next = isNaN(val) ? 0 : Math.max(0, val);
 
     // If trying to set positive quantity on out-of-stock product, prevent it!

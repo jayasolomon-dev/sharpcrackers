@@ -561,12 +561,18 @@ export const ProductsPage = ({
                                   </button>
 
                                   <input
-                                    type="number"
-                                    min="0"
-                                    max="999"
-                                    value={qty}
-                                    onChange={(e) => setItemQuantity(product.id, e.target.value)}
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    placeholder="0"
+                                    value={qty === 0 ? '' : qty}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                      const clean = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
+                                      setItemQuantity(product.id, clean);
+                                    }}
                                     className={`table-qty-input ${qty > 0 ? 'active-input' : ''}`}
+                                    aria-label="Quantity"
                                   />
 
                                   <button
@@ -728,11 +734,16 @@ export const ProductsPage = ({
                                   <Minus size={15} />
                                 </button>
                                 <input
-                                  type="number"
-                                  min="0"
-                                  max="999"
-                                  value={qty}
-                                  onChange={(e) => setItemQuantity(product.id, e.target.value)}
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  placeholder="0"
+                                  value={qty === 0 ? '' : qty}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => {
+                                    const clean = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
+                                    setItemQuantity(product.id, clean);
+                                  }}
                                   className="mobile-stepper-input"
                                   aria-label="Quantity"
                                 />
@@ -1806,7 +1817,8 @@ export const ProductsPage = ({
         }
 
         .table-qty-input {
-          width: 44px;
+          width: 48px;
+          min-width: 44px;
           height: 32px;
           border: none;
           text-align: center;
@@ -1814,7 +1826,13 @@ export const ProductsPage = ({
           font-size: 0.95rem;
           color: #0f172a;
           background: transparent;
-          -moz-appearance: textfield;
+          outline: none;
+        }
+
+        .table-qty-input::placeholder {
+          color: #94a3b8;
+          font-weight: 600;
+          opacity: 0.8;
         }
 
         .table-qty-input::-webkit-outer-spin-button,
@@ -2785,7 +2803,8 @@ export const ProductsPage = ({
           }
 
           .mobile-stepper-input {
-            width: 42px;
+            width: 46px;
+            min-width: 42px;
             height: 38px;
             border: none;
             text-align: center;
@@ -2793,7 +2812,13 @@ export const ProductsPage = ({
             font-size: 1rem;
             color: #d90429;
             background: transparent;
-            -moz-appearance: textfield;
+            outline: none;
+          }
+
+          .mobile-stepper-input::placeholder {
+            color: #94a3b8;
+            font-weight: 600;
+            opacity: 0.8;
           }
 
           .mobile-stepper-input::-webkit-outer-spin-button,
