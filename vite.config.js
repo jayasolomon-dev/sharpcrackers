@@ -350,6 +350,20 @@ function apiDevPlugin() {
           return
         }
 
+        if (pathname.startsWith('/api/orders/') && req.method === 'GET') {
+          const orderId = pathname.replace('/api/orders/', '')
+          const orders = readJsonFile(ORDERS_FILE, [])
+          const found = orders.find(o => o.orderId === orderId)
+          if (found) {
+            res.statusCode = 200
+            res.end(JSON.stringify(found))
+          } else {
+            res.statusCode = 404
+            res.end(JSON.stringify({ error: 'Order not found' }))
+          }
+          return
+        }
+
         if (pathname.startsWith('/api/orders/') && req.method === 'PUT') {
           const orderId = pathname.replace('/api/orders/', '')
           try {

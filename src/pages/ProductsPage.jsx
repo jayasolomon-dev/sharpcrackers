@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { dataService, PRODUCT_TAMIL_NAMES, CATEGORY_TAMIL_NAMES } from '../services/dataService';
 import CreativeActionButton from '../components/CreativeActionButton';
+import { LiveOrderTrackerModal } from '../components/LiveOrderTrackerModal';
 import { 
   Search, 
   Filter, 
@@ -28,7 +29,10 @@ import {
   Phone,
   Package,
   Tag,
-  ChevronDown
+  ChevronDown,
+  RefreshCw,
+  XCircle,
+  CheckCircle
 } from 'lucide-react';
 
 export { PRODUCT_TAMIL_NAMES, CATEGORY_TAMIL_NAMES };
@@ -63,6 +67,7 @@ export const ProductsPage = ({
   const [previewProduct, setPreviewProduct] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSampleReceipt, setShowSampleReceipt] = useState(false);
+  const [showLiveTrackerModal, setShowLiveTrackerModal] = useState(false);
 
   // Sync with prop if changed from Navbar/Home
   useEffect(() => {
@@ -198,21 +203,50 @@ export const ProductsPage = ({
       {lastOrderPlaced && (
         <section className="order-notification-banner-wrapper">
           <div className="container">
-            <div className="order-notification-card">
+            <div className={`order-notification-card card-status-${(lastOrderPlaced.status || 'pending').toLowerCase()}`}>
               <div className="order-notification-content">
-                <div className="order-bell-icon">
-                  <Check size={24} />
+                <div className={`order-bell-icon status-icon-${(lastOrderPlaced.status || 'pending').toLowerCase()}`}>
+                  {lastOrderPlaced.status === 'Processing' ? (
+                    <RefreshCw size={22} className="spin-icon-slow" />
+                  ) : lastOrderPlaced.status === 'Completed' ? (
+                    <CheckCircle size={22} />
+                  ) : lastOrderPlaced.status === 'Cancelled' ? (
+                    <XCircle size={22} />
+                  ) : (
+                    <Clock size={22} />
+                  )}
                 </div>
                 <div className="order-notification-text">
-                  <div className="order-tag">
-                    <Sparkles size={13} />
-                    <span>ORDER RECEIVED AT SIVAKASI FACTORY DESK</span>
+                  <div className="order-tag-row">
+                    <div className="order-tag">
+                      <Sparkles size={13} />
+                      <span>DIRECT FACTORY BOOKING</span>
+                    </div>
+
+                    {/* LIVE STATUS BADGE */}
+                    <div className={`banner-live-status-pill status-${(lastOrderPlaced.status || 'pending').toLowerCase()}`}>
+                      <span className="live-radar-dot"></span>
+                      <span>Live Status: <strong>{lastOrderPlaced.status || 'Pending'}</strong></span>
+                    </div>
                   </div>
+
                   <h2 className="order-notification-heading">
-                    Thank you for ordering, {lastOrderPlaced.customer?.name}!
+                    {lastOrderPlaced.status === 'Processing' ? (
+                      `Order #${lastOrderPlaced.orderId} is Now Packing at Sivakasi Godown!`
+                    ) : lastOrderPlaced.status === 'Completed' ? (
+                      `Order #${lastOrderPlaced.orderId} is Packed & Ready / Dispatched!`
+                    ) : (
+                      `Thank you for ordering, ${lastOrderPlaced.customer?.name}!`
+                    )}
                   </h2>
                   <p className="order-notification-desc">
-                    We will reach you within <strong>24 hours</strong> (5 – 24 hours) at <strong>{lastOrderPlaced.customer?.phone}</strong> to confirm your Sivakasi order booking.
+                    {lastOrderPlaced.status === 'Processing' ? (
+                      <span>Our Sivakasi factory staff has confirmed your order and is packing your cracker boxes right now with safety standards.</span>
+                    ) : lastOrderPlaced.status === 'Completed' ? (
+                      <span>Your order has been fully verified, packed, and dispatched / handed over to transport. Thank you for choosing Sharp Crackers!</span>
+                    ) : (
+                      <span>We will reach you within <strong>24 hours</strong> (5 – 24 hours) at <strong>{lastOrderPlaced.customer?.phone}</strong> to confirm your Sivakasi order booking.</span>
+                    )}
                   </p>
                   <div className="order-notification-meta">
                     <span className="meta-pill">Order ID: <strong>#{lastOrderPlaced.orderId}</strong></span>
@@ -224,8 +258,16 @@ export const ProductsPage = ({
 
               <div className="order-notification-actions">
                 <button 
+                  onClick={() => setShowLiveTrackerModal(true)} 
+                  className="btn btn-primary btn-sm tracker-cta-btn"
+                  title="Track Live Status"
+                >
+                  <Package size={15} />
+                  <span>Track Live Status</span>
+                </button>
+                <button 
                   onClick={() => setShowSampleReceipt(true)} 
-                  className="btn btn-gold btn-sm"
+                  className="btn btn-outline-dark btn-sm"
                   title="View sample reference receipt"
                 >
                   <FileText size={15} />
@@ -1076,7 +1118,61 @@ export const ProductsPage = ({
         </div>
       )}
 
+      {/* Customer Live Order Status Tracker Modal */}
+      <LiveOrderTrackerModal 
+        isOpen={showLiveTrackerModal} 
+        onClose={() => setShowLiveTrackerModal(false)} 
+        initialOrder={lastOrderPlaced} 
+      />
+
       <style>{`
+        .order-tag-row {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          flex-wrap: wrap;
+          margin-bottom: 0.5rem;
+        }
+
+        .banner-live-status-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.2rem 0.65rem;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+        }
+
+        .banner-live-status-pill.status-pending {
+          background: rgba(245, 158, 11, 0.18);
+          color: #fde68a;
+          border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .banner-live-status-pill.status-processing {
+          background: rgba(59, 130, 246, 0.22);
+          color: #bfdbfe;
+          border: 1px solid rgba(59, 130, 246, 0.45);
+        }
+
+        .banner-live-status-pill.status-completed {
+          background: rgba(16, 185, 129, 0.22);
+          color: #a7f3d0;
+          border: 1px solid rgba(16, 185, 129, 0.45);
+        }
+
+        .banner-live-status-pill.status-cancelled {
+          background: rgba(239, 68, 68, 0.22);
+          color: #fecaca;
+          border: 1px solid rgba(239, 68, 68, 0.45);
+        }
+
+        .tracker-cta-btn {
+          box-shadow: 0 4px 14px rgba(255, 111, 0, 0.4);
+        }
+
         .order-notification-banner-wrapper {
           background: #0f172a;
           padding: 1rem 0;

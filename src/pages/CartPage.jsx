@@ -11,6 +11,7 @@ import { dataService } from '../services/dataService';
 import { generateOrderPdf, printOrderDocument } from '../utils/pdfGenerator';
 import confetti from 'canvas-confetti';
 import CreativeActionButton from '../components/CreativeActionButton';
+import { LiveOrderTrackerModal } from '../components/LiveOrderTrackerModal';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -252,283 +253,22 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
   };
 
   // -------------------------------------------------------------
-  // SUCCESS NOTIFICATION POPUP (MODAL)
+  // SUCCESS NOTIFICATION & LIVE ORDER STATUS TRACKER
   // -------------------------------------------------------------
   if (submittedOrder) {
-    const totalOrderQty = (submittedOrder.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
-
     return (
-      <div className="order-submitted-overlay">
-        <div className="order-submitted-modal card">
-          <div className="submitted-icon-wrap">
-            <CheckCircle size={56} className="text-emerald" />
-          </div>
-
-          <div className="badge badge-green mb-2">
-            <Sparkles size={14} />
-            <span>ORDER RECEIVED AT SIVAKASI FACTORY DESK</span>
-          </div>
-
-          <h1 className="submitted-main-title">Thank You For Ordering!</h1>
-          
-          <div className="reach-highlight-box">
-            <Clock size={22} className="text-orange" />
-            <span>We will reach you within <strong>24 hours</strong> (5 – 24 hours) at <strong>{submittedOrder.customer.phone}</strong></span>
-          </div>
-
-          <p className="submitted-subtext">
-            Your cracker order <strong>#{submittedOrder.orderId}</strong> has been forwarded directly to our Admin team.
-            <br />
-            <span className="sample-reference-badge">Sample Reference Receipt for your records</span>
-          </p>
-
-          {/* Quick Summary Card */}
-          <div className="submitted-quick-info">
-            <div className="info-stat">
-              <span className="stat-label">Customer Name</span>
-              <strong className="stat-val">{submittedOrder.customer.name}</strong>
-            </div>
-            <div className="info-stat">
-              <span className="stat-label">Mobile Number</span>
-              <strong className="stat-val">{submittedOrder.customer.phone}</strong>
-            </div>
-            <div className="info-stat">
-              <span className="stat-label">Products Ordered</span>
-              <strong className="stat-val">{submittedOrder.items.length} varieties ({totalOrderQty} boxes)</strong>
-            </div>
-            <div className="info-stat">
-              <span className="stat-label">Total Amount</span>
-              <strong className="stat-val text-red">{formatCur(submittedOrder.grandTotal)}</strong>
-            </div>
-          </div>
-
-          {/* Primary Action: Back to Product List */}
-          <div className="modal-cta-group">
-            <button 
-              onClick={handleReturnToProducts} 
-              className="btn btn-primary btn-lg btn-block return-btn"
-            >
-              <span>Back to Products List ({countdown}s)</span>
-              <ArrowRight size={18} />
-            </button>
-
-            {/* Optional Sample Receipt Print / PDF / WhatsApp for customer reference */}
-            <div className="sample-receipt-actions">
-              <span className="sample-receipt-hint">Download or Print Your Order Copy</span>
-              <div className="d-flex gap-2 justify-content-center flex-wrap align-items-center mt-2">
-                <CreativeActionButton
-                  variant="pdf"
-                  onClick={handleDownloadPdf}
-                  label="Download PDF"
-                  size="md"
-                />
-                <CreativeActionButton
-                  variant="print"
-                  onClick={handlePrintReceipt}
-                  label="Print Receipt"
-                  size="md"
-                />
-                <button 
-                  type="button"
-                  onClick={handleSendOrderToWhatsApp} 
-                  className="btn btn-md"
-                  style={{
-                    background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    border: 'none',
-                    padding: '0.65rem 1.15rem',
-                    borderRadius: '9px',
-                    boxShadow: '0 4px 14px rgba(37, 211, 102, 0.35)',
-                    cursor: 'pointer',
-                    fontSize: '0.94rem',
-                    minHeight: '48px'
-                  }}
-                >
-                  <MessageSquare size={17} />
-                  <span>WhatsApp</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="redirect-progress-bar-wrap">
-            <div 
-              className="redirect-progress-bar"
-              style={{ width: `${((5 - countdown) / 5) * 100}%` }}
-            ></div>
-          </div>
+      <div className="order-submitted-overlay" style={{ overflowY: 'auto', padding: '2rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: '860px', margin: 'auto', width: '100%' }}>
+          <LiveOrderTrackerModal 
+            inline 
+            initialOrder={submittedOrder} 
+            onContinueShopping={handleReturnToProducts} 
+          />
         </div>
-
-        <style>{`
-          .order-submitted-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(5, 10, 24, 0.85);
-            backdrop-filter: blur(6px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-            animation: fadeIn 0.25s ease-out;
-          }
-
-          .order-submitted-modal {
-            background: #ffffff;
-            max-width: 620px;
-            width: 100%;
-            border-radius: var(--radius-xl);
-            padding: 2.75rem 2rem 2rem;
-            text-align: center;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
-            border: 2px solid #ffb703;
-            position: relative;
-            overflow: hidden;
-            animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-
-          @keyframes scaleIn {
-            from { transform: scale(0.92); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-          }
-
-          .submitted-icon-wrap {
-            width: 76px;
-            height: 76px;
-            border-radius: 50%;
-            background: #ecfdf5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.25rem;
-          }
-
-          .submitted-main-title {
-            font-size: 2.2rem;
-            font-weight: 900;
-            color: #0f172a;
-            margin-bottom: 0.65rem;
-            line-height: 1.15;
-          }
-
-          .reach-highlight-box {
-            background: #fff7ed;
-            border: 1.5px solid #ffedd5;
-            color: #9a3412;
-            padding: 0.75rem 1.25rem;
-            border-radius: var(--radius-full);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1.05rem;
-            margin-bottom: 1rem;
-          }
-
-          .submitted-subtext {
-            font-size: 0.95rem;
-            color: #64748b;
-            margin-bottom: 1.75rem;
-            line-height: 1.6;
-          }
-
-          .sample-reference-badge {
-            display: inline-block;
-            margin-top: 0.4rem;
-            background: #f1f5f9;
-            color: #475569;
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 0.2rem 0.65rem;
-            border-radius: var(--radius-full);
-            border: 1px solid #e2e8f0;
-          }
-
-          .submitted-quick-info {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: var(--radius-lg);
-            padding: 1rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.85rem;
-            text-align: left;
-            margin-bottom: 1.75rem;
-          }
-
-          .info-stat {
-            display: flex;
-            flex-direction: column;
-          }
-
-          .stat-label {
-            font-size: 0.72rem;
-            color: #64748b;
-            text-transform: uppercase;
-            font-weight: 700;
-          }
-
-          .stat-val {
-            font-size: 0.95rem;
-            color: #0f172a;
-          }
-
-          .modal-cta-group {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-          }
-
-          .return-btn {
-            font-size: 1.1rem;
-            padding: 0.95rem;
-            box-shadow: 0 4px 18px rgba(255, 111, 0, 0.4);
-          }
-
-          .sample-receipt-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-
-          .sample-receipt-hint {
-            font-size: 0.8rem;
-            color: #64748b;
-          }
-
-          .redirect-progress-bar-wrap {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: #f1f5f9;
-          }
-
-          .redirect-progress-bar {
-            height: 100%;
-            background: #ff6f00;
-            transition: width 1s linear;
-          }
-
-          @media (max-width: 576px) {
-            .order-submitted-modal {
-              padding: 2rem 1.25rem 1.5rem;
-            }
-            .submitted-main-title {
-              font-size: 1.75rem;
-            }
-            .submitted-quick-info {
-              grid-template-columns: 1fr;
-            }
-          }
-        `}</style>
       </div>
     );
   }
+
 
   // -------------------------------------------------------------
   // EMPTY CART VIEW

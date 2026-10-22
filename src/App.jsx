@@ -36,9 +36,42 @@ const getInitialPage = () => {
 export function App() {
   const [currentPage, setCurrentPageRaw] = useState(getInitialPage);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [lastOrderPlaced, setLastOrderPlaced] = useState(null);
+  const [lastOrderPlaced, setLastOrderPlaced] = useState(() => dataService.getLastPlacedOrder());
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => dataService.isAdminAuthenticated());
   const searchInputRef = useRef(null);
+
+  // Live order status synchronization for customer store
+  useEffect(() => {
+    const unsub = dataService.subscribe((event) => {
+      if (
+        event?.type === 'ORDER_STATUS_CHANGED' || 
+        event?.type === 'ORDER_CREATED' ||
+        event?.type === 'ORDERS_UPDATED'
+      ) {
+        const latest = dataService.getLastPlacedOrder();
+        if (latest) {
+          setLastOrderPlaced(latest);
+        }
+      }
+    });
+
+    const timer = setInterval(() => {
+      const latest = dataService.getLastPlacedOrder();
+      if (latest) {
+        setLastOrderPlaced(prev => {
+          if (!prev || prev.status !== latest.status || prev.orderId !== latest.orderId) {
+            return latest;
+          }
+          return prev;
+        });
+      }
+    }, 3000);
+
+    return () => {
+      unsub();
+      clearInterval(timer);
+    };
+  }, []);
 
   const setCurrentPage = (page) => {
     setCurrentPageRaw(page);

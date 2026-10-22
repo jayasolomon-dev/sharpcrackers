@@ -2590,7 +2590,50 @@ export const dataService = {
   },
 
   getOrderById(orderId) {
-    return this.getOrders().find(o => o.orderId === orderId);
+    if (!orderId) return null;
+    return this.getOrders().find(o => String(o.orderId).trim().toLowerCase() === String(orderId).trim().toLowerCase());
+  },
+
+  getLastPlacedOrder() {
+    try {
+      const orderId = typeof window !== 'undefined' ? localStorage.getItem('sharp_last_customer_order_id') : null;
+      if (orderId) {
+        return this.getOrderById(orderId);
+      }
+    } catch {}
+    return null;
+  },
+
+  setLastPlacedOrderId(orderId) {
+    try {
+      if (typeof window !== 'undefined' && orderId) {
+        localStorage.setItem('sharp_last_customer_order_id', String(orderId));
+      }
+    } catch {}
+  },
+
+  async fetchOrderById(orderId) {
+    if (!orderId) return null;
+    let local = this.getOrderById(orderId);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, { cache: 'no-store' });
+      if (res.ok) {
+        const remote = await res.json();
+        if (remote && remote.orderId) {
+          const orders = this.getOrders();
+          const idx = orders.findIndex(o => o.orderId === remote.orderId);
+          if (idx !== -1) {
+            orders[idx] = { ...orders[idx], ...remote };
+          } else {
+            orders.unshift(remote);
+          }
+          localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+          notifyDataChanged({ type: 'ORDER_STATUS_CHANGED', orderId: remote.orderId, status: remote.status, order: remote });
+          return remote;
+        }
+      }
+    } catch (_) {}
+    return local;
   },
 
   generateContinuousInvoiceId() {
@@ -2684,6 +2727,7 @@ export const dataService = {
     const activeOrders = filterActiveOrders(orders);
     activeOrders.unshift(newOrder);
     localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(activeOrders));
+    this.setLastPlacedOrderId(newOrder.orderId);
     notifyDataChanged({ type: 'ORDER_CREATED', order: newOrder });
 
     // Sync to universal cloud/server API with guaranteed await

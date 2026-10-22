@@ -525,6 +525,16 @@ async function handleApiRequest(request, env, url) {
     if (orderMatch) {
       const orderId = decodeURIComponent(orderMatch[1]);
 
+      if (method === 'GET') {
+        const existing = await env.DB.prepare('SELECT data_json, status, created_at, updated_at FROM orders WHERE order_id = ?').bind(orderId).first();
+        if (!existing) {
+          return jsonResponse({ error: 'Order not found' }, 404);
+        }
+        const orderObj = JSON.parse(existing.data_json);
+        if (existing.status) orderObj.status = existing.status;
+        return jsonResponse(orderObj);
+      }
+
       if (method === 'PUT') {
         const body = await request.json();
         const newStatus = body.status;
