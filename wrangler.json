@@ -1,5 +1,6 @@
 {
-  "name": "sharp",
+  "name": "sharpcrackers",
+  "account_id": "935bb52ad0d38d6974289e4a94ff49c2",
   "main": "./worker.js",
   "compatibility_date": "2024-09-23",
   "assets": {
