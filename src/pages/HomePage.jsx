@@ -234,28 +234,10 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
                 Best-Selling Fireworks
               </h2>
               <p className="section-desc">
-                Hand-picked trending festive favorites continuously moving — swipe or use arrows to explore all {bestSellers.length} bestsellers!
+                Hand-picked trending festive favorites continuously moving — swipe or drag to explore all {bestSellers.length} bestsellers!
               </p>
             </div>
             <div className="slider-action-controls">
-              <button 
-                type="button"
-                className="slider-nav-btn" 
-                onClick={() => handleScroll('left')} 
-                title="Scroll previous"
-                aria-label="Scroll left"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button 
-                type="button"
-                className="slider-nav-btn" 
-                onClick={() => handleScroll('right')} 
-                title="Scroll next"
-                aria-label="Scroll right"
-              >
-                <ChevronRight size={20} />
-              </button>
               <button onClick={handleExploreClick} className="btn btn-outline-dark btn-sm">
                 <span>Full Catalog</span>
                 <ArrowRight size={14} />

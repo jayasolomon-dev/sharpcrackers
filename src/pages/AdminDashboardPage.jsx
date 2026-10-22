@@ -702,14 +702,25 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
       {incomingOrderAlert && (
         <div className="container-wide mt-3 no-print">
           <div className="incoming-order-alert-banner">
-            <div className="alert-pulse-icon">
-              <BellRing size={22} className="text-white" />
-            </div>
-            <div className="alert-text-body">
-              <strong>🔔 NEW CUSTOMER ORDER RECEIVED JUST NOW!</strong>
-              <span>
-                Order <strong>#{incomingOrderAlert.orderId}</strong> placed by <strong>{incomingOrderAlert.customer?.name}</strong> ({incomingOrderAlert.customer?.phone}) for <strong>{formatCur(incomingOrderAlert.grandTotal)}</strong>!
-              </span>
+            <div className="alert-content-left">
+              <div className="alert-pulse-icon">
+                <BellRing size={20} className="text-white" />
+              </div>
+              <div className="alert-text-body">
+                <div className="alert-badge-row">
+                  <span className="alert-pill-tag">🔔 NEW ORDER RECEIVED</span>
+                  <button 
+                    onClick={() => setIncomingOrderAlert(null)}
+                    className="alert-dismiss-btn-mobile"
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="alert-details-line">
+                  Order <strong>#{incomingOrderAlert.orderId}</strong> placed by <strong>{incomingOrderAlert.customer?.name}</strong> ({incomingOrderAlert.customer?.phone}) for <strong>{formatCur(incomingOrderAlert.grandTotal)}</strong>!
+                </div>
+              </div>
             </div>
             <div className="alert-actions-group">
               <button 
@@ -717,7 +728,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                   setSelectedOrder(incomingOrderAlert);
                   setIncomingOrderAlert(null);
                 }} 
-                className="btn btn-gold btn-sm"
+                className="btn btn-gold btn-sm view-alert-order-btn"
               >
                 <Eye size={15} />
                 <span>View Order Details</span>
@@ -789,7 +800,8 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
             onClick={() => setActiveTab('orders')}
           >
             <FileText size={17} />
-            <span>Customer Orders ({orders.length})</span>
+            <span className="tab-label-desktop">Customer Orders ({orders.length})</span>
+            <span className="tab-label-mobile">Orders ({orders.length})</span>
             {kpiStats.pendingOrdersCount > 0 && (
               <span className="tab-pending-badge">{kpiStats.pendingOrdersCount} new</span>
             )}
@@ -800,7 +812,8 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
             onClick={() => setActiveTab('products')}
           >
             <Package size={17} />
-            <span>Product Catalog & Categories ({products.length})</span>
+            <span className="tab-label-desktop">Product Catalog & Categories ({products.length})</span>
+            <span className="tab-label-mobile">Catalog ({products.length})</span>
           </button>
         </div>
 
@@ -811,40 +824,28 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           <div className="admin-tab-content">
             {/* 30-Day Cloud & Local Storage Retention & Backup Strip */}
             <div className="card mb-3 p-3 retention-strip">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div className="retention-strip-inner">
+                <div className="retention-info-col">
                   <div className="retention-icon-box">
                     <ShieldCheck size={20} />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '13px', color: '#0f172a' }}>
-                      30-Day Active Retention & Secure Backup Storage Active
+                    <div className="retention-title">
+                      30-Day Active Retention & Secure Backup Active
                     </div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>
-                      Bills stay active for 30 days. After 30 days, they are automatically stored in the Secure Backup Archive (Never lost).
+                    <div className="retention-desc">
+                      Bills stay active for 30 days, then safely preserved in Secure Backup Archive.
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span className="retention-pill-badge">
-                    <Calendar size={13} />
-                    30 DAYS ACTIVE WINDOW
-                  </span>
+                <div className="retention-action-col">
                   <button 
                     onClick={() => setShowBackupModal(true)}
-                    className="btn btn-outline-light btn-xs backup-archive-btn"
+                    className="btn btn-outline-light btn-sm backup-archive-btn"
                   >
-                    <Archive size={13} />
-                    <span>Backup Bills Archive ({backupOrders.length})</span>
-                  </button>
-                  <button 
-                    onClick={handleManualPurgeExpired}
-                    className="btn btn-outline-light btn-xs retention-check-btn"
-                    title="Scan and move bills older than 30 days to Archive"
-                  >
-                    <RefreshCw size={13} />
-                    <span>Run Auto-Purge & Backup</span>
+                    <Archive size={14} />
+                    <span>Backup Archive ({backupOrders.length})</span>
                   </button>
                 </div>
               </div>
@@ -856,7 +857,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                 <Search size={18} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Search by Order ID, Customer Name, or Mobile..."
+                  placeholder="Search by order ID, name or phone..."
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
                   className="admin-search-input"
@@ -869,7 +870,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               </div>
 
               <div className="status-filter-group">
-                <span className="filter-label">Filter Status:</span>
+                <span className="filter-label">Filter:</span>
                 <CustomSelectDropdown
                   value={orderStatusFilter}
                   onChange={(val) => setOrderStatusFilter(val)}
@@ -2446,6 +2447,7 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           padding: 1rem 1.5rem;
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 1.25rem;
           box-shadow: 0 8px 25px rgba(234, 88, 12, 0.35);
           animation: pulseBanner 2s infinite ease-in-out;
@@ -2454,6 +2456,34 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
         @keyframes pulseBanner {
           0%, 100% { box-shadow: 0 8px 25px rgba(234, 88, 12, 0.35); }
           50% { box-shadow: 0 10px 32px rgba(255, 111, 0, 0.6); }
+        }
+
+        .alert-content-left {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex-grow: 1;
+        }
+
+        .alert-badge-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.25rem;
+        }
+
+        .alert-pill-tag {
+          font-size: 0.75rem;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          background: rgba(255, 255, 255, 0.25);
+          padding: 0.2rem 0.55rem;
+          border-radius: 99px;
+          color: #ffffff;
+        }
+
+        .alert-dismiss-btn-mobile {
+          display: none;
         }
 
         .alert-pulse-icon {
@@ -2473,6 +2503,12 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           gap: 0.15rem;
           flex-grow: 1;
           font-size: 0.95rem;
+        }
+
+        .alert-details-line {
+          color: #ffffff;
+          line-height: 1.4;
+          font-size: 0.92rem;
         }
 
         .alert-actions-group {
@@ -2606,6 +2642,78 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
         .admin-tab-btn.active .tab-pending-badge {
           background: #ffffff;
           color: #dc2626;
+        }
+
+        .tab-label-desktop {
+          display: inline;
+        }
+
+        .tab-label-mobile {
+          display: none;
+        }
+
+        /* 30-Day Retention Strip */
+        .retention-strip {
+          background: #f0fdf4 !important;
+          border: 1px solid #bbf7d0 !important;
+          border-radius: 10px;
+        }
+
+        .retention-strip-inner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 0.85rem;
+        }
+
+        .retention-info-col {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .retention-icon-box {
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          background: #dcfce7;
+          color: #16a34a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .retention-title {
+          font-weight: 700;
+          font-size: 13px;
+          color: #0f172a;
+          margin-bottom: 2px;
+        }
+
+        .retention-desc {
+          font-size: 11px;
+          color: #64748b;
+          line-height: 1.4;
+        }
+
+        .backup-archive-btn {
+          border: 1px solid #cbd5e1 !important;
+          color: #0f172a !important;
+          background: #ffffff !important;
+          font-weight: 600;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+          padding: 0.45rem 0.85rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          border-radius: 6px;
+        }
+
+        .backup-archive-btn:hover {
+          background: #f8fafc !important;
+          border-color: #94a3b8 !important;
         }
 
         /* Catalog Sub-tabs Switcher */
@@ -4252,29 +4360,91 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
             justify-content: flex-start;
             flex-wrap: wrap;
           }
+          .incoming-order-alert-banner {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 1rem;
+            gap: 0.85rem;
+          }
+          .alert-content-left {
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+          .alert-badge-row {
+            justify-content: space-between;
+            width: 100%;
+          }
+          .alert-dismiss-btn-mobile {
+            display: block;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.85;
+          }
+          .alert-actions-group .alert-dismiss-btn {
+            display: none;
+          }
+          .alert-actions-group {
+            width: 100%;
+          }
+          .view-alert-order-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 0.65rem 1rem;
+            font-size: 0.9rem;
+          }
+          .tab-label-desktop {
+            display: none;
+          }
+          .tab-label-mobile {
+            display: inline;
+          }
           .admin-nav-tabs-bar {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            flex-wrap: nowrap;
-            padding-bottom: 0.5rem;
+            display: flex;
+            width: 100%;
+            gap: 0.5rem;
           }
           .admin-tab-btn {
+            flex: 1;
+            padding: 0.75rem 0.5rem;
+            font-size: 0.88rem;
+            justify-content: center;
             white-space: nowrap;
-            flex-shrink: 0;
+          }
+          .retention-strip-inner {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+          }
+          .retention-action-col .backup-archive-btn {
+            width: 100%;
+            justify-content: center;
           }
           .table-filter-bar {
             flex-direction: column;
             align-items: stretch;
+            gap: 0.75rem;
           }
           .search-box {
             min-width: 100%;
           }
           .status-filter-group {
             width: 100%;
-            justify-content: space-between;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
           }
-          .admin-select {
-            flex-grow: 1;
+          .status-filter-group .filter-label {
+            font-size: 0.82rem;
+            color: #64748b;
+            font-weight: 700;
+            white-space: nowrap;
+          }
+          .status-filter-group .custom-select-wrapper {
+            flex: 1;
+            width: 100%;
           }
           .form-grid-2, .form-grid-3 {
             grid-template-columns: 1fr;

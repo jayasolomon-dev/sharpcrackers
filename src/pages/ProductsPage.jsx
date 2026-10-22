@@ -878,25 +878,52 @@ export const ProductsPage = ({
                         </div>
                       </div>
                     ) : (
-                      <>
-                        <span className="qty-label">Add Quantity:</span>
-                        <div className="table-qty-control large-control">
+                      <div className="modal-qty-control-row">
+                        <div className="modal-stepper-box">
+                          <span className="qty-label">Add Quantity:</span>
+                          <div className="table-qty-control large-control">
+                            <button 
+                              onClick={() => updateQuantity(previewProduct.id, -1)} 
+                              className="table-qty-btn minus-btn"
+                              disabled={getItemQuantity(previewProduct.id) === 0}
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="large-qty-num">{getItemQuantity(previewProduct.id)}</span>
+                            <button 
+                              onClick={() => updateQuantity(previewProduct.id, 1)} 
+                              className="table-qty-btn plus-btn"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Item Total & Action Confirmation Button */}
+                        <div className="modal-total-and-cta">
+                          {getItemQuantity(previewProduct.id) > 0 && (
+                            <div className="modal-item-subtotal">
+                              <span>Total:</span>
+                              <strong>{formatCur(previewProduct.unitPrice * getItemQuantity(previewProduct.id))}</strong>
+                            </div>
+                          )}
+
                           <button 
-                            onClick={() => updateQuantity(previewProduct.id, -1)} 
-                            className="table-qty-btn minus-btn"
-                            disabled={getItemQuantity(previewProduct.id) === 0}
+                            className="btn btn-primary modal-done-btn"
+                            onClick={() => {
+                              if (getItemQuantity(previewProduct.id) === 0) {
+                                updateQuantity(previewProduct.id, 1);
+                              }
+                              setPreviewProduct(null);
+                            }}
                           >
-                            <Minus size={16} />
-                          </button>
-                          <span className="large-qty-num">{getItemQuantity(previewProduct.id)}</span>
-                          <button 
-                            onClick={() => updateQuantity(previewProduct.id, 1)} 
-                            className="table-qty-btn plus-btn"
-                          >
-                            <Plus size={16} />
+                            <ShoppingCart size={16} />
+                            <span>{getItemQuantity(previewProduct.id) > 0 ? 'Update Order Sheet' : 'Add to Order Sheet'}</span>
                           </button>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1894,22 +1921,37 @@ export const ProductsPage = ({
 
         /* Lightbox Modal */
         .product-modal {
+          position: relative;
           max-width: 750px;
           padding: 2rem;
+          border-radius: var(--radius-xl);
+          background: #ffffff;
         }
 
         .modal-close-btn {
           position: absolute;
-          top: 15px;
-          right: 15px;
-          width: 32px;
-          height: 32px;
+          top: 1rem;
+          right: 1rem;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
-          background: #f1f5f9;
+          background: #ffffff;
+          border: 1.5px solid #e2e8f0;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
           display: flex;
           align-items: center;
           justify-content: center;
           color: #475569;
+          cursor: pointer;
+          z-index: 30;
+          transition: all 0.2s ease;
+        }
+
+        .modal-close-btn:hover {
+          background: #f8fafc;
+          color: #0f172a;
+          border-color: #cbd5e1;
+          transform: scale(1.05);
         }
 
         .modal-body-layout {
@@ -2008,9 +2050,55 @@ export const ProductsPage = ({
         }
 
         .modal-qty-action {
+          width: 100%;
+        }
+
+        .modal-qty-control-row {
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 1rem;
+          flex-wrap: wrap;
+          width: 100%;
+        }
+
+        .modal-stepper-box {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .modal-total-and-cta {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+        }
+
+        .modal-item-subtotal {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          line-height: 1.2;
+          font-size: 0.85rem;
+          color: #64748b;
+        }
+
+        .modal-item-subtotal strong {
+          color: #ea580c;
+          font-size: 1.2rem;
+          font-family: var(--font-display);
+        }
+
+        .modal-done-btn {
+          padding: 0.65rem 1.15rem;
+          font-size: 0.9rem;
+          font-weight: 700;
+          border-radius: var(--radius-md);
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          box-shadow: 0 4px 14px rgba(255, 111, 0, 0.3);
+          cursor: pointer;
         }
 
         .large-control .table-qty-btn {
@@ -2792,14 +2880,42 @@ export const ProductsPage = ({
           }
 
           .modal-qty-action {
+            margin-top: 0.5rem;
+          }
+
+          .modal-qty-control-row {
+            flex-direction: column;
+            align-items: stretch;
             gap: 0.75rem;
           }
 
+          .modal-stepper-box {
+            justify-content: space-between;
+            width: 100%;
+          }
+
+          .modal-total-and-cta {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+          }
+
+          .modal-done-btn {
+            flex: 1;
+            justify-content: center;
+          }
+
           .modal-close-btn {
-            top: 10px;
-            right: 10px;
-            width: 28px;
-            height: 28px;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            z-index: 40;
           }
         }
 
