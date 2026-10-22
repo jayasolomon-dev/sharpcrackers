@@ -503,7 +503,6 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
               className="btn btn-primary btn-lg empty-explore-btn"
             >
               <span>Explore Products & Price List</span>
-              <Sparkles size={18} />
             </button>
           </div>
         </div>
