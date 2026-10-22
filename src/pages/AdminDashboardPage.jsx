@@ -887,20 +887,18 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                   <div className="empty-ambient-backdrop"></div>
                   
                   {/* Glowing Iconic Focal Point */}
+                  {/* Ambient Icon Capsule without sparkle */}
                   <div className="empty-icon-capsule">
                     <div className="empty-icon-pulse-ring"></div>
                     <div className="empty-icon-core">
                       <FileText size={34} style={{ color: '#ea580c' }} />
-                      <div className="empty-sparkle-dot">
-                        <Sparkles size={14} style={{ color: '#ffb703' }} />
-                      </div>
                     </div>
                   </div>
 
                   {/* Real-time Status Live Pill */}
                   <div className="empty-live-status-pill">
                     <span className="live-pulse-dot"></span>
-                    <span>Live Sivakasi Desk Sync Active</span>
+                    <span>Live Sync Active</span>
                   </div>
 
                   {/* Content Header */}
@@ -924,13 +922,10 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
                   ) : (
                     <>
                       <h3 className="empty-state-title">
-                        Ready to Receive Customer Orders!
+                        No Orders Yet
                       </h3>
-                      <p className="empty-state-ta-subtitle">
-                        வாடிக்கையாளர்கள் இணையதளத்தில் ஆர்டர் செய்யும் போது, இங்கு தானாகவே தோன்றும்.
-                      </p>
                       <p className="empty-state-desc">
-                        When customers submit their cracker order sheet on the website, new bills will appear here in real time with instant audio alerts and 30-day cloud backup.
+                        When customers place orders on the website, they will appear here in real time.
                       </p>
                       <div className="empty-action-buttons-group">
                         <button 
