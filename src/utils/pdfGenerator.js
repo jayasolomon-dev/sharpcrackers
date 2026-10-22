@@ -5,6 +5,7 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { SHARP_LOGO_INVOICE_BASE64 } from './logoInvoiceBase64';
 
 export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   const doc = new jsPDF({
@@ -31,27 +32,43 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   doc.setFillColor(255, 183, 3);
   doc.rect(0, 28, pageWidth, 1.5, 'F');
 
+  // Official Brand Logo (Website Genuine Asset)
+  try {
+    doc.addImage(SHARP_LOGO_INVOICE_BASE64, 'JPEG', 14, 4, 20, 20);
+  } catch (e) {
+    console.warn("Invoice logo render fallback:", e);
+  }
+
+  // Company Name & Taglines beside Logo
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text(settings.shopName || "SHARP CRACKERS", 14, 13);
+  doc.setFontSize(16);
+  doc.text(settings.shopName || "SHARP CRACKERS", 38, 12);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(255, 215, 110);
-  doc.text(settings.tagline || "Light Up Your Celebrations! • Direct From Sivakasi", 14, 19);
+  doc.text(settings.tagline || "Light Up Your Celebrations! • Direct From Sivakasi", 38, 17);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(220, 225, 235);
+  doc.text("Direct Sivakasi Fireworks Showroom & Wholesale Order Desk", 38, 22);
 
   // Document Title Pill on Top Right
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(255, 255, 255);
-  doc.text("CUSTOMER ORDER SHEET", pageWidth - 14, 13, { align: 'right' });
+  doc.text("CUSTOMER ORDER SHEET", pageWidth - 14, 11, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
+  doc.setTextColor(255, 215, 110);
+  doc.text(`Invoice ID: ${order.orderId || 'NEW-ORDER'}`, pageWidth - 14, 17, { align: 'right' });
+
+  doc.setFontSize(7.5);
   doc.setTextColor(220, 225, 235);
-  doc.text(`Order ID: ${order.orderId || 'NEW-ORDER'}`, pageWidth - 14, 19, { align: 'right' });
-  doc.text(`Date: ${new Date(order.createdAt || Date.now()).toLocaleString('en-IN')}`, pageWidth - 14, 24, { align: 'right' });
+  doc.text(`Date: ${new Date(order.createdAt || Date.now()).toLocaleString('en-IN')}`, pageWidth - 14, 22, { align: 'right' });
 
   // 2. Business & Customer Info Grid
   let startY = 36;
@@ -278,17 +295,20 @@ export const printOrderDocument = (order, settings) => {
       </head>
       <body>
         <div class="header">
-          <div>
-            <div class="logo-title">${settings.shopName || 'SHARP CRACKERS'}</div>
-            <div class="tagline">${settings.tagline || 'Direct Sivakasi Fireworks Sales'}</div>
-            <div style="font-size: 11px; color: #475569; margin-top: 4px;">
-              ${settings.address || '89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021'}<br/>
-              Phone: ${settings.phone || '+91 95668 86795'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <img src="/images/sharp_crackers_brand_logo.jpg" alt="Sharp Crackers Official Logo" style="width: 58px; height: 58px; object-fit: contain; border-radius: 8px; border: 2px solid #ff6f00; box-shadow: 0 2px 8px rgba(0,0,0,0.12); flex-shrink: 0;" />
+            <div>
+              <div class="logo-title">${settings.shopName || 'SHARP CRACKERS'}</div>
+              <div class="tagline">${settings.tagline || 'Direct Sivakasi Fireworks Sales'}</div>
+              <div style="font-size: 11px; color: #475569; margin-top: 4px;">
+                ${settings.address || '89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021'}<br/>
+                Phone: ${settings.phone || '+91 95668 86795'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}
+              </div>
             </div>
           </div>
           <div class="doc-title">
             <h2>Customer Order Sheet</h2>
-            <div style="font-size: 13px; font-weight: bold; margin-top: 4px;">Order ID: ${order.orderId || 'DRAFT'}</div>
+            <div style="font-size: 13px; font-weight: bold; margin-top: 4px; color: #ff6f00;">Invoice ID: ${order.orderId || 'DRAFT'}</div>
             <div style="font-size: 11px; color: #64748b;">Date: ${new Date(order.createdAt || Date.now()).toLocaleString('en-IN')}</div>
           </div>
         </div>

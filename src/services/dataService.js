@@ -2541,6 +2541,42 @@ export const dataService = {
     return this.getOrders().find(o => o.orderId === orderId);
   },
 
+  generateContinuousInvoiceId() {
+    const orders = this.getOrders();
+    const currentYear = new Date().getFullYear();
+    let maxSeq = 0;
+
+    // 1. Check all existing active orders
+    orders.forEach(o => {
+      if (!o || !o.orderId) return;
+      const match = String(o.orderId).match(/SC-(?:\d{4}-)?(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num < 100000 && num > maxSeq) {
+          maxSeq = num;
+        }
+      }
+    });
+
+    // 2. Check local sequence counter in localStorage
+    try {
+      const storedSeq = typeof window !== 'undefined' ? localStorage.getItem('sharp_crackers_invoice_counter') : null;
+      if (storedSeq) {
+        const parsed = parseInt(storedSeq, 10);
+        if (!isNaN(parsed) && parsed > maxSeq) {
+          maxSeq = parsed;
+        }
+      }
+    } catch {}
+
+    const nextSeq = maxSeq + 1;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sharp_crackers_invoice_counter', String(nextSeq));
+    }
+
+    return `SC-${currentYear}-${String(nextSeq).padStart(4, '0')}`;
+  },
+
   async createOrder(orderData) {
     const orders = this.getOrders();
     const catalog = this.getProducts();
@@ -2569,7 +2605,9 @@ export const dataService = {
     const deliveryCharge = 0;
     const grandTotal = calculatedSubtotal;
 
-    const orderId = `SC-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+    const orderId = orderData.orderId && !String(orderData.orderId).includes('DRAFT')
+      ? orderData.orderId 
+      : this.generateContinuousInvoiceId();
 
     const newOrder = {
       orderId,
