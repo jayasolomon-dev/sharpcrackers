@@ -1412,10 +1412,17 @@ export const ProductsPage = ({
         }
 
         .category-item-btn.active {
-          background: #fff7ed;
-          color: #ea580c;
-          border-color: #ffedd5;
-          box-shadow: 0 2px 8px rgba(255, 111, 0, 0.12);
+          background: linear-gradient(135deg, #ff6f00 0%, #ea580c 100%);
+          color: #ffffff;
+          border-color: #ff6f00;
+          box-shadow: 0 4px 14px rgba(255, 111, 0, 0.32);
+        }
+
+        .category-item-btn.active:hover {
+          background: linear-gradient(135deg, #ff7a00 0%, #f97316 100%);
+          border-color: #ff7a00;
+          color: #ffffff;
+          box-shadow: 0 6px 18px rgba(255, 111, 0, 0.4);
         }
 
         .cat-icon {
@@ -1435,10 +1442,11 @@ export const ProductsPage = ({
           font-size: 0.88rem;
           font-weight: 700;
           color: #1e293b;
+          transition: color 0.15s ease;
         }
 
         .category-item-btn.active .cat-name-en {
-          color: #c2410c;
+          color: #ffffff;
         }
 
         .cat-name-ta {
@@ -1446,26 +1454,30 @@ export const ProductsPage = ({
           color: #64748b;
           font-family: 'Mukta Malar', 'Noto Sans Tamil', system-ui, sans-serif;
           font-weight: 500;
+          transition: color 0.15s ease;
         }
 
         .category-item-btn.active .cat-name-ta {
-          color: #ea580c;
+          color: #fed7aa;
           font-weight: 600;
         }
 
         .cat-pill-count {
           font-size: 0.72rem;
           font-weight: 700;
-          color: #94a3b8;
+          color: #64748b;
           background: #f1f5f9;
           padding: 0.15rem 0.45rem;
           border-radius: 99px;
           flex-shrink: 0;
+          transition: all 0.15s ease;
         }
 
         .category-item-btn.active .cat-pill-count {
-          background: #ffedd5;
-          color: #c2410c;
+          background: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.35);
+          font-weight: 800;
         }
 
         .sidebar-info-box {
