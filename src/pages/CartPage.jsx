@@ -880,7 +880,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   <input
                     ref={nameInputRef}
                     type="text"
-                    placeholder="Enter your full name (letters only)"
+                    placeholder="Enter your name"
                     value={customer.name}
                     onChange={handleNameChange}
                     onKeyDown={(e) => {
@@ -910,7 +910,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                     type="tel"
                     inputMode="numeric"
                     maxLength={10}
-                    placeholder="10-digit mobile number (e.g. 9876543210)"
+                    placeholder="Enter mobile number"
                     value={customer.phone}
                     onChange={handlePhoneChange}
                     onKeyDown={(e) => {
@@ -931,7 +931,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   <input
                     ref={emailInputRef}
                     type="email"
-                    placeholder="e.g. name@example.com (optional)"
+                    placeholder="Enter email address"
                     value={customer.email}
                     onChange={handleEmailChange}
                     onKeyDown={(e) => {
@@ -952,7 +952,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   <textarea
                     ref={notesInputRef}
                     rows="2"
-                    placeholder="Any specific requests or preferred contact time..."
+                    placeholder="Write your message or notes..."
                     value={customer.notes}
                     onChange={(e) => setCustomer({ ...customer, notes: e.target.value })}
                     className="form-textarea"
