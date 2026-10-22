@@ -73,9 +73,14 @@ export default {
       return handleApiRequest(request, env, url);
     }
 
-    // 3. Fallback to Cloudflare Static Assets (Single Page App)
+    // 3. Static Assets & SPA Routing (fall back to / for client-side routing like /admin)
     if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
-      return env.ASSETS.fetch(request);
+      const response = await env.ASSETS.fetch(request);
+      if (response.status === 404 && !url.pathname.includes('.')) {
+        const indexUrl = new URL('/', request.url);
+        return env.ASSETS.fetch(new Request(indexUrl, request));
+      }
+      return response;
     }
 
     return new Response('Not Found', { status: 404 });
