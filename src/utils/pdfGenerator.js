@@ -5,10 +5,12 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { SHARP_LOGO_INVOICE_BASE64 } from './logoInvoiceBase64';
+import { SHARP_LOGO_INVOICE_BASE64 } from './logoInvoiceBase64.js';
+import { SHARP_SIGNATURE_BASE64 } from './signatureBase64.js';
 
 export const generateOrderPdf = (order, settings, shouldDownload = true) => {
-  const doc = new jsPDF({
+  const jsPDFClass = typeof jsPDF === 'function' ? jsPDF : (jsPDF.jsPDF || jsPDF);
+  const doc = new jsPDFClass({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
@@ -228,6 +230,19 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   // Signature Blocks
   const sigY = summaryY + 34;
   if (sigY <= pageHeight - 16) {
+    // Authorized Digital Signature (positioned directly above the line)
+    if (SHARP_SIGNATURE_BASE64) {
+      try {
+        const sigWidth = 42;
+        const sigHeight = 11;
+        const sigX = (pageWidth - 39) - (sigWidth / 2);
+        const sigImgY = sigY + 8 - sigHeight - 0.5;
+        doc.addImage(SHARP_SIGNATURE_BASE64, 'PNG', sigX, sigImgY, sigWidth, sigHeight);
+      } catch (e) {
+        console.warn("Invoice signature render fallback:", e);
+      }
+    }
+
     doc.setDrawColor(180, 190, 205);
     doc.setLineWidth(0.3);
     doc.line(14, sigY + 8, 64, sigY + 8);
@@ -288,8 +303,9 @@ export const printOrderDocument = (order, settings) => {
           .summary-row { display: flex; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; }
           .grand-total { background: #d90429; color: #ffffff; font-weight: 700; font-size: 15px; }
           .clearfix::after { content: ""; clear: both; display: table; }
-          .signatures { margin-top: 40px; display: flex; justify-content: space-between; }
-          .sig-box { width: 200px; text-align: center; border-top: 1px solid #94a3b8; padding-top: 6px; font-size: 11px; color: #64748b; }
+          .signatures { margin-top: 50px; display: flex; justify-content: space-between; }
+          .sig-box { width: 200px; text-align: center; border-top: 1px solid #94a3b8; padding-top: 6px; font-size: 11px; color: #64748b; position: relative; }
+          .sig-img { position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); max-height: 46px; max-width: 160px; object-fit: contain; }
           .safety { font-size: 11px; color: #64748b; border-left: 3px solid #ffb703; padding-left: 8px; margin-top: 15px; }
         </style>
       </head>
@@ -378,7 +394,10 @@ export const printOrderDocument = (order, settings) => {
 
         <div class="signatures">
           <div class="sig-box">Customer Signature</div>
-          <div class="sig-box">Authorized Signatory<br/><strong>SHARP CRACKERS</strong></div>
+          <div class="sig-box">
+            ${SHARP_SIGNATURE_BASE64 ? `<img src="${SHARP_SIGNATURE_BASE64}" class="sig-img" alt="Digital Signature" />` : ''}
+            Authorized Signatory<br/><strong>SHARP CRACKERS</strong>
+          </div>
         </div>
 
         <script>
