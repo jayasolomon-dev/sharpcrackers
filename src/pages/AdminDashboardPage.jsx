@@ -314,6 +314,23 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
     return `${settings.currencySymbol || '₹'}${Number(amount || 0).toLocaleString('en-IN')}`;
   };
 
+  const formatKpiRevenue = (amount) => {
+    const num = Number(amount || 0);
+    const symbol = settings.currencySymbol || '₹';
+    
+    // For values >= 1 Crore (10,000,000)
+    if (num >= 10000000) {
+      const crVal = num / 10000000;
+      if (crVal >= 100000) {
+        return `${symbol}${(crVal / 100000).toLocaleString('en-IN', { maximumFractionDigits: 2 })}L Cr`;
+      }
+      return `${symbol}${crVal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`;
+    }
+    
+    // For values under 1 Crore, standard Indian currency formatting (e.g. ₹3,18,945)
+    return `${symbol}${num.toLocaleString('en-IN')}`;
+  };
+
   const formatDate = (isoString) => {
     if (!isoString) return '';
     const d = new Date(isoString);
@@ -338,7 +355,8 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
       else if (st === 'cancelled') cancelledOrdersCount++;
 
       if (st !== 'cancelled') {
-        totalRevenue += Number(order.grandTotal) || 0;
+        const amt = parseFloat(String(order.grandTotal || 0).replace(/[^\d.-]/g, '')) || 0;
+        totalRevenue += amt;
       }
     });
 
@@ -832,13 +850,24 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               </div>
             </div>
 
-            <div className="kpi-card card">
+            <div className="kpi-card card" title={`Total Order Value: ${formatCur(kpiStats.totalRevenue)}`}>
               <div className="kpi-icon-box bg-orange-subtle">
                 <TrendingUp size={22} className="text-orange" />
               </div>
               <div className="kpi-data">
                 <span className="kpi-title">Total Order Value</span>
-                <span className="kpi-value text-orange">{formatCur(kpiStats.totalRevenue)}</span>
+                <span 
+                  className={`kpi-value text-orange ${
+                    String(formatKpiRevenue(kpiStats.totalRevenue)).length > 13 
+                      ? 'kpi-val-mini' 
+                      : String(formatKpiRevenue(kpiStats.totalRevenue)).length > 9 
+                        ? 'kpi-val-compact' 
+                        : ''
+                  }`}
+                  title={`Exact Amount: ${formatCur(kpiStats.totalRevenue)}`}
+                >
+                  {formatKpiRevenue(kpiStats.totalRevenue)}
+                </span>
               </div>
             </div>
           </div>
@@ -2795,15 +2824,17 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
         }
 
         .kpi-card {
-          padding: 1.25rem;
+          padding: 1.15rem 1.1rem;
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.85rem;
           background: #ffffff;
-          border-radius: 12px;
+          border-radius: 14px;
           border: 1px solid #e2e8f0;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
           transition: transform 0.25s ease, box-shadow 0.25s ease;
+          min-width: 0;
+          overflow: hidden;
         }
 
         .kpi-card:hover {
@@ -2846,21 +2877,44 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
         .text-emerald { color: #059669; }
         .text-orange { color: #ea580c; }
 
+        .kpi-data {
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+        }
+
         .kpi-title {
-          font-size: 0.78rem;
+          font-size: 0.74rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           color: #64748b;
           display: block;
           margin-bottom: 0.25rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .kpi-value {
-          font-size: 1.6rem;
+          font-size: 1.45rem;
           font-weight: 800;
           color: #0f172a;
-          line-height: 1;
+          line-height: 1.15;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: block;
+        }
+
+        .kpi-value.kpi-val-compact {
+          font-size: 1.15rem;
+          letter-spacing: -0.2px;
+        }
+
+        .kpi-value.kpi-val-mini {
+          font-size: 1.02rem;
+          letter-spacing: -0.4px;
         }
 
         /* Dedicated 2 Primary Admin Tabs */

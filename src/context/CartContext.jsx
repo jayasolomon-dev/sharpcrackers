@@ -100,7 +100,7 @@ export const CartProvider = ({ children }) => {
 
     setQuantities(prev => {
       const current = prev[productId] || 0;
-      const next = Math.max(0, current + delta);
+      const next = Math.min(99999, Math.max(0, current + delta));
       const updated = { ...prev };
       if (next === 0) {
         delete updated[productId];
@@ -117,7 +117,7 @@ export const CartProvider = ({ children }) => {
       sanitized = rawValue.replace(/\D/g, '').replace(/^0+/, '');
     }
     const val = parseInt(sanitized, 10);
-    const next = isNaN(val) ? 0 : Math.max(0, val);
+    const next = isNaN(val) ? 0 : Math.min(99999, Math.max(0, val));
 
     // If trying to set positive quantity on out-of-stock product, prevent it!
     if (next > 0) {
