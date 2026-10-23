@@ -465,6 +465,16 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
     }
   };
 
+  const filteredBackupOrders = useMemo(() => {
+    if (!backupSearch.trim()) return backupOrders;
+    const q = backupSearch.toLowerCase().trim();
+    return backupOrders.filter(ord => 
+      String(ord.orderId || '').toLowerCase().includes(q) ||
+      String(ord.customer?.name || '').toLowerCase().includes(q) ||
+      String(ord.customer?.phone || '').includes(q)
+    );
+  }, [backupOrders, backupSearch]);
+
   // -------------------------------------------------------------
   // PRODUCT CATALOG & STOCK ACTIONS
   // -------------------------------------------------------------
@@ -2389,74 +2399,151 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
       )}
 
       {/* =============================================================
-          MODAL: BACKUP BILLS ARCHIVE
+          MODAL: BACKUP BILLS ARCHIVE (MATCHED TO DARK LUXURY THEME)
          ============================================================= */}
       {showBackupModal && (
         <div className="modal-overlay" onClick={() => setShowBackupModal(false)}>
-          <div className="modal-content modal-content-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-bar">
-              <div>
-                <span className="badge badge-festive mb-1">ARCHIVE BILLS & HISTORICAL ORDERS</span>
-                <h2>30-Day Backup Bills Storage</h2>
-                <span className="text-muted" style={{ fontSize: '13px' }}>
+          <div className="modal-content backup-archive-modal-card" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="archive-modal-header">
+              <div className="archive-header-meta">
+                <div className="archive-pill-badge">
+                  <Archive size={13} className="text-amber" />
+                  <span>30-DAY RETENTION & BACKUP STORAGE</span>
+                </div>
+                <h2 className="archive-modal-title">30-Day Backup Bills Storage</h2>
+                <p className="archive-modal-subtext">
                   Secure permanent vault for customer bills past the 30-day active window.
-                </span>
+                </p>
               </div>
-              <button onClick={() => setShowBackupModal(false)} className="modal-close-btn">
-                <X size={20} />
+              <button 
+                type="button"
+                onClick={() => setShowBackupModal(false)} 
+                className="archive-modal-close-btn"
+                title="Close"
+                aria-label="Close"
+              >
+                <X size={18} />
               </button>
             </div>
 
-            <div className="modal-scroll-body p-4">
-              <div className="table-filter-bar mb-3">
-                <div className="search-box">
-                  <Search size={18} className="search-icon" />
+            {/* Modal Body */}
+            <div className="archive-modal-body">
+              {/* Filter & Policy Bar */}
+              <div className="archive-toolbar">
+                <div className="archive-search-box">
+                  <Search size={16} className="archive-search-icon" />
                   <input
                     type="text"
                     placeholder="Search backup bills by ID, customer name, mobile..."
                     value={backupSearch}
                     onChange={(e) => setBackupSearch(e.target.value)}
-                    className="admin-search-input"
+                    className="archive-search-input"
                   />
+                  {backupSearch && (
+                    <button 
+                      type="button" 
+                      onClick={() => setBackupSearch('')} 
+                      className="archive-clear-search"
+                      title="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="archive-count-badge">
+                  <span className="live-radar-dot"></span>
+                  <span><strong>{filteredBackupOrders.length}</strong> Bills Archived</span>
                 </div>
               </div>
 
-              {backupOrders.length === 0 ? (
-                <div className="text-center py-5 text-muted">
-                  <Archive size={44} className="mb-2" />
-                  <h4>No Archived Bills Yet</h4>
-                  <p>Bills older than 30 days are automatically archived here.</p>
+              {/* Retention Policy Note */}
+              <div className="archive-policy-note">
+                <Clock size={15} className="text-amber flex-shrink-0" />
+                <span>
+                  <strong>Retention Policy:</strong> Orders are active in your primary dashboard for 30 days. Bills past 30 days are safely preserved here and can be restored or printed anytime.
+                </span>
+              </div>
+
+              {filteredBackupOrders.length === 0 ? (
+                <div className="archive-empty-state">
+                  <div className="archive-empty-icon-wrap">
+                    <Archive size={30} />
+                  </div>
+                  <h4 className="archive-empty-title">
+                    {backupSearch ? 'No Matching Backup Bills Found' : 'No Archived Bills Yet'}
+                  </h4>
+                  <p className="archive-empty-desc">
+                    {backupSearch 
+                      ? `No archived bills match "${backupSearch}". Try searching with a different order ID, customer name, or phone number.`
+                      : 'Bills older than 30 days are automatically archived here to keep your primary dashboard fast, organized, and clean.'}
+                  </p>
                 </div>
               ) : (
-                <div className="table-responsive-wrapper">
-                  <table className="admin-table">
+                <div className="archive-table-wrapper">
+                  <table className="archive-table">
                     <thead>
                       <tr>
                         <th>Order ID</th>
-                        <th>Date</th>
+                        <th>Created Date</th>
                         <th>Customer</th>
                         <th>Mobile</th>
-                        <th className="text-right">Amount</th>
+                        <th className="text-right">Total Amount</th>
                         <th className="text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {backupOrders.map((ord) => (
+                      {filteredBackupOrders.map((ord) => (
                         <tr key={ord.orderId}>
-                          <td><strong>{ord.orderId}</strong></td>
-                          <td>{formatDate(ord.createdAt).date}</td>
-                          <td>{ord.customer?.name}</td>
-                          <td>{ord.customer?.phone}</td>
-                          <td className="text-right font-bold text-red">{formatCur(ord.grandTotal)}</td>
+                          <td>
+                            <span className="archive-order-id">#{ord.orderId}</span>
+                          </td>
+                          <td>
+                            <div className="archive-date-col">
+                              <span className="date-main">{formatDate(ord.createdAt).date}</span>
+                              <span className="date-sub">{formatDate(ord.createdAt).time}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <strong className="archive-customer-name">{ord.customer?.name || 'Customer'}</strong>
+                          </td>
+                          <td>
+                            <a href={`tel:${ord.customer?.phone}`} className="archive-phone-link">
+                              {ord.customer?.phone}
+                            </a>
+                          </td>
+                          <td className="text-right">
+                            <span className="archive-price-tag">{formatCur(ord.grandTotal)}</span>
+                          </td>
                           <td className="text-center">
-                            <button
-                              onClick={() => handleRestoreOrder(ord.orderId)}
-                              className="btn btn-outline-light btn-xs"
-                              title="Restore to active orders"
-                            >
-                              <Undo2 size={13} />
-                              <span>Restore</span>
-                            </button>
+                            <div className="archive-actions-cell">
+                              <button
+                                type="button"
+                                onClick={() => handleRestoreOrder(ord.orderId)}
+                                className="btn-archive-restore"
+                                title="Restore back to active orders list"
+                              >
+                                <Undo2 size={13} />
+                                <span>Restore</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => generateOrderPdf(ord, settings, true)}
+                                className="btn-archive-icon"
+                                title="Download Invoice PDF"
+                              >
+                                <Download size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => printOrderDocument(ord, settings)}
+                                className="btn-archive-icon"
+                                title="Print Receipt"
+                              >
+                                <Printer size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -4770,6 +4857,379 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           background: #fecaca;
           color: #b91c1c;
           transform: translateY(-1px);
+        }
+        /* =============================================================
+           MODAL: BACKUP BILLS ARCHIVE (DARK LUXURY THEME MATCHED)
+           ============================================================= */
+        .backup-archive-modal-card {
+          max-width: 860px;
+          width: min(860px, 94vw);
+          background: linear-gradient(155deg, #10192e 0%, #090e1d 100%);
+          border: 1px solid rgba(255, 183, 3, 0.4);
+          border-radius: 22px;
+          box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 45px rgba(255, 183, 3, 0.12);
+          overflow: hidden;
+          animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+          display: flex;
+          flex-direction: column;
+          max-height: 88vh;
+          color: #ffffff;
+        }
+
+        .archive-modal-header {
+          padding: 1.45rem 1.75rem 1.15rem;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+          background: rgba(255, 255, 255, 0.02);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          position: relative;
+        }
+
+        .archive-header-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+        }
+
+        .archive-pill-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          align-self: flex-start;
+          font-size: 0.7rem;
+          font-weight: 800;
+          color: #ffd166;
+          background: rgba(255, 183, 3, 0.12);
+          border: 1px solid rgba(255, 183, 3, 0.35);
+          padding: 0.25rem 0.75rem;
+          border-radius: 9999px;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+        }
+
+        .archive-modal-title {
+          font-size: 1.45rem;
+          font-weight: 900;
+          color: #ffffff;
+          margin: 0;
+          line-height: 1.2;
+          letter-spacing: -0.01em;
+        }
+
+        .archive-modal-subtext {
+          font-size: 0.85rem;
+          color: #94a3b8;
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .archive-modal-close-btn {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          background: rgba(255, 255, 255, 0.08);
+          color: #cbd5e1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          flex-shrink: 0;
+        }
+
+        .archive-modal-close-btn:hover {
+          background: rgba(239, 68, 68, 0.9);
+          border-color: #ef4444;
+          color: #ffffff;
+          transform: scale(1.08);
+          box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+        }
+
+        .archive-modal-close-btn:active {
+          transform: scale(0.92);
+        }
+
+        .archive-modal-body {
+          padding: 1.35rem 1.75rem 1.6rem;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .archive-toolbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .archive-search-box {
+          position: relative;
+          flex: 1;
+          min-width: 260px;
+          display: flex;
+          align-items: center;
+        }
+
+        .archive-search-icon {
+          position: absolute;
+          left: 0.95rem;
+          color: #ffb703;
+          pointer-events: none;
+        }
+
+        .archive-search-input {
+          width: 100%;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 0.65rem 2.2rem 0.65rem 2.5rem;
+          color: #ffffff;
+          font-size: 0.88rem;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+
+        .archive-search-input:focus {
+          border-color: #ffb703;
+          background: rgba(255, 255, 255, 0.08);
+          box-shadow: 0 0 16px rgba(255, 183, 3, 0.25);
+        }
+
+        .archive-search-input::placeholder {
+          color: #64748b;
+        }
+
+        .archive-clear-search {
+          position: absolute;
+          right: 0.75rem;
+          background: none;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          padding: 2px;
+        }
+
+        .archive-clear-search:hover {
+          color: #ffffff;
+        }
+
+        .archive-count-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #cbd5e1;
+          font-size: 0.82rem;
+          padding: 0.55rem 0.95rem;
+          border-radius: 10px;
+          white-space: nowrap;
+        }
+
+        .archive-count-badge strong {
+          color: #ffd166;
+        }
+
+        .archive-policy-note {
+          background: linear-gradient(135deg, rgba(255, 183, 3, 0.08) 0%, rgba(255, 111, 0, 0.04) 100%);
+          border: 1px solid rgba(255, 183, 3, 0.25);
+          border-radius: 12px;
+          padding: 0.75rem 1rem;
+          color: #cbd5e1;
+          font-size: 0.82rem;
+          line-height: 1.45;
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+        }
+
+        .archive-policy-note strong {
+          color: #ffd166;
+        }
+
+        .archive-empty-state {
+          padding: 3rem 1.5rem;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.65rem;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px dashed rgba(255, 255, 255, 0.12);
+          border-radius: 16px;
+        }
+
+        .archive-empty-icon-wrap {
+          width: 64px;
+          height: 64px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, rgba(255, 183, 3, 0.15) 0%, rgba(255, 111, 0, 0.08) 100%);
+          border: 1px solid rgba(255, 183, 3, 0.35);
+          color: #ffb703;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 25px rgba(255, 183, 3, 0.15);
+          margin-bottom: 0.25rem;
+        }
+
+        .archive-empty-title {
+          font-size: 1.18rem;
+          font-weight: 800;
+          color: #ffffff;
+          margin: 0;
+        }
+
+        .archive-empty-desc {
+          font-size: 0.86rem;
+          color: #94a3b8;
+          max-width: 440px;
+          margin: 0 auto;
+          line-height: 1.5;
+        }
+
+        .archive-table-wrapper {
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 14px;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        .archive-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.88rem;
+          color: #e2e8f0;
+        }
+
+        .archive-table th {
+          background: rgba(255, 255, 255, 0.05);
+          color: #94a3b8;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.6px;
+          text-transform: uppercase;
+          padding: 0.8rem 1rem;
+          text-align: left;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .archive-table td {
+          padding: 0.85rem 1rem;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          vertical-align: middle;
+        }
+
+        .archive-table tr:hover {
+          background: rgba(255, 183, 3, 0.04);
+        }
+
+        .archive-order-id {
+          font-family: monospace;
+          font-weight: 800;
+          color: #ffd166;
+          background: rgba(255, 183, 3, 0.1);
+          border: 1px solid rgba(255, 183, 3, 0.3);
+          padding: 0.2rem 0.55rem;
+          border-radius: 6px;
+          font-size: 0.82rem;
+        }
+
+        .archive-date-col {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+        }
+
+        .date-main {
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .date-sub {
+          font-size: 0.74rem;
+          color: #64748b;
+        }
+
+        .archive-customer-name {
+          color: #ffffff;
+          font-weight: 700;
+        }
+
+        .archive-phone-link {
+          color: #93c5fd;
+          text-decoration: none;
+          font-family: monospace;
+          font-size: 0.85rem;
+        }
+
+        .archive-phone-link:hover {
+          text-decoration: underline;
+        }
+
+        .archive-price-tag {
+          font-weight: 900;
+          color: #ffb703;
+          font-size: 0.95rem;
+          text-shadow: 0 0 10px rgba(255, 183, 3, 0.25);
+        }
+
+        .archive-actions-cell {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.45rem;
+        }
+
+        .btn-archive-restore {
+          background: rgba(16, 185, 129, 0.15);
+          border: 1px solid rgba(16, 185, 129, 0.4);
+          color: #34d399;
+          font-size: 0.78rem;
+          font-weight: 700;
+          padding: 0.35rem 0.75rem;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .btn-archive-restore:hover {
+          background: #10b981;
+          color: #ffffff;
+          border-color: #10b981;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-archive-icon {
+          width: 30px;
+          height: 30px;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 8px;
+          color: #cbd5e1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .btn-archive-icon:hover {
+          background: rgba(255, 255, 255, 0.15);
+          color: #ffffff;
+          border-color: rgba(255, 255, 255, 0.25);
         }
 
         /* =============================================================
