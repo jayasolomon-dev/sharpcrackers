@@ -241,137 +241,109 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     const totalOrderQty = (submittedOrder.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
 
     return (
-      <div className="order-submitted-overlay">
-        <div className="order-submitted-modal card">
-          {/* Top-Right Header Actions: Download Invoice & Close X Button */}
-          <div className="submitted-modal-top-actions">
-            <button 
-              type="button" 
-              onClick={handleDownloadPdf} 
-              className="submitted-modal-download-btn" 
-              title="Download Official Order Invoice PDF"
-            >
-              <Download size={15} />
-              <span>Download Invoice</span>
-            </button>
-            <button 
-              type="button" 
-              onClick={handleReturnToProducts} 
-              className="submitted-modal-close-btn" 
-              title="Close and return to products catalog"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Success Checkmark with Ambient Ring */}
-          <div className="submitted-icon-wrap">
-            <div className="icon-ambient-pulse"></div>
-            <CheckCircle size={44} className="submitted-check-icon" />
-          </div>
-
-          {/* Factory Desk Live Status Pill */}
-          <div className="factory-desk-badge">
-            <span className="live-radar-dot"></span>
-            <Sparkles size={13} className="text-amber" />
-            <span>ORDER RECEIVED AT SIVAKASI FACTORY DESK</span>
-          </div>
-
-          <h1 className="submitted-main-title">Thank You For Ordering!</h1>
-
-          <div className="order-id-chip-row">
-            <span className="order-id-chip">
-              Order ID: <strong>#{submittedOrder.orderId}</strong>
-            </span>
-          </div>
-          
-          {/* 24-Hour Confirmation Reach Box */}
-          <div className="reach-highlight-box">
-            <Clock size={20} className="reach-clock-icon" />
-            <span>
-              Our Sivakasi team will reach you within <strong>24 hours</strong> at <strong className="phone-accent">{submittedOrder.customer.phone}</strong>
-            </span>
-          </div>
-
-          <p className="submitted-subtext">
-            Your cracker booking has been registered directly on our live factory server.
-          </p>
-
-          {/* Clean Aligned 2x2 Glass Summary Grid */}
-          <div className="submitted-quick-info">
-            <div className="info-stat-card">
-              <span className="stat-label">Customer Name</span>
-              <strong className="stat-val" title={submittedOrder.customer.name}>{submittedOrder.customer.name}</strong>
+      <div className="order-submitted-overlay" onClick={handleReturnToProducts}>
+        <div className="order-submitted-modal card" onClick={(e) => e.stopPropagation()}>
+          {/* Header Row: Status Badge & Actions */}
+          <div className="submitted-modal-header">
+            <div className="submitted-status-pill">
+              <CheckCircle size={15} className="text-emerald" />
+              <span>Order Confirmed</span>
+              <span className="order-chip-num">#{submittedOrder.orderId}</span>
             </div>
-            <div className="info-stat-card">
-              <span className="stat-label">Mobile Number</span>
-              <strong className="stat-val">{submittedOrder.customer.phone}</strong>
-            </div>
-            <div className="info-stat-card">
-              <span className="stat-label">Products Ordered</span>
-              <strong className="stat-val">{submittedOrder.items.length} varieties ({totalOrderQty} boxes)</strong>
-            </div>
-            <div className="info-stat-card total-stat-card">
-              <span className="stat-label">Total Amount</span>
-              <strong className="stat-val text-amber-glow">{formatCur(submittedOrder.grandTotal)}</strong>
+
+            <div className="submitted-modal-top-actions">
+              <button 
+                type="button" 
+                onClick={handleDownloadPdf} 
+                className="submitted-modal-download-btn" 
+                title="Download Official Order Invoice PDF"
+              >
+                <Download size={13} />
+                <span>Download Invoice</span>
+              </button>
+              <button 
+                type="button" 
+                onClick={handleReturnToProducts} 
+                className="submitted-modal-close-btn" 
+                title="Close and return to products catalog"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
 
-          {/* Primary Action: Return to Products List */}
-          <div className="modal-cta-group">
-            <button 
-              type="button"
-              onClick={handleReturnToProducts} 
-              className="btn btn-primary btn-lg return-catalog-btn"
-            >
-              <span>Back to Products List</span>
-              <ArrowRight size={18} />
-            </button>
+          {/* Title & Contact Note */}
+          <div className="submitted-body-content">
+            <h2 className="submitted-compact-title">Thank You For Ordering!</h2>
+            <p className="submitted-reach-text">
+              <Clock size={14} className="text-amber" />
+              <span>Our Sivakasi team will reach you within <strong>24 hrs</strong> at <strong className="phone-accent">{submittedOrder.customer.phone}</strong></span>
+            </p>
 
-            {/* Official Order Receipt Actions */}
-            <div className="sample-receipt-actions">
-              <span className="sample-receipt-hint">Download or Share Official Order Copy</span>
-              <div className="receipt-buttons-row">
-                <CreativeActionButton
-                  variant="pdf"
-                  onClick={handleDownloadPdf}
-                  label="Download PDF"
-                  size="md"
-                />
-                <CreativeActionButton
-                  variant="print"
-                  onClick={handlePrintReceipt}
-                  label="Print Receipt"
-                  size="md"
-                />
-                <button 
-                  type="button"
-                  onClick={handleSendOrderToWhatsApp} 
-                  className="whatsapp-receipt-btn"
-                >
-                  <MessageSquare size={17} />
-                  <span>WhatsApp</span>
-                </button>
+            {/* Compact Glass Summary Strip */}
+            <div className="submitted-compact-strip">
+              <div className="strip-col">
+                <span className="strip-label">Customer</span>
+                <strong className="strip-val">{submittedOrder.customer.name}</strong>
+              </div>
+              <div className="strip-divider"></div>
+              <div className="strip-col">
+                <span className="strip-label">Ordered Items</span>
+                <strong className="strip-val">{submittedOrder.items.length} items ({totalOrderQty} boxes)</strong>
+              </div>
+              <div className="strip-divider"></div>
+              <div className="strip-col strip-col-total">
+                <span className="strip-label">Total Amount</span>
+                <strong className="strip-val total-price-glow">{formatCur(submittedOrder.grandTotal)}</strong>
               </div>
             </div>
           </div>
+
+          {/* Action Buttons Row */}
+          <div className="submitted-modal-footer">
+            <button 
+              type="button"
+              onClick={handleReturnToProducts} 
+              className="btn-compact-primary"
+            >
+              <span>Back to Products</span>
+              <ArrowRight size={15} />
+            </button>
+            <button 
+              type="button"
+              onClick={handleSendOrderToWhatsApp} 
+              className="btn-compact-whatsapp"
+              title="Share Order on WhatsApp"
+            >
+              <MessageSquare size={15} />
+              <span>WhatsApp</span>
+            </button>
+            <button 
+              type="button"
+              onClick={handlePrintReceipt} 
+              className="btn-compact-print"
+              title="Print Order Receipt"
+            >
+              <Printer size={15} />
+            </button>
+          </div>
         </div>
 
-        {/* Self-Contained Modal CSS (Guarantees 100% Matching Dark Theme) */}
+        {/* Self-Contained Modal CSS (Guarantees Minimal, Sleek Dark Theme) */}
         <style>{`
           .order-submitted-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(5, 10, 24, 0.88);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            background: rgba(3, 7, 18, 0.82);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 99999;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.25rem;
-            animation: fadeInModal 0.25s ease-out;
+            padding: 1rem;
+            animation: fadeInModal 0.2s ease-out;
             font-family: inherit;
           }
 
@@ -381,49 +353,75 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           }
 
           .order-submitted-modal {
-            background: linear-gradient(155deg, #131d36 0%, #0a1124 100%);
-            border: 1.5px solid rgba(255, 183, 3, 0.45);
-            max-width: 580px;
+            background: linear-gradient(155deg, #10192e 0%, #090e1d 100%);
+            border: 1px solid rgba(255, 183, 3, 0.4);
+            max-width: 480px;
             width: 100%;
-            border-radius: 24px;
-            padding: 2.5rem 2rem 2.25rem;
-            text-align: center;
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 45px rgba(255, 183, 3, 0.15);
+            border-radius: 18px;
+            padding: 1.35rem 1.45rem 1.25rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(255, 183, 3, 0.12);
             position: relative;
-            overflow: hidden;
-            animation: scaleInModal 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: scaleInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
           }
 
           @keyframes scaleInModal {
-            from { transform: scale(0.92) translateY(15px); opacity: 0; }
+            from { transform: scale(0.94) translateY(10px); opacity: 0; }
             to { transform: scale(1) translateY(0); opacity: 1; }
           }
 
-          .submitted-modal-top-actions {
-            position: absolute;
-            top: 1.15rem;
-            right: 1.15rem;
+          .submitted-modal-header {
             display: flex;
             align-items: center;
-            gap: 0.65rem;
-            z-index: 25;
+            justify-content: space-between;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.85rem;
+          }
+
+          .submitted-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #34d399;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+          }
+
+          .order-chip-num {
+            color: #ffd166;
+            font-weight: 800;
+            padding-left: 0.35rem;
+            border-left: 1px solid rgba(16, 185, 129, 0.4);
+            margin-left: 0.25rem;
+          }
+
+          .submitted-modal-top-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
           }
 
           .submitted-modal-download-btn {
             background: linear-gradient(135deg, rgba(255, 183, 3, 0.2) 0%, rgba(255, 111, 0, 0.25) 100%);
-            border: 1.5px solid rgba(255, 183, 3, 0.6);
+            border: 1px solid rgba(255, 183, 3, 0.55);
             color: #ffd166;
-            font-size: 0.82rem;
-            font-weight: 800;
-            padding: 0.42rem 0.95rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.32rem 0.75rem;
             border-radius: 9999px;
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
+            gap: 0.35rem;
             cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             white-space: nowrap;
           }
 
@@ -431,18 +429,13 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
             background: linear-gradient(135deg, #ffb703 0%, #ff8f00 100%);
             color: #0b1329;
             border-color: #ffb703;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(255, 183, 3, 0.5);
-          }
-
-          .submitted-modal-download-btn:active {
-            transform: translateY(0);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 183, 3, 0.4);
           }
 
           .submitted-modal-close-btn {
-            position: static;
-            width: 36px;
-            height: 36px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             border: 1px solid rgba(255, 255, 255, 0.16);
             background: rgba(255, 255, 255, 0.08);
@@ -451,316 +444,196 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
+            transition: all 0.2s ease;
           }
 
           .submitted-modal-close-btn:hover {
             background: rgba(239, 68, 68, 0.9);
             border-color: #ef4444;
             color: #ffffff;
-            transform: scale(1.08);
-            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+            transform: scale(1.06);
           }
 
-          .submitted-modal-close-btn:active {
-            transform: scale(0.92);
-          }
-
-          .submitted-icon-wrap {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          .submitted-body-content {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.15rem;
-            color: #ffffff;
-            position: relative;
-            box-shadow: 0 0 30px rgba(16, 185, 129, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.35);
+            flex-direction: column;
+            gap: 0.65rem;
           }
 
-          .icon-ambient-pulse {
-            position: absolute;
-            inset: -6px;
-            border-radius: 50%;
-            border: 2px solid rgba(16, 185, 129, 0.4);
-            animation: pulseAura 2s ease-in-out infinite;
-          }
-
-          @keyframes pulseAura {
-            0%, 100% { transform: scale(1); opacity: 0.6; }
-            50% { transform: scale(1.15); opacity: 0; }
-          }
-
-          .submitted-check-icon {
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
-          }
-
-          .factory-desk-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            background: rgba(16, 185, 129, 0.12);
-            border: 1px solid rgba(16, 185, 129, 0.35);
-            color: #34d399;
-            font-size: 0.74rem;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            padding: 0.3rem 0.85rem;
-            border-radius: 9999px;
-            margin-bottom: 0.75rem;
-            text-transform: uppercase;
-          }
-
-          .live-radar-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 8px #10b981;
-            animation: radarBlink 1.5s infinite;
-          }
-
-          @keyframes radarBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-          }
-
-          .submitted-main-title {
-            font-size: 2.1rem;
+          .submitted-compact-title {
+            font-size: 1.35rem;
             font-weight: 900;
             color: #ffffff;
-            margin: 0 0 0.45rem;
-            line-height: 1.15;
-            letter-spacing: -0.02em;
+            margin: 0;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
           }
 
-          .order-id-chip-row {
-            margin-bottom: 0.95rem;
-          }
-
-          .order-id-chip {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            color: #cbd5e1;
-            font-size: 0.86rem;
-            padding: 0.25rem 0.85rem;
-            border-radius: 9999px;
-          }
-
-          .order-id-chip strong {
-            color: #ffd166;
-            letter-spacing: 0.5px;
-          }
-
-          .reach-highlight-box {
-            background: linear-gradient(135deg, rgba(255, 111, 0, 0.12) 0%, rgba(255, 183, 3, 0.08) 100%);
-            border: 1px solid rgba(255, 183, 3, 0.35);
-            color: #ffd166;
-            padding: 0.85rem 1.25rem;
-            border-radius: 14px;
+          .submitted-reach-text {
+            font-size: 0.84rem;
+            color: #94a3b8;
+            margin: 0;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            font-size: 0.95rem;
-            line-height: 1.45;
-            margin-bottom: 0.75rem;
-          }
-
-          .reach-clock-icon {
-            color: #ffb703;
-            flex-shrink: 0;
+            gap: 0.45rem;
+            line-height: 1.4;
           }
 
           .phone-accent {
-            color: #ffffff;
-            text-decoration: underline;
-            text-underline-offset: 3px;
+            color: #ffd166;
+            font-weight: 700;
           }
 
-          .submitted-subtext {
-            font-size: 0.88rem;
-            color: #94a3b8;
-            margin: 0 0 1.25rem;
-            line-height: 1.5;
-          }
-
-          .submitted-quick-info {
-            background: rgba(255, 255, 255, 0.03);
+          .submitted-compact-strip {
+            background: rgba(255, 255, 255, 0.035);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 0.85rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.65rem;
-            margin-bottom: 1.35rem;
+            border-radius: 12px;
+            padding: 0.65rem 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+            margin-top: 0.25rem;
           }
 
-          .info-stat-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 12px;
-            padding: 0.75rem 0.95rem;
-            text-align: left;
+          .strip-col {
             display: flex;
             flex-direction: column;
-            gap: 0.2rem;
-            transition: all 0.2s ease;
+            gap: 0.15rem;
+            flex: 1;
+            min-width: 0;
           }
 
-          .info-stat-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.12);
+          .strip-divider {
+            width: 1px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
           }
 
-          .total-stat-card {
-            background: linear-gradient(135deg, rgba(255, 183, 3, 0.15) 0%, rgba(255, 111, 0, 0.08) 100%);
-            border-color: rgba(255, 183, 3, 0.4);
-          }
-
-          .stat-label {
-            font-size: 0.7rem;
-            font-weight: 800;
-            letter-spacing: 0.6px;
-            color: #94a3b8;
-            text-transform: uppercase;
-          }
-
-          .total-stat-card .stat-label {
-            color: #ffd166;
-          }
-
-          .stat-val {
-            font-size: 1rem;
+          .strip-label {
+            font-size: 0.66rem;
             font-weight: 700;
-            color: #ffffff;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .strip-val {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #e2e8f0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
           }
 
-          .text-amber-glow {
+          .strip-col-total .strip-label {
+            color: #ffd166;
+          }
+
+          .total-price-glow {
             color: #ffb703;
-            font-size: 1.3rem;
+            font-size: 1.05rem;
             font-weight: 900;
-            letter-spacing: -0.01em;
-            text-shadow: 0 0 12px rgba(255, 183, 3, 0.35);
+            text-shadow: 0 0 10px rgba(255, 183, 3, 0.35);
           }
 
-          .modal-cta-group {
+          .submitted-modal-footer {
             display: flex;
-            flex-direction: column;
-            gap: 1.15rem;
+            align-items: center;
+            gap: 0.55rem;
+            margin-top: 0.25rem;
           }
 
-          .return-catalog-btn {
-            width: 100%;
-            min-height: 52px;
+          .btn-compact-primary {
+            flex: 1;
+            min-height: 40px;
             background: linear-gradient(135deg, #ff6f00 0%, #ff8f00 100%);
             border: none;
-            border-radius: 14px;
+            border-radius: 10px;
             color: #ffffff;
-            font-size: 1.05rem;
+            font-size: 0.88rem;
             font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            box-shadow: 0 8px 24px rgba(255, 111, 0, 0.45);
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          }
-
-          .return-catalog-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(255, 111, 0, 0.6);
-            background: linear-gradient(135deg, #ff7a00 0%, #ffa000 100%);
-          }
-
-          .return-catalog-btn:active {
-            transform: translateY(0);
-          }
-
-          .sample-receipt-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 0.45rem;
-          }
-
-          .sample-receipt-hint {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #94a3b8;
-            letter-spacing: 0.3px;
-          }
-
-          .receipt-buttons-row {
-            display: flex;
-            gap: 0.6rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            align-items: center;
-          }
-
-          .whatsapp-receipt-btn {
-            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
-            color: #ffffff;
-            font-weight: 700;
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
-            border: none;
-            padding: 0.65rem 1.2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+            justify-content: center;
+            gap: 0.4rem;
             cursor: pointer;
-            font-size: 0.94rem;
-            min-height: 44px;
+            box-shadow: 0 4px 14px rgba(255, 111, 0, 0.35);
             transition: all 0.2s ease;
           }
 
-          .whatsapp-receipt-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(37, 211, 102, 0.5);
+          .btn-compact-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(255, 111, 0, 0.5);
           }
 
-          .whatsapp-receipt-btn:active {
-            transform: translateY(0);
+          .btn-compact-whatsapp {
+            min-height: 40px;
+            padding: 0 0.85rem;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 0.84rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+            transition: all 0.2s ease;
           }
 
-          @media (max-width: 576px) {
+          .btn-compact-whatsapp:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 211, 102, 0.45);
+          }
+
+          .btn-compact-print {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 10px;
+            color: #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+          }
+
+          .btn-compact-print:hover {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+          }
+
+          @media (max-width: 480px) {
             .order-submitted-modal {
-              padding: 2.5rem 1.15rem 1.75rem;
-              border-radius: 20px;
+              padding: 1.15rem 1rem 1rem;
+              border-radius: 16px;
             }
-            .submitted-modal-top-actions {
-              top: 0.85rem;
-              right: 0.85rem;
-              gap: 0.45rem;
+            .submitted-compact-title {
+              font-size: 1.2rem;
             }
-            .submitted-modal-download-btn {
-              font-size: 0.76rem;
-              padding: 0.35rem 0.75rem;
-            }
-            .submitted-modal-close-btn {
-              width: 32px;
-              height: 32px;
-            }
-            .submitted-main-title {
-              font-size: 1.65rem;
-            }
-            .submitted-quick-info {
-              grid-template-columns: 1fr;
-            }
-            .reach-highlight-box {
-              font-size: 0.88rem;
+            .submitted-compact-strip {
               flex-direction: column;
-              text-align: center;
-              padding: 0.75rem 1rem;
+              align-items: flex-start;
+              gap: 0.4rem;
+            }
+            .strip-divider {
+              display: none;
+            }
+            .submitted-modal-footer {
+              flex-wrap: wrap;
+            }
+            .btn-compact-primary {
+              width: 100%;
+              flex: auto;
             }
           }
         `}</style>
