@@ -11,7 +11,6 @@ import { dataService } from '../services/dataService';
 import { generateOrderPdf, printOrderDocument } from '../utils/pdfGenerator';
 import confetti from 'canvas-confetti';
 import CreativeActionButton from '../components/CreativeActionButton';
-import { LiveOrderTrackerModal } from '../components/LiveOrderTrackerModal';
 import { 
   ShoppingCart, 
   Trash2, 
@@ -30,7 +29,9 @@ import {
   Receipt,
   ArrowRight,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  Download,
+  X
 } from 'lucide-react';
 
 export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
@@ -65,14 +66,9 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedOrder, setSubmittedOrder] = useState(null);
-  const [countdown, setCountdown] = useState(5);
 
   const formatCur = (num) => `₹${Number(num || 0).toLocaleString('en-IN')}`;
 
-  // Enforce Minimum Wholesale Order Value from Settings
-  const minOrderAmount = Number(settings?.minOrderAmount || 1500);
-  const isBelowMinOrder = cartGrandTotal > 0 && cartGrandTotal < minOrderAmount;
-  const amountNeeded = Math.max(0, minOrderAmount - cartGrandTotal);
 
   // Input Sanitizers & Handlers
   const handleNameChange = (e) => {
@@ -143,10 +139,6 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
       alert("Your order sheet is empty. Please select products before submitting.");
       return;
     }
-    if (isBelowMinOrder) {
-      alert(`Minimum Sivakasi wholesale order amount is ₹${minOrderAmount.toLocaleString('en-IN')}. Please add items worth ₹${amountNeeded.toLocaleString('en-IN')} more to confirm your order.`);
-      return;
-    }
 
     setIsSubmitting(true);
 
@@ -161,7 +153,9 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           unitPrice: item.unitPrice,
           quantity: item.quantity,
           totalPrice: item.totalPrice,
-          image: item.image
+          image: item.image && String(item.image).startsWith('data:') 
+            ? (item.code ? `/images/products/${String(item.code).toLowerCase()}.jpg` : '') 
+            : item.image
         }))
       };
 
@@ -189,23 +183,10 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     }
   };
 
-  // Auto redirect countdown back to Products List
-  useEffect(() => {
-    let timer = null;
-    if (submittedOrder && countdown > 0) {
-      timer = setTimeout(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-    } else if (submittedOrder && countdown === 0) {
-      // Go back to product list
-      setCurrentPage('products');
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [submittedOrder, countdown, setCurrentPage]);
+  // Return back to Products List (Triggered via X button or Return button)
 
   const handleReturnToProducts = () => {
+    setSubmittedOrder(null);
     setCurrentPage('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -253,18 +234,536 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
   };
 
   // -------------------------------------------------------------
-  // SUCCESS NOTIFICATION & LIVE ORDER STATUS TRACKER
+  // -------------------------------------------------------------
+  // SUCCESS NOTIFICATION & ORDER RECEIPT VIEW (Dark Luxury Theme)
   // -------------------------------------------------------------
   if (submittedOrder) {
+    const totalOrderQty = (submittedOrder.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+
     return (
-      <div className="order-submitted-overlay" style={{ overflowY: 'auto', padding: '2rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ maxWidth: '860px', margin: 'auto', width: '100%' }}>
-          <LiveOrderTrackerModal 
-            inline 
-            initialOrder={submittedOrder} 
-            onContinueShopping={handleReturnToProducts} 
-          />
+      <div className="order-submitted-overlay">
+        <div className="order-submitted-modal card">
+          {/* Top-Right Header Actions: Download Invoice & Close X Button */}
+          <div className="submitted-modal-top-actions">
+            <button 
+              type="button" 
+              onClick={handleDownloadPdf} 
+              className="submitted-modal-download-btn" 
+              title="Download Official Order Invoice PDF"
+            >
+              <Download size={15} />
+              <span>Download Invoice</span>
+            </button>
+            <button 
+              type="button" 
+              onClick={handleReturnToProducts} 
+              className="submitted-modal-close-btn" 
+              title="Close and return to products catalog"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Success Checkmark with Ambient Ring */}
+          <div className="submitted-icon-wrap">
+            <div className="icon-ambient-pulse"></div>
+            <CheckCircle size={44} className="submitted-check-icon" />
+          </div>
+
+          {/* Factory Desk Live Status Pill */}
+          <div className="factory-desk-badge">
+            <span className="live-radar-dot"></span>
+            <Sparkles size={13} className="text-amber" />
+            <span>ORDER RECEIVED AT SIVAKASI FACTORY DESK</span>
+          </div>
+
+          <h1 className="submitted-main-title">Thank You For Ordering!</h1>
+
+          <div className="order-id-chip-row">
+            <span className="order-id-chip">
+              Order ID: <strong>#{submittedOrder.orderId}</strong>
+            </span>
+          </div>
+          
+          {/* 24-Hour Confirmation Reach Box */}
+          <div className="reach-highlight-box">
+            <Clock size={20} className="reach-clock-icon" />
+            <span>
+              Our Sivakasi team will reach you within <strong>24 hours</strong> at <strong className="phone-accent">{submittedOrder.customer.phone}</strong>
+            </span>
+          </div>
+
+          <p className="submitted-subtext">
+            Your cracker booking has been registered directly on our live factory server.
+          </p>
+
+          {/* Clean Aligned 2x2 Glass Summary Grid */}
+          <div className="submitted-quick-info">
+            <div className="info-stat-card">
+              <span className="stat-label">Customer Name</span>
+              <strong className="stat-val" title={submittedOrder.customer.name}>{submittedOrder.customer.name}</strong>
+            </div>
+            <div className="info-stat-card">
+              <span className="stat-label">Mobile Number</span>
+              <strong className="stat-val">{submittedOrder.customer.phone}</strong>
+            </div>
+            <div className="info-stat-card">
+              <span className="stat-label">Products Ordered</span>
+              <strong className="stat-val">{submittedOrder.items.length} varieties ({totalOrderQty} boxes)</strong>
+            </div>
+            <div className="info-stat-card total-stat-card">
+              <span className="stat-label">Total Amount</span>
+              <strong className="stat-val text-amber-glow">{formatCur(submittedOrder.grandTotal)}</strong>
+            </div>
+          </div>
+
+          {/* Primary Action: Return to Products List */}
+          <div className="modal-cta-group">
+            <button 
+              type="button"
+              onClick={handleReturnToProducts} 
+              className="btn btn-primary btn-lg return-catalog-btn"
+            >
+              <span>Back to Products List</span>
+              <ArrowRight size={18} />
+            </button>
+
+            {/* Official Order Receipt Actions */}
+            <div className="sample-receipt-actions">
+              <span className="sample-receipt-hint">Download or Share Official Order Copy</span>
+              <div className="receipt-buttons-row">
+                <CreativeActionButton
+                  variant="pdf"
+                  onClick={handleDownloadPdf}
+                  label="Download PDF"
+                  size="md"
+                />
+                <CreativeActionButton
+                  variant="print"
+                  onClick={handlePrintReceipt}
+                  label="Print Receipt"
+                  size="md"
+                />
+                <button 
+                  type="button"
+                  onClick={handleSendOrderToWhatsApp} 
+                  className="whatsapp-receipt-btn"
+                >
+                  <MessageSquare size={17} />
+                  <span>WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Self-Contained Modal CSS (Guarantees 100% Matching Dark Theme) */}
+        <style>{`
+          .order-submitted-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 10, 24, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            animation: fadeInModal 0.25s ease-out;
+            font-family: inherit;
+          }
+
+          @keyframes fadeInModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+
+          .order-submitted-modal {
+            background: linear-gradient(155deg, #131d36 0%, #0a1124 100%);
+            border: 1.5px solid rgba(255, 183, 3, 0.45);
+            max-width: 580px;
+            width: 100%;
+            border-radius: 24px;
+            padding: 2.5rem 2rem 2.25rem;
+            text-align: center;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 45px rgba(255, 183, 3, 0.15);
+            position: relative;
+            overflow: hidden;
+            animation: scaleInModal 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            color: #ffffff;
+          }
+
+          @keyframes scaleInModal {
+            from { transform: scale(0.92) translateY(15px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+          }
+
+          .submitted-modal-top-actions {
+            position: absolute;
+            top: 1.15rem;
+            right: 1.15rem;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            z-index: 25;
+          }
+
+          .submitted-modal-download-btn {
+            background: linear-gradient(135deg, rgba(255, 183, 3, 0.2) 0%, rgba(255, 111, 0, 0.25) 100%);
+            border: 1.5px solid rgba(255, 183, 3, 0.6);
+            color: #ffd166;
+            font-size: 0.82rem;
+            font-weight: 800;
+            padding: 0.42rem 0.95rem;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+          }
+
+          .submitted-modal-download-btn:hover {
+            background: linear-gradient(135deg, #ffb703 0%, #ff8f00 100%);
+            color: #0b1329;
+            border-color: #ffb703;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(255, 183, 3, 0.5);
+          }
+
+          .submitted-modal-download-btn:active {
+            transform: translateY(0);
+          }
+
+          .submitted-modal-close-btn {
+            position: static;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+          }
+
+          .submitted-modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.9);
+            border-color: #ef4444;
+            color: #ffffff;
+            transform: scale(1.08);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+          }
+
+          .submitted-modal-close-btn:active {
+            transform: scale(0.92);
+          }
+
+          .submitted-icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.15rem;
+            color: #ffffff;
+            position: relative;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.35);
+          }
+
+          .icon-ambient-pulse {
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 2px solid rgba(16, 185, 129, 0.4);
+            animation: pulseAura 2s ease-in-out infinite;
+          }
+
+          @keyframes pulseAura {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 0; }
+          }
+
+          .submitted-check-icon {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+          }
+
+          .factory-desk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #34d399;
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            padding: 0.3rem 0.85rem;
+            border-radius: 9999px;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+          }
+
+          .live-radar-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: radarBlink 1.5s infinite;
+          }
+
+          @keyframes radarBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+          }
+
+          .submitted-main-title {
+            font-size: 2.1rem;
+            font-weight: 900;
+            color: #ffffff;
+            margin: 0 0 0.45rem;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+          }
+
+          .order-id-chip-row {
+            margin-bottom: 0.95rem;
+          }
+
+          .order-id-chip {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #cbd5e1;
+            font-size: 0.86rem;
+            padding: 0.25rem 0.85rem;
+            border-radius: 9999px;
+          }
+
+          .order-id-chip strong {
+            color: #ffd166;
+            letter-spacing: 0.5px;
+          }
+
+          .reach-highlight-box {
+            background: linear-gradient(135deg, rgba(255, 111, 0, 0.12) 0%, rgba(255, 183, 3, 0.08) 100%);
+            border: 1px solid rgba(255, 183, 3, 0.35);
+            color: #ffd166;
+            padding: 0.85rem 1.25rem;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            font-size: 0.95rem;
+            line-height: 1.45;
+            margin-bottom: 0.75rem;
+          }
+
+          .reach-clock-icon {
+            color: #ffb703;
+            flex-shrink: 0;
+          }
+
+          .phone-accent {
+            color: #ffffff;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+          }
+
+          .submitted-subtext {
+            font-size: 0.88rem;
+            color: #94a3b8;
+            margin: 0 0 1.25rem;
+            line-height: 1.5;
+          }
+
+          .submitted-quick-info {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 0.85rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+            margin-bottom: 1.35rem;
+          }
+
+          .info-stat-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 0.75rem 0.95rem;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            transition: all 0.2s ease;
+          }
+
+          .info-stat-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .total-stat-card {
+            background: linear-gradient(135deg, rgba(255, 183, 3, 0.15) 0%, rgba(255, 111, 0, 0.08) 100%);
+            border-color: rgba(255, 183, 3, 0.4);
+          }
+
+          .stat-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            color: #94a3b8;
+            text-transform: uppercase;
+          }
+
+          .total-stat-card .stat-label {
+            color: #ffd166;
+          }
+
+          .stat-val {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .text-amber-glow {
+            color: #ffb703;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: -0.01em;
+            text-shadow: 0 0 12px rgba(255, 183, 3, 0.35);
+          }
+
+          .modal-cta-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1.15rem;
+          }
+
+          .return-catalog-btn {
+            width: 100%;
+            min-height: 52px;
+            background: linear-gradient(135deg, #ff6f00 0%, #ff8f00 100%);
+            border: none;
+            border-radius: 14px;
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 8px 24px rgba(255, 111, 0, 0.45);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          .return-catalog-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 111, 0, 0.6);
+            background: linear-gradient(135deg, #ff7a00 0%, #ffa000 100%);
+          }
+
+          .return-catalog-btn:active {
+            transform: translateY(0);
+          }
+
+          .sample-receipt-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+          }
+
+          .sample-receipt-hint {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #94a3b8;
+            letter-spacing: 0.3px;
+          }
+
+          .receipt-buttons-row {
+            display: flex;
+            gap: 0.6rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+          }
+
+          .whatsapp-receipt-btn {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: #ffffff;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border: none;
+            padding: 0.65rem 1.2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+            cursor: pointer;
+            font-size: 0.94rem;
+            min-height: 44px;
+            transition: all 0.2s ease;
+          }
+
+          .whatsapp-receipt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 211, 102, 0.5);
+          }
+
+          .whatsapp-receipt-btn:active {
+            transform: translateY(0);
+          }
+
+          @media (max-width: 576px) {
+            .order-submitted-modal {
+              padding: 2.5rem 1.15rem 1.75rem;
+              border-radius: 20px;
+            }
+            .submitted-modal-top-actions {
+              top: 0.85rem;
+              right: 0.85rem;
+              gap: 0.45rem;
+            }
+            .submitted-modal-download-btn {
+              font-size: 0.76rem;
+              padding: 0.35rem 0.75rem;
+            }
+            .submitted-modal-close-btn {
+              width: 32px;
+              height: 32px;
+            }
+            .submitted-main-title {
+              font-size: 1.65rem;
+            }
+            .submitted-quick-info {
+              grid-template-columns: 1fr;
+            }
+            .reach-highlight-box {
+              font-size: 0.88rem;
+              flex-direction: column;
+              text-align: center;
+              padding: 0.75rem 1rem;
+            }
+          }
+        `}</style>
       </div>
     );
   }
@@ -715,38 +1214,21 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                   </div>
                 </div>
 
-                {/* Minimum Order Warning Banner */}
-                {isBelowMinOrder && (
-                  <div className="min-order-alert-banner">
-                    <AlertCircle size={22} className="min-order-alert-icon" />
-                    <div>
-                      <div className="min-order-alert-title">Minimum Order Requirement: {formatCur(minOrderAmount)}</div>
-                      <div className="min-order-alert-desc">
-                        Please add crackers worth <strong>{formatCur(amountNeeded)}</strong> more to place your Sivakasi wholesale order.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Submit Order Button */}
                 <div className="two-action-buttons">
                   <button 
                     type="submit" 
                     className="btn btn-primary btn-block submit-order-btn"
-                    disabled={isSubmitting || hasOutOfStockItems || isBelowMinOrder}
+                    disabled={isSubmitting || hasOutOfStockItems}
                     style={
                       hasOutOfStockItems 
                         ? { opacity: 0.75, cursor: 'not-allowed', background: '#dc2626' } 
-                        : isBelowMinOrder
-                          ? { opacity: 0.8, cursor: 'not-allowed', background: 'linear-gradient(135deg, #d97706, #b45309)' }
-                          : {}
+                        : {}
                     }
                     title={
                       hasOutOfStockItems 
                         ? "Please remove out of stock items first" 
-                        : isBelowMinOrder 
-                          ? `Minimum wholesale order value is ${formatCur(minOrderAmount)}`
-                          : "Submit Order"
+                        : "Submit Order"
                     }
                   >
                     <Send size={18} />
@@ -755,9 +1237,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                         ? 'Submitting Order...' 
                         : hasOutOfStockItems 
                           ? 'Remove Out of Stock Items to Submit' 
-                          : isBelowMinOrder
-                            ? `Min Order ${formatCur(minOrderAmount)} Required`
-                            : 'Submit Order'}
+                          : 'Submit Order'}
                     </span>
                   </button>
 
@@ -1137,44 +1617,6 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           margin-top: 0.5rem;
         }
 
-        .min-order-alert-banner {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.85rem;
-          background: #fffbeb;
-          border: 1.5px solid #fde68a;
-          color: #92400e;
-          padding: 0.9rem 1.1rem;
-          border-radius: var(--radius-md);
-          margin-top: 1rem;
-          margin-bottom: 0.5rem;
-          box-shadow: 0 2px 8px rgba(217, 119, 6, 0.08);
-          animation: fadeInMinOrder 0.3s ease;
-        }
-
-        @keyframes fadeInMinOrder {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .min-order-alert-icon {
-          color: #d97706;
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-
-        .min-order-alert-title {
-          font-weight: 700;
-          color: #b45309;
-          font-size: 0.92rem;
-          margin-bottom: 0.2rem;
-        }
-
-        .min-order-alert-desc {
-          color: #78350f;
-          font-size: 0.84rem;
-          line-height: 1.45;
-        }
 
         .submit-order-btn {
           font-size: 1.05rem;
@@ -1460,6 +1902,199 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           background: #f1f5f9 !important;
           color: #cbd5e1 !important;
           cursor: not-allowed !important;
+        }
+
+        /* Order Submitted Fullscreen Modal */
+        .order-submitted-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(5, 10, 24, 0.85);
+          backdrop-filter: blur(6px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          animation: fadeIn 0.25s ease-out;
+        }
+
+        .order-submitted-modal {
+          background: #ffffff;
+          max-width: 620px;
+          width: 100%;
+          border-radius: var(--radius-xl);
+          padding: 2.75rem 2rem 2rem;
+          text-align: center;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+          border: 2px solid #ffb703;
+          position: relative;
+          overflow: hidden;
+          animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes scaleIn {
+          from { transform: scale(0.92); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+
+        .submitted-icon-wrap {
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          background: #ecfdf5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1.25rem;
+        }
+
+        .submitted-main-title {
+          font-size: 2.2rem;
+          font-weight: 900;
+          color: #0f172a;
+          margin-bottom: 0.65rem;
+          line-height: 1.15;
+        }
+
+        .reach-highlight-box {
+          background: #fff7ed;
+          border: 1.5px solid #ffedd5;
+          color: #9a3412;
+          padding: 0.75rem 1.25rem;
+          border-radius: var(--radius-full);
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1.05rem;
+          margin-bottom: 1rem;
+        }
+
+        .submitted-subtext {
+          font-size: 0.95rem;
+          color: #64748b;
+          margin-bottom: 1.75rem;
+          line-height: 1.6;
+        }
+
+        .sample-reference-badge {
+          display: inline-block;
+          margin-top: 0.4rem;
+          background: #f1f5f9;
+          color: #475569;
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 0.2rem 0.65rem;
+          border-radius: var(--radius-full);
+          border: 1px solid #e2e8f0;
+        }
+
+        .submitted-quick-info {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: var(--radius-lg);
+          padding: 1rem;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.85rem;
+          text-align: left;
+          margin-bottom: 1.75rem;
+        }
+
+        .info-stat {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .stat-label {
+          font-size: 0.72rem;
+          color: #64748b;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+
+        .stat-val {
+          font-size: 0.95rem;
+          color: #0f172a;
+        }
+
+        .modal-cta-group {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .return-btn {
+          font-size: 1.1rem;
+          padding: 0.95rem;
+          box-shadow: 0 4px 18px rgba(255, 111, 0, 0.4);
+        }
+
+        .sample-receipt-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .sample-receipt-hint {
+          font-size: 0.8rem;
+          color: #64748b;
+        }
+
+        .redirect-progress-bar-wrap {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: #f1f5f9;
+        }
+
+        .redirect-progress-bar {
+          height: 100%;
+          background: #ff6f00;
+          transition: width 1s linear;
+        }
+
+        .submitted-modal-close-btn {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 25;
+        }
+
+        .submitted-modal-close-btn:hover {
+          background: #ef4444;
+          border-color: #ef4444;
+          color: #ffffff;
+          transform: scale(1.08);
+          box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+        }
+
+        .submitted-modal-close-btn:active {
+          transform: scale(0.92);
+        }
+
+        @media (max-width: 576px) {
+          .order-submitted-modal {
+            padding: 2rem 1.25rem 1.5rem;
+          }
+          .submitted-main-title {
+            font-size: 1.75rem;
+          }
+          .submitted-quick-info {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>

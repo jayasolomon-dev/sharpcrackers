@@ -12,8 +12,17 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "sharp-crackers-db",
-      "database_id": "77048665-9a12-4293-b5ab-fd8f668842d1"
+      "database_name": "sharpcrackers_db",
+      "database_id": "3a82141a-f116-4a3e-87c8-eef51ce157e4"
     }
-  ]
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "order-images"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 3 * * *"]
+  }
 }

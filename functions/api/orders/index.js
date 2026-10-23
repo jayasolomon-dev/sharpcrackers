@@ -58,38 +58,58 @@ export async function onRequestPost({ request, env }) {
   }
 
   try {
-    const newOrder = await request.json();
+    const order = await request.json();
+    let orderId = String(order.orderId || '').trim();
 
-    if (!newOrder.orderId || !/^SC-\d{4}-\d{4}$/.test(newOrder.orderId)) {
+    // Check if an order with this ID already exists in D1
+    let isExisting = false;
+    if (orderId && !orderId.includes('DRAFT') && !orderId.includes('TEMP')) {
+      const check = await env.DB.prepare('SELECT order_id FROM orders WHERE order_id = ?').bind(orderId).first().catch(() => null);
+      if (check) isExisting = true;
+    }
+
+    // If orderId is missing, temporary, or already taken, allocate next continuous sequence
+    if (!orderId || isExisting || orderId.includes('DRAFT') || orderId.includes('TEMP')) {
       const maxRow = await env.DB.prepare(`
-        SELECT order_id FROM orders WHERE order_id LIKE 'SC-%' ORDER BY created_at DESC LIMIT 100
+        SELECT order_id FROM orders 
+        WHERE order_id LIKE 'SC-%' 
+        ORDER BY created_at DESC 
+        LIMIT 500
       `).all().catch(() => ({ results: [] }));
-      let maxSeq = 0;
+      
+      let maxSeq = 10;
       (maxRow.results || []).forEach(r => {
-        const m = String(r.order_id).match(/SC-(?:\d{4}-)?(\d{1,4})$/i);
+        const m = String(r.order_id).match(/SC-(?:\d{4}-)?(\d+)$/i);
         if (m) {
           const n = parseInt(m[1], 10);
-          if (!isNaN(n) && n < 10000 && n > maxSeq) maxSeq = n;
+          if (!isNaN(n) && n > maxSeq) maxSeq = n;
         }
       });
       const nextSeq = maxSeq + 1;
-      newOrder.orderId = `SC-${new Date().getFullYear()}-${String(nextSeq).padStart(4, '0')}`;
-    }
-    if (!newOrder.createdAt) {
-      newOrder.createdAt = new Date().toISOString();
-    }
-    if (!newOrder.status) {
-      newOrder.status = 'Pending';
+      const currentYear = new Date().getFullYear();
+      orderId = `SC-${currentYear}-${String(nextSeq).padStart(4, '0')}`;
     }
 
-    const orderId = String(newOrder.orderId);
-    const createdAt = String(newOrder.createdAt);
-    const updatedAt = newOrder.updatedAt ? String(newOrder.updatedAt) : createdAt;
-    const customerName = String(newOrder.customer?.name || 'Customer');
-    const customerPhone = String(newOrder.customer?.phone || '');
-    const grandTotal = Number(newOrder.grandTotal || newOrder.subtotal || 0);
-    const status = String(newOrder.status || 'Pending');
-    const dataJson = JSON.stringify(newOrder);
+    // Strip heavy base64 data URLs from line items to prevent SQLITE_TOOBIG
+    const cleanOrder = { ...order };
+    if (Array.isArray(cleanOrder.items)) {
+      cleanOrder.items = cleanOrder.items.map(it => {
+        let img = it.image || '';
+        if (img.startsWith('data:')) {
+          img = it.code ? `/images/products/${String(it.code).toLowerCase()}.jpg` : '';
+        }
+        return { ...it, image: img };
+      });
+    }
+
+    const createdAt = String(cleanOrder.createdAt || new Date().toISOString());
+    const updatedAt = String(cleanOrder.updatedAt || createdAt);
+    const customerName = String(cleanOrder.customer?.name || 'Customer');
+    const customerPhone = String(cleanOrder.customer?.phone || '');
+    const grandTotal = Number(cleanOrder.grandTotal || cleanOrder.subtotal || 0);
+    const status = String(cleanOrder.status || 'Pending');
+    const fullOrder = { ...cleanOrder, orderId, createdAt, updatedAt, status, grandTotal };
+    const dataJson = JSON.stringify(fullOrder);
 
     // Insert or replace into Cloudflare D1 SQL table
     await env.DB.prepare(`
@@ -113,7 +133,9 @@ export async function onRequestPost({ request, env }) {
       dataJson
     ).run();
 
-    return new Response(JSON.stringify(newOrder), { status: 201, headers: corsHeaders });
+    await env.DB.prepare('DELETE FROM deleted_orders WHERE order_id = ?').bind(orderId).run().catch(() => {});
+
+    return new Response(JSON.stringify({ success: true, orderId, order: fullOrder }), { status: 201, headers: corsHeaders });
   } catch (err) {
     return new Response(
       JSON.stringify({ error: 'Failed to save order to D1', message: err.message }), 

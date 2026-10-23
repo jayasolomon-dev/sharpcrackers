@@ -65,7 +65,7 @@ const DEFAULT_SETTINGS = {
   branchAddress: "",
   businessHours: "8:00 AM – 10:00 PM (Monday – Sunday)",
   currencySymbol: "₹",
-  minOrderAmount: 1500,
+  minOrderAmount: 0,
   deliveryCharge: 0,
   freeDeliveryThreshold: 0,
   promoBannerText: "DIWALI 2026 SPECIAL OFFER: Flat Direct Sourcing with Heavy Savings! Order online now for guaranteed express booking!",
@@ -1802,54 +1802,68 @@ const DEFAULT_ORDERS = [
 ];
 
 // ============================================================================
-// 30-DAY BILL RETENTION & AUTO-DELETE SYSTEM
+// 30-DAY BILL RETENTION & AUTO-PURGE SYSTEM
+// Active orders are retained for 30 days. Orders older than 30 days are automatically
+// moved to the secure backup archive and removed from the active list.
 // ============================================================================
 export const ORDER_RETENTION_DAYS = 30;
-export const ORDER_RETENTION_MS = ORDER_RETENTION_DAYS * 24 * 60 * 60 * 1000; // 30 days = 2,592,000,000 ms
+export const ORDER_RETENTION_MS = ORDER_RETENTION_DAYS * 24 * 60 * 60 * 1000; // 30 days in ms
 
 /**
- * Checks if an order's createdAt is older than 30 days
+ * Checks whether an order was created more than 30 days ago
  */
-export const isOrderExpired = (order, now = Date.now()) => {
+export const isOrderExpired = (order) => {
   if (!order || !order.createdAt) return false;
-  const time = new Date(order.createdAt).getTime();
-  if (isNaN(time)) return false;
-  return (now - time) > ORDER_RETENTION_MS;
+  const createdTime = new Date(order.createdAt).getTime();
+  if (isNaN(createdTime)) return false;
+  return (Date.now() - createdTime) > ORDER_RETENTION_MS;
 };
 
 /**
- * Returns precise retention details for Admin UI (days remaining, expiry timestamp, alert flags)
+ * Returns 30-day countdown and retention details for Admin UI
  */
-export const getOrderRetentionDetails = (order, now = Date.now()) => {
+export const getOrderRetentionDetails = (order) => {
   if (!order || !order.createdAt) {
-    return { daysRemaining: ORDER_RETENTION_DAYS, isExpired: false, percentRemaining: 100, expiresAt: null };
+    return {
+      daysRemaining: 30,
+      isExpired: false,
+      percentRemaining: 100,
+      expiresAt: null,
+      isNearExpiry: false
+    };
   }
-  const time = new Date(order.createdAt).getTime();
-  if (isNaN(time)) {
-    return { daysRemaining: ORDER_RETENTION_DAYS, isExpired: false, percentRemaining: 100, expiresAt: null };
+  const createdTime = new Date(order.createdAt).getTime();
+  if (isNaN(createdTime)) {
+    return {
+      daysRemaining: 30,
+      isExpired: false,
+      percentRemaining: 100,
+      expiresAt: null,
+      isNearExpiry: false
+    };
   }
-  const ageMs = now - time;
-  const msRemaining = ORDER_RETENTION_MS - ageMs;
+  const expiresAtTime = createdTime + ORDER_RETENTION_MS;
+  const msRemaining = expiresAtTime - Date.now();
   const daysRemaining = Math.max(0, Math.ceil(msRemaining / (24 * 60 * 60 * 1000)));
-  const isExpired = ageMs > ORDER_RETENTION_MS;
   const percentRemaining = Math.max(0, Math.min(100, Math.round((msRemaining / ORDER_RETENTION_MS) * 100)));
-  const expiresAt = new Date(time + ORDER_RETENTION_MS).toISOString();
+  const isExpired = msRemaining <= 0;
+  const isNearExpiry = !isExpired && daysRemaining <= 5;
 
   return {
     daysRemaining,
     isExpired,
     percentRemaining,
-    expiresAt,
-    isNearExpiry: daysRemaining <= 5 && !isExpired
+    expiresAt: new Date(expiresAtTime).toISOString(),
+    isNearExpiry
   };
 };
 
 /**
- * Filters out any bills older than 30 days
+ * Filters and returns only active orders within the 30-day retention window
  */
-export const filterActiveOrders = (orders = [], now = Date.now()) => {
+export const filterActiveOrders = (orders = []) => {
   if (!Array.isArray(orders)) return [];
-  return orders.filter(o => !isOrderExpired(o, now));
+  return orders.filter(o => o && o.orderId && !isOrderExpired(o));
 };
 
 // Data service helpers
@@ -2394,83 +2408,78 @@ export const dataService = {
   getOrders() {
     const data = localStorage.getItem(STORAGE_KEYS.ORDERS);
     if (!data) {
-      const initialActive = filterActiveOrders(DEFAULT_ORDERS);
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(initialActive));
-      return initialActive;
+      return [];
     }
     try {
       const parsed = JSON.parse(data);
-      const deletedSet = new Set(this.getDeletedOrderIds());
-      const nonDeleted = parsed.filter(o => o && o.orderId && !deletedSet.has(o.orderId));
+      if (!Array.isArray(parsed)) return [];
+      const valid = parsed.filter(o => o && o.orderId);
       
-      // Separate active and expired (> 30 days)
-      const activeOrders = [];
-      const expiredOrders = [];
-      nonDeleted.forEach(o => {
+      // Auto-archive any expired orders (> 30 days) to keep active list clean
+      const active = [];
+      const expired = [];
+      valid.forEach(o => {
         if (isOrderExpired(o)) {
-          expiredOrders.push(o);
+          expired.push(o);
         } else {
-          activeOrders.push(o);
+          active.push(o);
         }
       });
 
-      // Automatically store expired bills into secure backup storage
-      if (expiredOrders.length > 0) {
-        this.archiveExpiredOrders(expiredOrders);
+      if (expired.length > 0) {
+        setTimeout(() => {
+          this.archiveExpiredOrders(expired);
+        }, 0);
+        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(active));
+        return this.normalizeOrderSequences(active);
       }
-      
-      const normalized = this.normalizeOrderSequences(activeOrders);
-      if (JSON.stringify(normalized) !== JSON.stringify(parsed)) {
-        localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(normalized));
-      }
-      return normalized;
+
+      return this.normalizeOrderSequences(valid);
     } catch {
-      return filterActiveOrders(DEFAULT_ORDERS);
+      return [];
     }
   },
 
-  // Manual or automatic purge of expired orders (> 30 days old)
+  // 30-Day Auto Retention: Prunes bills older than 30 days and moves to backup archive
   pruneExpiredOrders() {
-    const rawData = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    const parsed = rawData ? JSON.parse(rawData) : [];
+    const all = this.getOrders();
     const active = [];
     const expired = [];
-    parsed.forEach(o => {
-      if (isOrderExpired(o)) {
-        expired.push(o);
+
+    all.forEach(order => {
+      if (isOrderExpired(order)) {
+        expired.push(order);
       } else {
-        active.push(o);
+        active.push(order);
       }
     });
 
     if (expired.length > 0) {
       this.archiveExpiredOrders(expired);
-    }
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(active));
-    if (expired.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(active));
       notifyDataChanged({ type: 'ORDERS_PRUNED', prunedCount: expired.length });
     }
-    // Sync with cloud backend
-    this.fetchOrders().catch(() => {});
+
+    // Also trigger cloud purge on Cloudflare D1
+    fetch('/api/orders/purge-expired', {
+      method: 'POST',
+      headers: this.getAdminHeaders()
+    }).catch(() => {});
+
     return { prunedCount: expired.length, remainingCount: active.length };
   },
 
-  // Safe deduplicated two-way merge: keeps active orders within 30 days
-  mergeOrders(localOrders = [], remoteOrders = [], deletedIds = []) {
-    const deletedSet = new Set(deletedIds);
+  // Safe deduplicated two-way merge: lifetime persistence
+  mergeOrders(localOrders = [], remoteOrders = []) {
     const map = new Map();
-    const now = Date.now();
 
-    // 1. Load local orders (only active within 30 days)
-    filterActiveOrders(localOrders, now).forEach(o => {
-      if (o && o.orderId && !deletedSet.has(o.orderId)) {
-        map.set(o.orderId, o);
-      }
+    (Array.isArray(localOrders) ? localOrders : []).forEach(o => {
+      if (o && o.orderId) map.set(o.orderId, o);
     });
 
-    // 2. Merge remote orders (only active within 30 days)
-    filterActiveOrders(remoteOrders, now).forEach(ro => {
-      if (!ro || !ro.orderId || deletedSet.has(ro.orderId)) return;
+    // Remote orders from authoritative D1 database take precedence
+    (Array.isArray(remoteOrders) ? remoteOrders : []).forEach(ro => {
+      if (!ro || !ro.orderId) return;
       const existing = map.get(ro.orderId);
       if (!existing) {
         map.set(ro.orderId, ro);
@@ -2492,101 +2501,43 @@ export const dataService = {
 
   normalizeOrderSequences(orders) {
     if (!Array.isArray(orders) || orders.length === 0) return [];
-
-    // Check if there are any legacy random timestamp IDs (> 9999 or non-continuous)
-    const hasLegacyIds = orders.some(o => {
-      if (!o || !o.orderId) return false;
-      const m = String(o.orderId).match(/SC-(?:\d{4}-)?(\d+)$/i);
-      return !m || parseInt(m[1], 10) > 9999;
+    return [...orders].sort((a, b) => {
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
-
-    if (!hasLegacyIds) return orders;
-
-    // Sort chronologically (oldest first) to assign continuous sequence 1, 2, 3...
-    const sorted = [...orders].sort((a, b) => {
-      return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-    });
-
-    const currentYear = new Date().getFullYear();
-    const oldIdsToPurge = [];
-    const normalized = sorted.map((o, idx) => {
-      const seq = idx + 1;
-      const cleanId = `SC-${currentYear}-${String(seq).padStart(4, '0')}`;
-      if (o.orderId && o.orderId !== cleanId && (String(o.orderId).length > 11 || !/^SC-\d{4}-\d{4}$/.test(o.orderId))) {
-        oldIdsToPurge.push(o.orderId);
-      }
-      return {
-        ...o,
-        orderId: cleanId
-      };
-    });
-
-    // Mark old random IDs as deleted so cloud sync purges them
-    if (oldIdsToPurge.length > 0 && typeof window !== 'undefined') {
-      try {
-        const deleted = this.getDeletedOrderIds();
-        const mergedDeleted = Array.from(new Set([...deleted, ...oldIdsToPurge]));
-        localStorage.setItem(STORAGE_KEYS.DELETED_ORDERS, JSON.stringify(mergedDeleted));
-      } catch {}
-    }
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sharp_crackers_invoice_counter', String(sorted.length));
-    }
-
-    // Return in reverse chronological order (newest first for display)
-    return normalized.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   },
 
   async fetchOrders() {
-    const localOrders = this.getOrders();
-    const deletedIds = this.getDeletedOrderIds();
-
-    // 1. Try smart bidirectional sync API
+    // 1. Authoritative fetch from Cloudflare D1
     try {
-      const res = await fetch('/api/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orders: localOrders,
-          deletedOrderIds: deletedIds
-        }),
-        cache: 'no-store'
-      });
-
+      const res = await fetch('/api/orders', { cache: 'no-store' });
       if (res.ok) {
-        const data = await res.json();
-        if (data && Array.isArray(data.orders)) {
-          if (Array.isArray(data.deletedOrderIds)) {
-            const mergedDeleted = Array.from(new Set([...deletedIds, ...data.deletedOrderIds]));
-            localStorage.setItem(STORAGE_KEYS.DELETED_ORDERS, JSON.stringify(mergedDeleted));
+        const remoteOrders = await res.json();
+        if (Array.isArray(remoteOrders)) {
+          const localOrders = this.getOrders();
+          const remoteIdSet = new Set(remoteOrders.map(o => o.orderId));
+          const unsyncedPending = localOrders.filter(o => o && o.orderId && !remoteIdSet.has(o.orderId) && o.isLocalPending);
+
+          // If there are unsynced pending local orders, upload them
+          if (unsyncedPending.length > 0) {
+            for (const pending of unsyncedPending) {
+              fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pending)
+              }).catch(() => {});
+            }
           }
 
-          const merged = this.mergeOrders(localOrders, data.orders, this.getDeletedOrderIds());
-          localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(merged));
-          return merged;
+          const unified = this.normalizeOrderSequences([...remoteOrders, ...unsyncedPending]);
+          localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(unified));
+          return unified;
         }
       }
     } catch (e) {
       // Offline fallback: keep local orders intact
     }
 
-    // 2. Fallback to GET /api/orders if sync endpoint is unavailable
-    try {
-      const res = await fetch('/api/orders', { cache: 'no-store' });
-      if (res.ok) {
-        const remote = await res.json();
-        if (Array.isArray(remote)) {
-          const merged = this.mergeOrders(localOrders, remote, deletedIds);
-          localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(merged));
-          return merged;
-        }
-      }
-    } catch (e) {
-      // Fallback
-    }
-
-    return localOrders;
+    return this.getOrders();
   },
 
   getOrderById(orderId) {
@@ -2608,6 +2559,14 @@ export const dataService = {
     try {
       if (typeof window !== 'undefined' && orderId) {
         localStorage.setItem('sharp_last_customer_order_id', String(orderId));
+      }
+    } catch {}
+  },
+
+  clearLastPlacedOrderId() {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('sharp_last_customer_order_id');
       }
     } catch {}
   },
@@ -2639,15 +2598,15 @@ export const dataService = {
   generateContinuousInvoiceId() {
     const orders = this.getOrders();
     const currentYear = new Date().getFullYear();
-    let maxSeq = 0;
+    let maxSeq = 10; // Floor at 10 to avoid collision with legacy sample orders
 
-    // 1. Check all existing active orders (strictly sequences <= 9999)
+    // 1. Check all existing active orders
     orders.forEach(o => {
       if (!o || !o.orderId) return;
-      const match = String(o.orderId).match(/SC-(?:\d{4}-)?(\d{1,4})$/i);
+      const match = String(o.orderId).match(/SC-(?:\d{4}-)?(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num < 10000 && num > maxSeq) {
+        if (!isNaN(num) && num > maxSeq) {
           maxSeq = num;
         }
       }
@@ -2658,7 +2617,7 @@ export const dataService = {
       const storedSeq = typeof window !== 'undefined' ? localStorage.getItem('sharp_crackers_invoice_counter') : null;
       if (storedSeq) {
         const parsed = parseInt(storedSeq, 10);
-        if (!isNaN(parsed) && parsed < 10000 && parsed > maxSeq) {
+        if (!isNaN(parsed) && parsed > maxSeq) {
           maxSeq = parsed;
         }
       }
@@ -2673,7 +2632,6 @@ export const dataService = {
   },
 
   async createOrder(orderData) {
-    const orders = this.getOrders();
     const catalog = this.getProducts();
     let calculatedSubtotal = 0;
 
@@ -2684,6 +2642,11 @@ export const dataService = {
       const totalPrice = unitPrice * quantity;
       calculatedSubtotal += totalPrice;
 
+      let cleanImage = liveProduct.image || '';
+      if (cleanImage.startsWith('data:')) {
+        cleanImage = liveProduct.code ? `/images/products/${String(liveProduct.code).toLowerCase()}.jpg` : '';
+      }
+
       return {
         id: liveProduct.id,
         code: liveProduct.code,
@@ -2692,22 +2655,17 @@ export const dataService = {
         unitPrice: unitPrice,
         quantity: quantity,
         totalPrice: totalPrice,
-        image: liveProduct.image
+        image: cleanImage
       };
     });
 
-    const settings = this.getSettings();
-    const deliveryCharge = 0;
-    const grandTotal = calculatedSubtotal;
-
-    const orderId = orderData.orderId && !String(orderData.orderId).includes('DRAFT')
-      ? orderData.orderId 
-      : this.generateContinuousInvoiceId();
-
-    const newOrder = {
-      orderId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    const nowIso = new Date().toISOString();
+    const orderPayload = {
+      orderId: (orderData.orderId && !String(orderData.orderId).includes('DRAFT') && !String(orderData.orderId).includes('TEMP')) 
+        ? String(orderData.orderId).trim() 
+        : undefined,
+      createdAt: nowIso,
+      updatedAt: nowIso,
       customer: {
         name: orderData.customer.name.trim(),
         phone: orderData.customer.phone.trim(),
@@ -2719,31 +2677,50 @@ export const dataService = {
       items: validatedItems,
       subtotal: calculatedSubtotal,
       deliveryCharge: 0,
-      grandTotal: grandTotal,
+      grandTotal: calculatedSubtotal,
       status: 'Pending'
     };
 
-    // Save immediately locally (pruning any orders older than 30 days)
-    const activeOrders = filterActiveOrders(orders);
-    activeOrders.unshift(newOrder);
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(activeOrders));
-    this.setLastPlacedOrderId(newOrder.orderId);
-    notifyDataChanged({ type: 'ORDER_CREATED', order: newOrder });
-
-    // Sync to universal cloud/server API with guaranteed await
+    let placedOrder = null;
     try {
-      await fetch('/api/orders', {
+      const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder)
+        body: JSON.stringify(orderPayload)
       });
-      // Reconcile cloud state across all devices
-      this.fetchOrders().catch(() => {});
+      if (res.ok) {
+        const data = await res.json();
+        placedOrder = data.order || { ...orderPayload, orderId: data.orderId };
+      }
     } catch (err) {
-      console.warn('Network sync pending; order safely stored locally:', err);
+      console.warn('Network sync pending; fallback to local generator:', err);
     }
 
-    return newOrder;
+    if (!placedOrder) {
+      placedOrder = {
+        ...orderPayload,
+        orderId: this.generateContinuousInvoiceId(),
+        isLocalPending: true
+      };
+    }
+
+    // Save locally
+    const currentOrders = this.getOrders();
+    const updated = [placedOrder, ...currentOrders.filter(o => o.orderId !== placedOrder.orderId)];
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(updated));
+    this.setLastPlacedOrderId(placedOrder.orderId);
+    notifyDataChanged({ type: 'ORDER_CREATED', order: placedOrder });
+
+    // Update sequence counter
+    const seqMatch = String(placedOrder.orderId).match(/SC-(?:\d{4}-)?(\d+)$/i);
+    if (seqMatch) {
+      const num = parseInt(seqMatch[1], 10);
+      if (!isNaN(num)) {
+        localStorage.setItem('sharp_crackers_invoice_counter', String(num));
+      }
+    }
+
+    return placedOrder;
   },
 
   async updateOrderStatus(orderId, newStatus) {

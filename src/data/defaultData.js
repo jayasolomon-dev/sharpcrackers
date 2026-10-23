@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS = {
   branchAddress: "Showroom: 78, Madurai Main Highway, Virudhunagar Dist, Tamil Nadu",
   businessHours: "8:00 AM – 10:00 PM (Monday – Sunday)",
   currencySymbol: "₹",
-  minOrderAmount: 1500,
+  minOrderAmount: 0,
   deliveryCharge: 150,
   freeDeliveryThreshold: 5000,
   promoBannerText: "💥 DIWALI 2026 SPECIAL OFFER: Flat Direct Sourcing with Heavy Savings! Order online now for guaranteed express delivery! 🎆",

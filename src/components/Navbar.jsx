@@ -7,7 +7,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PillNav from './PillNav';
 import { useCart } from '../context/CartContext';
 import { dataService } from '../services/dataService';
-import { LiveOrderTrackerModal } from './LiveOrderTrackerModal';
 import { 
   Sparkles, 
   ShoppingCart, 
@@ -24,7 +23,6 @@ import {
 export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
   const { totalQuantity, totalSelectedProducts, settings, products } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showTrackerModal, setShowTrackerModal] = useState(false);
   const [lastCustomerOrder, setLastCustomerOrder] = useState(() => dataService.getLastPlacedOrder());
 
   // Live order status synchronization for Navbar
@@ -225,19 +223,6 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
               <Search size={18} />
             </button>
 
-            {/* Live Track Order Button */}
-            <button
-              type="button"
-              className={`track-order-nav-btn ${lastCustomerOrder ? 'has-active-order' : ''}`}
-              onClick={() => setShowTrackerModal(true)}
-              title={lastCustomerOrder ? `Live Order #${lastCustomerOrder.orderId}: ${lastCustomerOrder.status}` : "Track Your Order Live"}
-            >
-              <Package size={17} />
-              <span className="track-nav-label">Track Order</span>
-              {lastCustomerOrder && (
-                <span className={`nav-status-dot status-${lastCustomerOrder.status?.toLowerCase()}`} title={`Status: ${lastCustomerOrder.status}`}></span>
-              )}
-            </button>
 
             {/* Cart Button */}
             <button 
@@ -330,31 +315,6 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
                 </button>
               ))}
 
-              {/* Mobile Live Track Order Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setShowTrackerModal(true);
-                }}
-                className={`mobile-nav-item ${lastCustomerOrder ? 'active-tracker' : ''}`}
-              >
-                <div className="mobile-nav-left">
-                  <span className="mobile-nav-icon"><Package size={20} className="text-orange" /></span>
-                  <div className="mobile-nav-text">
-                    <span className="item-name">Track Order Live</span>
-                  </div>
-                </div>
-                <div className="mobile-nav-right">
-                  {lastCustomerOrder ? (
-                    <span className={`nav-status-pill status-${lastCustomerOrder.status?.toLowerCase()}`}>
-                      {lastCustomerOrder.status}
-                    </span>
-                  ) : (
-                    <span className="nav-pill-badge">Live</span>
-                  )}
-                </div>
-              </button>
 
               <div className="mobile-drawer-footer">
                 <button 
@@ -383,12 +343,6 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
         )}
       </nav>
 
-      {/* Customer Live Order Status Tracker Modal */}
-      <LiveOrderTrackerModal 
-        isOpen={showTrackerModal} 
-        onClose={() => setShowTrackerModal(false)} 
-        initialOrder={lastCustomerOrder} 
-      />
 
       <style>{`
         .sticky-nav-header {
@@ -917,73 +871,6 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           color: #ffb703;
         }
 
-        .track-order-nav-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.45rem;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          color: #f1f5f9;
-          padding: 0.45rem 0.85rem;
-          border-radius: var(--radius-md);
-          font-weight: 700;
-          font-size: 0.88rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          position: relative;
-        }
-
-        .track-order-nav-btn:hover {
-          background: rgba(255, 111, 0, 0.18);
-          border-color: #ff6f00;
-          color: #ffb703;
-          transform: translateY(-1px);
-        }
-
-        .track-order-nav-btn.has-active-order {
-          border-color: rgba(59, 130, 246, 0.5);
-          background: rgba(59, 130, 246, 0.12);
-        }
-
-        .nav-status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-        }
-
-        .nav-status-dot.status-pending {
-          background: #f59e0b;
-          box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.4);
-          animation: miniBlink 1.5s infinite;
-        }
-
-        .nav-status-dot.status-processing {
-          background: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
-          animation: miniBlink 1.2s infinite;
-        }
-
-        .nav-status-dot.status-completed {
-          background: #10b981;
-          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4);
-        }
-
-        .nav-status-dot.status-cancelled {
-          background: #ef4444;
-        }
-
-        .nav-status-pill {
-          padding: 0.2rem 0.55rem;
-          border-radius: 999px;
-          font-size: 0.72rem;
-          font-weight: 800;
-          text-transform: capitalize;
-        }
-
-        .nav-status-pill.status-pending { background: #fffbeb; color: #b45309; }
-        .nav-status-pill.status-processing { background: #eff6ff; color: #1e40af; }
-        .nav-status-pill.status-completed { background: #ecfdf5; color: #047857; }
-        .nav-status-pill.status-cancelled { background: #fef2f2; color: #b91c1c; }
 
         .cart-action-btn {
           display: flex;

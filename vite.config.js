@@ -15,51 +15,21 @@ const ENQUIRIES_FILE = path.join(DATA_DIR, 'enquiries.json')
 const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json')
 const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json')
 
-// 30-Day Bill Retention & Backup Archive System
-const ORDER_RETENTION_DAYS = 30
-const ORDER_RETENTION_MS = ORDER_RETENTION_DAYS * 24 * 60 * 60 * 1000
+// ============================================================================
+// LIFETIME ORDERS & PERMANENT RETENTION SYSTEM
+// Orders are kept permanently for lifetime without auto-expiration or purging
+// ============================================================================
+const ORDER_RETENTION_DAYS = 999999
+const ORDER_RETENTION_MS = Infinity
 
-function isOrderExpired(order, now = Date.now()) {
-  if (!order || !order.createdAt) return false
-  const time = new Date(order.createdAt).getTime()
-  if (isNaN(time)) return false
-  return (now - time) > ORDER_RETENTION_MS
+function isOrderExpired() {
+  return false
 }
 
-function appendToBackupOrders(expiredOrders = []) {
-  if (!Array.isArray(expiredOrders) || expiredOrders.length === 0) return
-  try {
-    const existing = readJsonFile(BACKUP_ORDERS_FILE, [])
-    const map = new Map()
-    existing.forEach(o => { if (o && o.orderId) map.set(o.orderId, o) })
-    const nowIso = new Date().toISOString()
-    expiredOrders.forEach(o => {
-      if (o && o.orderId && !map.has(o.orderId)) {
-        map.set(o.orderId, { ...o, archivedAt: nowIso, isArchived: true })
-      }
-    })
-    const updated = Array.from(map.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    writeJsonFile(BACKUP_ORDERS_FILE, updated)
-  } catch (err) {
-    console.error('Failed to append to backup in vite config:', err)
-  }
-}
+function appendToBackupOrders() {}
 
-function pruneExpiredOrders(orders = [], now = Date.now()) {
-  if (!Array.isArray(orders)) return []
-  const active = []
-  const expired = []
-  for (const o of orders) {
-    if (isOrderExpired(o, now)) {
-      expired.push(o)
-    } else {
-      active.push(o)
-    }
-  }
-  if (expired.length > 0) {
-    appendToBackupOrders(expired)
-  }
-  return active
+function pruneExpiredOrders(orders = []) {
+  return Array.isArray(orders) ? orders : []
 }
 
 function readJsonFile(filePath, fallback = []) {

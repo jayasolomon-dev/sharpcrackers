@@ -59,7 +59,9 @@ export function App() {
       const latest = dataService.getLastPlacedOrder();
       if (latest) {
         setLastOrderPlaced(prev => {
-          if (!prev || prev.status !== latest.status || prev.orderId !== latest.orderId) {
+          // If the user already dismissed the notification banner, do not resurrect it
+          if (!prev) return null;
+          if (prev.status !== latest.status || prev.orderId !== latest.orderId) {
             return latest;
           }
           return prev;
@@ -72,6 +74,11 @@ export function App() {
       clearInterval(timer);
     };
   }, []);
+
+  const handleDismissNotification = () => {
+    setLastOrderPlaced(null);
+    dataService.clearLastPlacedOrderId();
+  };
 
   const setCurrentPage = (page) => {
     setCurrentPageRaw(page);
@@ -221,7 +228,7 @@ export function App() {
             setCurrentPage={setCurrentPage} 
             searchInputRef={searchInputRef}
             lastOrderPlaced={lastOrderPlaced}
-            onDismissNotification={() => setLastOrderPlaced(null)}
+            onDismissNotification={handleDismissNotification}
           />
         );
 

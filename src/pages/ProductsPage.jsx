@@ -7,7 +7,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { dataService, PRODUCT_TAMIL_NAMES, CATEGORY_TAMIL_NAMES } from '../services/dataService';
 import CreativeActionButton from '../components/CreativeActionButton';
-import { LiveOrderTrackerModal } from '../components/LiveOrderTrackerModal';
+import { generateOrderPdf, printOrderDocument } from '../utils/pdfGenerator';
 import { 
   Search, 
   Filter, 
@@ -32,7 +32,8 @@ import {
   ChevronDown,
   RefreshCw,
   XCircle,
-  CheckCircle
+  CheckCircle,
+  Download
 } from 'lucide-react';
 
 export { PRODUCT_TAMIL_NAMES, CATEGORY_TAMIL_NAMES };
@@ -67,8 +68,32 @@ export const ProductsPage = ({
   const [previewProduct, setPreviewProduct] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSampleReceipt, setShowSampleReceipt] = useState(false);
-  const [showLiveTrackerModal, setShowLiveTrackerModal] = useState(false);
+  const [isNotificationVisible, setIsNotificationVisible] = useState(Boolean(lastOrderPlaced));
+  const [isNotificationFading, setIsNotificationFading] = useState(false);
   const catalogWorkspaceRef = useRef(null);
+
+  // Control order notification banner visibility based strictly on lastOrderPlaced (no auto-dismiss timer)
+  useEffect(() => {
+    if (!lastOrderPlaced) {
+      setIsNotificationVisible(false);
+      setIsNotificationFading(false);
+      return;
+    }
+
+    setIsNotificationVisible(true);
+    setIsNotificationFading(false);
+  }, [lastOrderPlaced]);
+
+  const handleCloseNotification = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    setIsNotificationFading(true);
+    setIsNotificationVisible(false);
+    if (typeof onDismissNotification === 'function') {
+      onDismissNotification();
+    }
+    dataService.clearLastPlacedOrderId();
+  };
 
   // Sync with prop if changed from Navbar/Home
   useEffect(() => {
@@ -227,9 +252,9 @@ export const ProductsPage = ({
 
   return (
     <div className="products-page-container">
-      {/* Real-time Order Success Alert Banner (Shown when returning from order submission) */}
-      {lastOrderPlaced && (
-        <section className="order-notification-banner-wrapper">
+      {/* Real-time Order Success Alert Banner (Auto-dismisses in 3 seconds or via X button) */}
+      {lastOrderPlaced && isNotificationVisible && (
+        <section className={`order-notification-banner-wrapper ${isNotificationFading ? 'banner-fading-out' : ''}`}>
           <div className="container">
             <div className={`order-notification-card card-status-${(lastOrderPlaced.status || 'pending').toLowerCase()}`}>
               <div className="order-notification-content">
@@ -286,12 +311,13 @@ export const ProductsPage = ({
 
               <div className="order-notification-actions">
                 <button 
-                  onClick={() => setShowLiveTrackerModal(true)} 
-                  className="btn btn-primary btn-sm tracker-cta-btn"
-                  title="Track Live Status"
+                  type="button"
+                  onClick={() => generateOrderPdf(lastOrderPlaced, settings, true)} 
+                  className="banner-download-invoice-btn"
+                  title="Download Official Order Invoice PDF"
                 >
-                  <Package size={15} />
-                  <span>Track Live Status</span>
+                  <Download size={15} />
+                  <span>Download Invoice</span>
                 </button>
                 <button 
                   onClick={() => setShowSampleReceipt(true)} 
@@ -301,15 +327,15 @@ export const ProductsPage = ({
                   <FileText size={15} />
                   <span>Sample Reference</span>
                 </button>
-                {onDismissNotification && (
-                  <button 
-                    onClick={onDismissNotification} 
-                    className="banner-close-btn"
-                    title="Dismiss notice"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
+                <button 
+                  type="button"
+                  onClick={handleCloseNotification} 
+                  className="banner-close-btn"
+                  title="Dismiss notice"
+                  aria-label="Close notification"
+                >
+                  <X size={18} />
+                </button>
               </div>
             </div>
           </div>
@@ -1148,12 +1174,6 @@ export const ProductsPage = ({
         </div>
       )}
 
-      {/* Customer Live Order Status Tracker Modal */}
-      <LiveOrderTrackerModal 
-        isOpen={showLiveTrackerModal} 
-        onClose={() => setShowLiveTrackerModal(false)} 
-        initialOrder={lastOrderPlaced} 
-      />
 
       <style>{`
         .order-tag-row {
@@ -1199,20 +1219,27 @@ export const ProductsPage = ({
           border: 1px solid rgba(239, 68, 68, 0.45);
         }
 
-        .tracker-cta-btn {
-          box-shadow: 0 4px 14px rgba(255, 111, 0, 0.4);
-        }
 
         .order-notification-banner-wrapper {
           background: #0f172a;
           padding: 1rem 0;
           border-bottom: 2px solid #ffb703;
           animation: slideDown 0.3s ease-out;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .order-notification-banner-wrapper.banner-fading-out {
+          animation: slideUpFade 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
         }
 
         @keyframes slideDown {
           from { transform: translateY(-20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideUpFade {
+          0% { transform: translateY(0); opacity: 1; max-height: 250px; }
+          100% { transform: translateY(-25px); opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin: 0; overflow: hidden; border-width: 0; }
         }
 
         .order-notification-card {
@@ -1299,25 +1326,62 @@ export const ProductsPage = ({
           display: flex;
           align-items: center;
           gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .banner-download-invoice-btn {
+          background: linear-gradient(135deg, #ffb703 0%, #ff8f00 100%);
+          border: none;
+          color: #0b1329;
+          font-weight: 800;
+          font-size: 0.84rem;
+          padding: 0.45rem 1rem;
+          border-radius: 9999px;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(255, 183, 3, 0.4);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          white-space: nowrap;
+        }
+
+        .banner-download-invoice-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(255, 183, 3, 0.6);
+          filter: brightness(1.08);
+        }
+
+        .banner-download-invoice-btn:active {
+          transform: translateY(0);
         }
 
         .banner-close-btn {
-          background: rgba(255, 255, 255, 0.1);
-          border: none;
-          color: #94a3b8;
-          width: 32px;
-          height: 32px;
+          background: rgba(255, 255, 255, 0.12);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #e2e8f0;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: var(--transition-fast);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          z-index: 10;
         }
 
         .banner-close-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(239, 68, 68, 0.9);
+          border-color: #ef4444;
           color: #ffffff;
+          transform: scale(1.08);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .banner-close-btn:active {
+          transform: scale(0.92);
         }
 
         .modal-content-lg {

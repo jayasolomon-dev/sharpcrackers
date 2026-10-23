@@ -39,9 +39,30 @@ CREATE TABLE IF NOT EXISTS enquiries (
 
 CREATE INDEX IF NOT EXISTS idx_enquiries_created_at ON enquiries(created_at DESC);
 
--- 4. Shop Settings Table (Banners, minimum order, contact phone, etc.)
+-- 4. Archived Orders Table (For 30-Day Auto Retention & Safe Backup)
+CREATE TABLE IF NOT EXISTS archived_orders (
+  order_id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  archived_at TEXT NOT NULL,
+  data_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_archived_created_at ON archived_orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_archived_archived_at ON archived_orders(archived_at DESC);
+
+-- 5. Shop Settings Table (Banners, minimum order, contact phone, products, etc.)
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value_json TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+-- 6. Uploaded Media Table (Fallback storage for uploaded images)
+CREATE TABLE IF NOT EXISTS uploaded_media (
+  id TEXT PRIMARY KEY,
+  filename TEXT,
+  mime_type TEXT,
+  data_base64 TEXT,
+  created_at TEXT
+);
+
