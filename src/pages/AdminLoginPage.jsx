@@ -5,13 +5,13 @@
 
 import React, { useState } from 'react';
 import { dataService } from '../services/dataService';
-import { 
-  Lock, 
-  User, 
-  Eye, 
-  EyeOff, 
-  ShieldCheck, 
-  ArrowLeft, 
+import {
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  ArrowLeft,
   Flame,
   AlertCircle
 } from 'lucide-react';
@@ -53,10 +53,10 @@ export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
         <div className="login-card card">
           <div className="login-header">
             <div className="login-logo-box">
-              <img 
-                src="/images/sharp_crackers_brand_logo.jpg" 
-                alt="Sharp Crackers Official Logo" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              <img
+                src="/images/sharp_crackers_brand_logo.jpg"
+                alt="Sharp Crackers Official Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </div>
             <h1 className="login-title">SHARP CRACKERS</h1>
@@ -79,7 +79,7 @@ export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="sharpcrackers"
+                  placeholder="username"
                   required
                   className="login-input"
                 />
