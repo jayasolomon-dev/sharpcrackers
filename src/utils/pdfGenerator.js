@@ -1,6 +1,7 @@
 // ==========================================================================
-// SHARP CRACKERS - PDF INVOICE & ORDER SHEET GENERATOR
-// Uses jsPDF & jspdf-autotable to produce crisp, publication-ready A4 invoices
+// SHARP CRACKERS - POS THERMAL RECEIPT & INVOICE GENERATOR (80MM ROLL)
+// Generates standard 80mm (3-inch) POS thermal receipts with official Logo,
+// items table, customer details, guidelines, and authorized digital signature.
 // ==========================================================================
 
 import jsPDF from 'jspdf';
@@ -8,271 +9,341 @@ import autoTable from 'jspdf-autotable';
 import { SHARP_LOGO_INVOICE_BASE64 } from './logoInvoiceBase64.js';
 import { SHARP_SIGNATURE_BASE64 } from './signatureBase64.js';
 
+/**
+ * Generates and downloads a thermal receipt (80mm width POS format) as PDF.
+ * Uses dynamic height to provide a seamless continuous receipt roll.
+ */
 export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   const jsPDFClass = typeof jsPDF === 'function' ? jsPDF : (jsPDF.jsPDF || jsPDF);
+
+  const receiptWidth = 80; // Standard 80mm POS thermal receipt width
+  const totalItems = (order.items || []).length;
+  const totalQuantity = (order.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+  const grandTotal = order.grandTotal || (order.items || []).reduce((sum, it) => sum + ((it.unitPrice || 0) * (it.quantity || 0)), 0);
+
+  // Dynamic height calculation for thermal roll (prevents mid-receipt cut)
+  const baseThermalHeight = 175;
+  const itemsHeight = totalItems * 7.5;
+  const notesHeight = order.customer?.notes ? 8 : 0;
+  const calculatedHeight = Math.max(180, Math.ceil(baseThermalHeight + itemsHeight + notesHeight));
+
   const doc = new jsPDFClass({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4'
+    format: [receiptWidth, calculatedHeight]
   });
 
-  const primaryColor = [10, 19, 41]; // Deep navy
-  const accentColor = [217, 4, 41]; // Festive red
-  const grayBorder = [200, 205, 215];
-
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  // Helper format currency
   const formatCur = (num) => `Rs. ${Number(num || 0).toLocaleString('en-IN')}`;
 
-  // 1. Header Banner & Business Info
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageWidth, 28, 'F');
-
-  // Accent gold line
-  doc.setFillColor(255, 183, 3);
-  doc.rect(0, 28, pageWidth, 1.5, 'F');
-
-  // Official Brand Logo (Website Genuine Asset)
-  try {
-    doc.addImage(SHARP_LOGO_INVOICE_BASE64, 'JPEG', 14, 4, 20, 20);
-  } catch (e) {
-    console.warn("Invoice logo render fallback:", e);
-  }
-
-  // Company Name & Taglines beside Logo
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(settings.shopName || "SHARP CRACKERS", 38, 12);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(255, 215, 110);
-  doc.text(settings.tagline || "Light Up Your Celebrations! • Direct From Sivakasi", 38, 17);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(220, 225, 235);
-  doc.text("Direct Sivakasi Fireworks Showroom & Wholesale Order Desk", 38, 22);
-
-  // Document Title Pill on Top Right
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(255, 255, 255);
-  doc.text("CUSTOMER ORDER SHEET", pageWidth - 14, 11, { align: 'right' });
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 215, 110);
-  doc.text(`Invoice ID: ${order.orderId || 'NEW-ORDER'}`, pageWidth - 14, 17, { align: 'right' });
-
-  doc.setFontSize(7.5);
-  doc.setTextColor(220, 225, 235);
-  doc.text(`Date: ${new Date(order.createdAt || Date.now()).toLocaleString('en-IN')}`, pageWidth - 14, 22, { align: 'right' });
-
-  // 2. Business & Customer Info Grid
-  let startY = 36;
-
-  // Left Column: Business Contact
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("SHOWROOM & FACTORY DISPATCH:", 14, startY);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(71, 85, 105);
-  const shopAddr = doc.splitTextToSize(settings.address || "89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021", 85);
-  doc.text(shopAddr, 14, startY + 4);
-  const nextShopY = startY + 4 + (shopAddr.length * 3.5);
-  doc.text(`Phone: ${settings.phone || '+91 95668 86785'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}`, 14, nextShopY);
-
-  // Right Column: Customer Details Box
-  const boxX = 110;
-  const boxWidth = pageWidth - boxX - 14;
-  
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(...grayBorder);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(boxX, startY - 2, boxWidth, 24, 2, 2, 'FD');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("CUSTOMER CONTACT DETAILS:", boxX + 4, startY + 3);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(51, 65, 85);
-  doc.text(`Name: ${order.customer?.name || 'Customer'}`, boxX + 4, startY + 8);
-  doc.text(`Mobile: ${order.customer?.phone || 'N/A'}`, boxX + 4, startY + 12.5);
-  if (order.customer?.email) {
-    doc.text(`Email: ${order.customer.email}`, boxX + 4, startY + 17);
-  }
-
-  let tableStartY = Math.max(nextShopY + 8, startY + 28);
-
-  // 3. Tabular Product Rows
-  const tableData = (order.items || []).map((item, index) => [
-    (item.sno ? String(parseInt(item.sno, 10)).padStart(3, '0') : String(index + 1).padStart(3, '0')),
-    item.code || '-',
-    item.name || '-',
-    item.packDetails || '1 pack',
-    formatCur(item.unitPrice),
-    item.quantity || 0,
-    formatCur(item.totalPrice || ((item.unitPrice || 0) * (item.quantity || 0)))
-  ]);
-
-  autoTable(doc, {
-    startY: tableStartY,
-    head: [['S.No', 'Code', 'Product Description', 'Packing Details', 'Unit Price', 'Qty', 'Total']],
-    body: tableData,
-    theme: 'grid',
-    styles: {
-      fontSize: 8,
-      cellPadding: 2.2,
-      font: 'helvetica',
-      textColor: [30, 41, 59],
-      lineColor: [226, 232, 240],
-      lineWidth: 0.2
-    },
-    headStyles: {
-      fillColor: primaryColor,
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-      halign: 'center'
-    },
-    columnStyles: {
-      0: { halign: 'center', cellWidth: 12 },
-      1: { halign: 'center', cellWidth: 20 },
-      2: { cellWidth: 'auto' },
-      3: { halign: 'center', cellWidth: 28 },
-      4: { halign: 'right', cellWidth: 24 },
-      5: { halign: 'center', cellWidth: 16, fontStyle: 'bold' },
-      6: { halign: 'right', cellWidth: 26, fontStyle: 'bold' }
-    },
-    margin: { left: 14, right: 14, bottom: 42 },
-    didDrawPage: (data) => {
-      // Running Page Footer
-      const totalPagesExp = "{total_pages_count_string}";
-      let str = "Page " + doc.internal.getNumberOfPages();
-      if (typeof doc.putTotalPages === 'function') {
-        str = str + " of " + totalPagesExp;
-      }
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(148, 163, 184);
-      doc.text(str, pageWidth / 2, pageHeight - 8, { align: 'center' });
-      doc.text("SHARP CRACKERS • Official Order Sheet • Computer Generated", 14, pageHeight - 8);
+  // Helper for dashed receipt dividers
+  const drawDashedLine = (y) => {
+    doc.setDrawColor(130, 130, 130);
+    doc.setLineWidth(0.2);
+    if (typeof doc.setLineDashPattern === 'function') {
+      doc.setLineDashPattern([1.2, 1], 0);
+    } else if (typeof doc.setLineDash === 'function') {
+      doc.setLineDash([1.2, 1], 0);
     }
-  });
+    doc.line(3, y, 77, y);
+    if (typeof doc.setLineDashPattern === 'function') {
+      doc.setLineDashPattern([], 0);
+    } else if (typeof doc.setLineDash === 'function') {
+      doc.setLineDash([], 0);
+    }
+  };
 
-  // Calculate Totals Section
-  const finalY = doc.lastAutoTable.finalY + 4;
-  const totalItemsCount = (order.items || []).length;
-  const totalQuantity = (order.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
-  const grandTotal = order.grandTotal || (order.items || []).reduce((sum, it) => sum + (it.totalPrice || (it.unitPrice * it.quantity)), 0);
+  let currentY = 5;
 
-  // Check if we need a new page for totals & signatures
-  let summaryY = finalY;
-  if (finalY > pageHeight - 48) {
-    doc.addPage();
-    summaryY = 20;
+  // 1. Official Brand Logo (Centered)
+  if (SHARP_LOGO_INVOICE_BASE64) {
+    try {
+      const logoWidth = 16;
+      const logoHeight = 16;
+      const logoX = 40 - (logoWidth / 2);
+      doc.addImage(SHARP_LOGO_INVOICE_BASE64, 'JPEG', logoX, currentY, logoWidth, logoHeight);
+      currentY += logoHeight + 2;
+    } catch (e) {
+      console.warn("Thermal receipt logo render fallback:", e);
+    }
   }
 
-  // Summary Box on Right (Total Varieties, Total Units, Total Amount - No Delivery/Pickup)
-  const summaryX = pageWidth - 80;
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(...grayBorder);
-  doc.roundedRect(summaryX, summaryY, 66, 21, 1.5, 1.5, 'FD');
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(71, 85, 105);
-  doc.text(`Total Varieties: ${totalItemsCount} items`, summaryX + 4, summaryY + 5.5);
+  // 2. Shop Name & Details (Centered POS Header)
   doc.setFont('helvetica', 'bold');
-  doc.text(`Total Units: ${totalQuantity} pkts`, summaryX + 4, summaryY + 10.5);
-
-  // Total Amount Highlight
-  doc.setFillColor(...accentColor);
-  doc.rect(summaryX, summaryY + 14, 66, 7, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  doc.text("TOTAL AMOUNT:", summaryX + 4, summaryY + 18.5);
-  doc.text(formatCur(grandTotal), summaryX + 62, summaryY + 18.5, { align: 'right' });
-
-  // Left side notes & instructions
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFontSize(13);
   doc.setTextColor(15, 23, 42);
-  doc.text("TERMS & SPECIAL INSTRUCTIONS:", 14, summaryY + 4);
+  doc.text(settings.shopName || "SHARP CRACKERS", 40, currentY, { align: 'center' });
+  currentY += 4.5;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.setTextColor(100, 116, 139);
-  const terms = [
-    "• 100% Genuine Sivakasi Green Crackers with authorized safety labels.",
-    "• Please ignite outdoors under adult supervision and keep a bucket of water handy.",
-    "• Please inspect and verify all packages before signoff."
-  ];
-  terms.forEach((t, i) => {
-    doc.text(t, 14, summaryY + 9 + (i * 4));
+  doc.setTextColor(70, 70, 70);
+  doc.text(settings.tagline || "Light Up Your Celebrations!", 40, currentY, { align: 'center' });
+  currentY += 3.5;
+
+  doc.setFontSize(7);
+  doc.setTextColor(90, 90, 90);
+  doc.text("100% Genuine Sivakasi Green Crackers", 40, currentY, { align: 'center' });
+  currentY += 3.5;
+
+  const shopAddress = settings.address || "89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021";
+  const addressLines = doc.splitTextToSize(shopAddress, 72);
+  doc.text(addressLines, 40, currentY, { align: 'center' });
+  currentY += (addressLines.length * 3) + 0.5;
+
+  const phoneText = `Ph: ${settings.phone || '+91 95668 86785'}`;
+  const emailText = settings.email || 'sharpcrackars@gmail.com';
+  doc.text(`${phoneText} | ${emailText}`, 40, currentY, { align: 'center' });
+  currentY += 4;
+
+  // Divider
+  drawDashedLine(currentY);
+  currentY += 3.5;
+
+  // 3. Receipt Title & Order Metadata
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(0, 0, 0);
+  doc.text("RETAIL INVOICE / ORDER RECEIPT", 40, currentY, { align: 'center' });
+  currentY += 4.5;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(30, 41, 59);
+  doc.text(`Invoice ID:`, 4, currentY);
+  doc.text(`#${order.orderId || 'NEW-ORDER'}`, 76, currentY, { align: 'right' });
+  currentY += 3.8;
+
+  const orderDateStr = new Date(order.createdAt || Date.now()).toLocaleString('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
   });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`Date & Time:`, 4, currentY);
+  doc.text(orderDateStr, 76, currentY, { align: 'right' });
+  currentY += 3.8;
+
+  // Customer Details
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 41, 59);
+  doc.text(`Customer:`, 4, currentY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${order.customer?.name || 'Walk-in Customer'}`, 76, currentY, { align: 'right' });
+  currentY += 3.8;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Mobile:`, 4, currentY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${order.customer?.phone || 'N/A'}`, 76, currentY, { align: 'right' });
+  currentY += 3.8;
+
+  if (order.customer?.email) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Email:`, 4, currentY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${order.customer.email}`, 76, currentY, { align: 'right' });
+    currentY += 3.8;
+  }
 
   if (order.customer?.notes) {
     doc.setFont('helvetica', 'bold');
-    doc.text(`Customer Notes: "${order.customer.notes}"`, 14, summaryY + 23);
+    doc.text(`Notes:`, 4, currentY);
+    doc.setFont('helvetica', 'italic');
+    const noteLines = doc.splitTextToSize(order.customer.notes, 52);
+    doc.text(noteLines, 76, currentY, { align: 'right' });
+    currentY += (noteLines.length * 3.5);
   }
 
-  // Signature Blocks
-  const sigY = summaryY + 34;
-  if (sigY <= pageHeight - 16) {
-    // Authorized Digital Signature (positioned directly above the line)
-    if (SHARP_SIGNATURE_BASE64) {
-      try {
-        const sigWidth = 42;
-        const sigHeight = 11;
-        const sigX = (pageWidth - 39) - (sigWidth / 2);
-        const sigImgY = sigY + 8 - sigHeight - 0.5;
-        doc.addImage(SHARP_SIGNATURE_BASE64, 'PNG', sigX, sigImgY, sigWidth, sigHeight);
-      } catch (e) {
-        console.warn("Invoice signature render fallback:", e);
+  // Divider
+  drawDashedLine(currentY);
+  currentY += 2;
+
+  // 4. Products Table (Clean POS Thermal Format)
+  const tableData = (order.items || []).map((item, index) => {
+    const sno = item.sno ? String(parseInt(item.sno, 10)).padStart(2, '0') : String(index + 1).padStart(2, '0');
+    const nameWithPack = item.packDetails ? `${item.name || '-'}\n[${item.packDetails}]` : (item.name || '-');
+    return [
+      sno,
+      nameWithPack,
+      String(item.quantity || 0),
+      formatCur(item.unitPrice),
+      formatCur(item.totalPrice || ((item.unitPrice || 0) * (item.quantity || 0)))
+    ];
+  });
+
+  autoTable(doc, {
+    startY: currentY,
+    head: [['#', 'Item / Pack Details', 'Qty', 'Rate', 'Total']],
+    body: tableData,
+    theme: 'plain',
+    styles: {
+      fontSize: 6.8,
+      cellPadding: 1.5,
+      font: 'helvetica',
+      textColor: [20, 20, 20],
+      overflow: 'linebreak',
+      valign: 'middle'
+    },
+    headStyles: {
+      fillColor: [240, 240, 240],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      halign: 'center',
+      lineWidth: 0.15,
+      lineColor: [140, 140, 140]
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 7 },
+      1: { cellWidth: 32 },
+      2: { halign: 'center', cellWidth: 9, fontStyle: 'bold' },
+      3: { halign: 'right', cellWidth: 12 },
+      4: { halign: 'right', cellWidth: 14, fontStyle: 'bold' }
+    },
+    margin: { left: 3, right: 3 },
+    tableWidth: 74,
+    didDrawCell: (data) => {
+      // Dotted horizontal border under each row for authentic receipt look
+      if (data.section === 'body' && data.row.index !== undefined) {
+        doc.setDrawColor(225, 225, 225);
+        doc.setLineWidth(0.1);
+        doc.line(data.cell.x, data.cell.y + data.cell.height, data.cell.x + data.cell.width, data.cell.y + data.cell.height);
       }
     }
+  });
 
-    doc.setDrawColor(180, 190, 205);
-    doc.setLineWidth(0.3);
-    doc.line(14, sigY + 8, 64, sigY + 8);
-    doc.line(pageWidth - 64, sigY + 8, pageWidth - 14, sigY + 8);
+  currentY = (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY : currentY + 20) + 3;
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text("Customer Signature", 39, sigY + 12, { align: 'center' });
-    doc.text("For SHARP CRACKERS (Auth. Signatory)", pageWidth - 39, sigY + 12, { align: 'center' });
+  // 5. Order Totals Section
+  drawDashedLine(currentY);
+  currentY += 3.5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(50, 50, 50);
+  doc.text(`Total Varieties:`, 5, currentY);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${totalItems} items`, 75, currentY, { align: 'right' });
+  currentY += 4;
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Total Units / Pkts:`, 5, currentY);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${totalQuantity} boxes/pkts`, 75, currentY, { align: 'right' });
+  currentY += 5;
+
+  // Grand Total Highlight Box
+  doc.setFillColor(242, 242, 242);
+  doc.setDrawColor(30, 30, 30);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(3, currentY, 74, 8.5, 1, 1, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text("TOTAL AMOUNT:", 6, currentY + 5.5);
+  doc.text(formatCur(grandTotal), 74, currentY + 5.5, { align: 'right' });
+  currentY += 12;
+
+  // 6. Safety Guidelines & Terms
+  drawDashedLine(currentY);
+  currentY += 3.5;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.8);
+  doc.setTextColor(0, 0, 0);
+  doc.text("SAFETY GUIDELINES & TERMS:", 40, currentY, { align: 'center' });
+  currentY += 3.5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(70, 70, 70);
+  const terms = [
+    "• 100% Sivakasi Green Crackers (Scan QR for safety).",
+    "• Always ignite outdoors under adult supervision.",
+    "• Keep a bucket of water or sand nearby for safety.",
+    "• Please verify all packages before signoff."
+  ];
+  terms.forEach(term => {
+    doc.text(term, 4, currentY);
+    currentY += 3.2;
+  });
+  currentY += 2;
+
+  // 7. Signature Section (Dual: Customer & Authorized Digital Signature)
+  drawDashedLine(currentY);
+  currentY += 2.5;
+
+  const sigBlockY = currentY;
+
+  // Left: Customer Signature
+  doc.setDrawColor(140, 140, 140);
+  doc.setLineWidth(0.25);
+  doc.line(5, sigBlockY + 12, 35, sigBlockY + 12);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(80, 80, 80);
+  doc.text("Customer Signature", 20, sigBlockY + 15.5, { align: 'center' });
+
+  // Right: Authorized Signatory with base64 signature
+  if (SHARP_SIGNATURE_BASE64) {
+    try {
+      const sigWidth = 26;
+      const sigHeight = 7.5;
+      const sigX = 60 - (sigWidth / 2);
+      const sigImgY = sigBlockY + 12 - sigHeight - 0.5;
+      doc.addImage(SHARP_SIGNATURE_BASE64, 'PNG', sigX, sigImgY, sigWidth, sigHeight);
+    } catch (e) {
+      console.warn("Invoice signature render fallback:", e);
+    }
   }
 
-  // Replace total pages placeholder if supported
-  if (typeof doc.putTotalPages === 'function') {
-    doc.putTotalPages("{total_pages_count_string}");
-  }
+  doc.line(45, sigBlockY + 12, 75, sigBlockY + 12);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.5);
+  doc.setTextColor(0, 0, 0);
+  doc.text("Authorized Signatory", 60, sigBlockY + 15.5, { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(5.8);
+  doc.setTextColor(70, 70, 70);
+  doc.text("For SHARP CRACKERS", 60, sigBlockY + 19, { align: 'center' });
+
+  currentY = sigBlockY + 22;
+
+  // 8. Footer Salutation
+  drawDashedLine(currentY);
+  currentY += 4;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(0, 0, 0);
+  doc.text("THANK YOU FOR YOUR ORDER!", 40, currentY, { align: 'center' });
+  currentY += 3.5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(80, 80, 80);
+  doc.text("Light Up Your Celebrations Safely!", 40, currentY, { align: 'center' });
+  currentY += 3.2;
+  doc.text("*** Computer Generated Thermal Invoice ***", 40, currentY, { align: 'center' });
 
   if (shouldDownload) {
-    const filename = `Sharp_Crackers_Order_${order.orderId || 'New'}.pdf`;
+    const filename = `Sharp_Crackers_Receipt_${order.orderId || 'New'}.pdf`;
     doc.save(filename);
   }
 
   return doc;
 };
 
-// Print dialog helper
+/**
+ * Opens browser print dialog with dedicated 80mm thermal receipt template.
+ */
 export const printOrderDocument = (order, settings) => {
-  const printWindow = window.open('', '_blank', 'width=850,height=900');
+  const printWindow = window.open('', '_blank', 'width=450,height=700');
   if (!printWindow) {
-    alert("Please allow popups to print the order invoice.");
+    alert("Please allow popups to print the thermal order invoice.");
     return;
   }
 
@@ -280,124 +351,342 @@ export const printOrderDocument = (order, settings) => {
   const totalQuantity = (order.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
   const grandTotal = order.grandTotal || (order.items || []).reduce((sum, it) => sum + ((it.unitPrice || 0) * (it.quantity || 0)), 0);
 
+  const orderDateStr = new Date(order.createdAt || Date.now()).toLocaleString('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  });
+
   const html = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
-        <title>SHARP CRACKERS - Order Sheet #${order.orderId || 'Draft'}</title>
+        <meta charset="UTF-8" />
+        <title>SHARP CRACKERS - Thermal Receipt #${order.orderId || 'Draft'}</title>
         <style>
-          @page { size: A4 portrait; margin: 12mm; }
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; margin: 0; padding: 15px; font-size: 13px; line-height: 1.4; }
-          .header { border-bottom: 3px solid #ff6f00; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: flex-start; }
-          .logo-title { font-size: 24px; font-weight: 800; color: #0a1329; text-transform: uppercase; letter-spacing: 0.5px; }
-          .tagline { font-size: 12px; color: #ff6f00; font-weight: 600; }
-          .doc-title { text-align: right; }
-          .doc-title h2 { margin: 0; font-size: 18px; color: #d90429; text-transform: uppercase; }
-          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
-          th { background: #0a1329; color: #ffffff; padding: 8px 6px; text-align: left; font-weight: 600; border: 1px solid #0a1329; }
-          td { padding: 6px 6px; border: 1px solid #cbd5e1; }
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          body {
+            width: 80mm;
+            max-width: 80mm;
+            margin: 0 auto;
+            padding: 5mm 3.5mm;
+            font-family: 'Courier New', Courier, monospace, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #000;
+            background: #fff;
+            font-size: 11px;
+            line-height: 1.35;
+          }
           .text-center { text-align: center; }
           .text-right { text-align: right; }
-          .summary-box { float: right; width: 280px; margin-bottom: 20px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 4px; overflow: hidden; }
-          .summary-row { display: flex; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; }
-          .grand-total { background: #d90429; color: #ffffff; font-weight: 700; font-size: 15px; }
-          .clearfix::after { content: ""; clear: both; display: table; }
-          .signatures { margin-top: 50px; display: flex; justify-content: space-between; }
-          .sig-box { width: 200px; text-align: center; border-top: 1px solid #94a3b8; padding-top: 6px; font-size: 11px; color: #64748b; position: relative; }
-          .sig-img { position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); max-height: 46px; max-width: 160px; object-fit: contain; }
-          .safety { font-size: 11px; color: #64748b; border-left: 3px solid #ffb703; padding-left: 8px; margin-top: 15px; }
+          .text-left { text-align: left; }
+          .bold { font-weight: 700; }
+
+          .header {
+            text-align: center;
+            margin-bottom: 6px;
+          }
+          .logo-img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            margin: 0 auto 5px;
+            display: block;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+          }
+          .shop-title {
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            margin: 0;
+            text-transform: uppercase;
+          }
+          .shop-tagline {
+            font-size: 10px;
+            color: #333;
+            margin: 2px 0;
+          }
+          .shop-desc {
+            font-size: 9.5px;
+            color: #555;
+            margin: 2px 0;
+          }
+          .shop-addr {
+            font-size: 9.5px;
+            color: #444;
+            margin: 2px 0;
+          }
+          .shop-contact {
+            font-size: 9.5px;
+            color: #333;
+            margin: 2px 0;
+            font-weight: 600;
+          }
+
+          .dashed-divider {
+            border-top: 1px dashed #444;
+            margin: 6px 0;
+          }
+          .double-divider {
+            border-top: 2px solid #000;
+            margin: 6px 0;
+          }
+
+          .receipt-title {
+            text-align: center;
+            font-weight: 800;
+            font-size: 11.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 4px 0;
+          }
+
+          .meta-table {
+            width: 100%;
+            font-size: 10.5px;
+            margin-bottom: 4px;
+            border-collapse: collapse;
+          }
+          .meta-table td {
+            padding: 1.5px 0;
+            vertical-align: top;
+          }
+
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+            margin: 4px 0;
+          }
+          .items-table th {
+            border-top: 1px dashed #444;
+            border-bottom: 1px dashed #444;
+            padding: 4px 1px;
+            font-weight: 700;
+            text-transform: uppercase;
+          }
+          .items-table td {
+            padding: 3.5px 1px;
+            border-bottom: 1px dotted #ccc;
+            vertical-align: top;
+          }
+          .pack-badge {
+            font-size: 9px;
+            color: #555;
+            display: block;
+          }
+
+          .summary-block {
+            margin: 6px 0;
+            font-size: 11px;
+          }
+          .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+          }
+          .grand-total-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1.5px solid #000;
+            background: #f7f7f7;
+            padding: 5px 8px;
+            font-size: 13px;
+            font-weight: 900;
+            margin-top: 5px;
+            border-radius: 4px;
+          }
+
+          .safety-block {
+            font-size: 9px;
+            color: #444;
+            line-height: 1.35;
+            margin: 6px 0;
+          }
+          .safety-title {
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            font-size: 9.5px;
+          }
+
+          .signatures-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 24px;
+            margin-bottom: 8px;
+          }
+          .sig-col {
+            width: 48%;
+            text-align: center;
+          }
+          .sig-line {
+            border-top: 1px solid #555;
+            padding-top: 4px;
+            font-size: 9px;
+            color: #333;
+          }
+          .sig-img {
+            max-height: 34px;
+            max-width: 105px;
+            display: block;
+            margin: 0 auto 3px;
+            object-fit: contain;
+          }
+
+          .footer-note {
+            text-align: center;
+            font-size: 9.5px;
+            color: #555;
+            margin-top: 6px;
+          }
+          .footer-salute {
+            font-weight: 800;
+            font-size: 10.5px;
+            color: #000;
+          }
+
+          @media print {
+            body {
+              margin: 0;
+              padding: 3mm 2mm;
+            }
+          }
         </style>
       </head>
       <body>
+        <!-- Header -->
         <div class="header">
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <img src="/images/sharp_crackers_brand_logo.jpg" alt="Sharp Crackers Official Logo" style="width: 58px; height: 58px; object-fit: contain; border-radius: 8px; border: 2px solid #ff6f00; box-shadow: 0 2px 8px rgba(0,0,0,0.12); flex-shrink: 0;" />
-            <div>
-              <div class="logo-title">${settings.shopName || 'SHARP CRACKERS'}</div>
-              <div class="tagline">${settings.tagline || 'Direct Sivakasi Fireworks Sales'}</div>
-              <div style="font-size: 11px; color: #475569; margin-top: 4px;">
-                ${settings.address || '89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021'}<br/>
-                Phone: ${settings.phone || '+91 95668 86785'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}
-              </div>
-            </div>
-          </div>
-          <div class="doc-title">
-            <h2>Customer Order Sheet</h2>
-            <div style="font-size: 13px; font-weight: bold; margin-top: 4px; color: #ff6f00;">Invoice ID: ${order.orderId || 'DRAFT'}</div>
-            <div style="font-size: 11px; color: #64748b;">Date: ${new Date(order.createdAt || Date.now()).toLocaleString('en-IN')}</div>
-          </div>
+          <img src="${SHARP_LOGO_INVOICE_BASE64 || '/images/sharp_crackers_brand_logo.jpg'}" alt="Sharp Crackers Official Logo" class="logo-img" />
+          <h1 class="shop-title">${settings.shopName || 'SHARP CRACKERS'}</h1>
+          <div class="shop-tagline">${settings.tagline || 'Light Up Your Celebrations!'}</div>
+          <div class="shop-desc">100% Genuine Sivakasi Green Crackers</div>
+          <div class="shop-addr">${settings.address || '89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021'}</div>
+          <div class="shop-contact">Ph: ${settings.phone || '+91 95668 86785'} | ${settings.email || 'sharpcrackars@gmail.com'}</div>
         </div>
 
-        <div class="grid">
-          <div>
-            <strong>CUSTOMER CONTACT DETAILS:</strong><br/>
-            <strong>Name:</strong> ${order.customer?.name || 'Customer'}<br/>
-            <strong>Mobile:</strong> ${order.customer?.phone || 'N/A'}<br/>
-            ${order.customer?.email ? `<strong>Email:</strong> ${order.customer.email}<br/>` : ''}
-          </div>
-          <div>
-            <strong>ORDER SUMMARY:</strong><br/>
-            <strong>Total Varieties:</strong> ${(order.items || []).length} items<br/>
-            <strong>Total Quantity:</strong> ${totalQuantity} boxes/pkts<br/>
-            ${order.customer?.notes ? `<strong>Notes:</strong> <em>${order.customer.notes}</em>` : ''}
-          </div>
-        </div>
+        <div class="dashed-divider"></div>
+        <div class="receipt-title">Retail Invoice / Order Receipt</div>
+        <div class="dashed-divider"></div>
 
-        <table>
+        <!-- Meta Table -->
+        <table class="meta-table">
+          <tr>
+            <td class="bold" style="width: 32%;">Invoice ID:</td>
+            <td class="text-right bold">#${order.orderId || 'NEW-ORDER'}</td>
+          </tr>
+          <tr>
+            <td class="bold">Date & Time:</td>
+            <td class="text-right">${orderDateStr}</td>
+          </tr>
+          <tr>
+            <td class="bold">Customer:</td>
+            <td class="text-right">${order.customer?.name || 'Walk-in Customer'}</td>
+          </tr>
+          <tr>
+            <td class="bold">Mobile:</td>
+            <td class="text-right">${order.customer?.phone || 'N/A'}</td>
+          </tr>
+          ${order.customer?.email ? `
+          <tr>
+            <td class="bold">Email:</td>
+            <td class="text-right">${order.customer.email}</td>
+          </tr>` : ''}
+          ${order.customer?.notes ? `
+          <tr>
+            <td class="bold">Notes:</td>
+            <td class="text-right"><em>${order.customer.notes}</em></td>
+          </tr>` : ''}
+        </table>
+
+        <!-- Products Table -->
+        <table class="items-table">
           <thead>
             <tr>
-              <th class="text-center" style="width: 35px;">S.No</th>
-              <th class="text-center" style="width: 70px;">Code</th>
-              <th>Product Name</th>
-              <th class="text-center" style="width: 100px;">Pack Details</th>
-              <th class="text-right" style="width: 80px;">Unit Price</th>
-              <th class="text-center" style="width: 45px;">Qty</th>
-              <th class="text-right" style="width: 90px;">Total</th>
+              <th class="text-center" style="width: 20px;">#</th>
+              <th class="text-left">Item</th>
+              <th class="text-center" style="width: 30px;">Qty</th>
+              <th class="text-right" style="width: 48px;">Rate</th>
+              <th class="text-right" style="width: 58px;">Total</th>
             </tr>
           </thead>
           <tbody>
             ${(order.items || []).map((it, idx) => `
               <tr>
-                <td class="text-center" style="font-family: monospace; font-weight: 700;">${it.sno ? String(parseInt(it.sno, 10)).padStart(3, '0') : String(idx + 1).padStart(3, '0')}</td>
-                <td class="text-center" style="font-weight: 600;">${it.code || '-'}</td>
-                <td><strong>${it.name}</strong></td>
-                <td class="text-center">${it.packDetails || '1 pack'}</td>
+                <td class="text-center bold">${it.sno ? String(parseInt(it.sno, 10)).padStart(2, '0') : String(idx + 1).padStart(2, '0')}</td>
+                <td class="text-left">
+                  <div class="bold">${it.name}</div>
+                  ${it.packDetails ? `<span class="pack-badge">${it.packDetails}</span>` : ''}
+                </td>
+                <td class="text-center bold">${it.quantity}</td>
                 <td class="text-right">${formatCur(it.unitPrice)}</td>
-                <td class="text-center" style="font-weight: 700;">${it.quantity}</td>
-                <td class="text-right" style="font-weight: 700;">${formatCur(it.totalPrice || (it.unitPrice * it.quantity))}</td>
+                <td class="text-right bold">${formatCur(it.totalPrice || (it.unitPrice * it.quantity))}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        <div class="clearfix">
-          <div class="summary-box">
-            <div class="summary-row">
-              <span>Total Varieties:</span>
-              <strong>${(order.items || []).length} items</strong>
-            </div>
-            <div class="summary-row">
-              <span>Total Units / Quantity:</span>
-              <strong>${totalQuantity} boxes/pkts</strong>
-            </div>
-            <div class="summary-row grand-total">
-              <span>Total Order Amount:</span>
-              <span>${formatCur(grandTotal)}</span>
+        <!-- Order Summary -->
+        <div class="summary-block">
+          <div class="summary-row">
+            <span>Total Varieties:</span>
+            <span class="bold">${(order.items || []).length} items</span>
+          </div>
+          <div class="summary-row">
+            <span>Total Units / Quantity:</span>
+            <span class="bold">${totalQuantity} boxes/pkts</span>
+          </div>
+          <div class="grand-total-box">
+            <span>TOTAL AMOUNT:</span>
+            <span>${formatCur(grandTotal)}</span>
+          </div>
+        </div>
+
+        <div class="dashed-divider"></div>
+
+        <!-- Safety Guidelines -->
+        <div class="safety-block">
+          <div class="safety-title">Safety Guidelines & Terms:</div>
+          <div>• 100% Genuine Sivakasi Green Crackers with authorized safety seal.</div>
+          <div>• Always light crackers outdoors under adult supervision.</div>
+          <div>• Keep a bucket of water or sand nearby for emergency safety.</div>
+          <div>• Please inspect and verify all cracker packages before signoff.</div>
+        </div>
+
+        <div class="dashed-divider"></div>
+
+        <!-- Signatures (Customer & Digital Sign) -->
+        <div class="signatures-wrap">
+          <div class="sig-col">
+            <div style="height: 34px;"></div>
+            <div class="sig-line">Customer Signature</div>
+          </div>
+          <div class="sig-col">
+            ${SHARP_SIGNATURE_BASE64 ? `<img src="${SHARP_SIGNATURE_BASE64}" class="sig-img" alt="Digital Signature" />` : '<div style="height: 34px;"></div>'}
+            <div class="sig-line">
+              <span class="bold">Authorized Signatory</span><br/>
+              <span style="font-size: 8.5px; color: #666;">For SHARP CRACKERS</span>
             </div>
           </div>
         </div>
 
-        <div class="safety">
-          <strong>Safe Handling Guidelines:</strong> Always light crackers in open outdoor grounds. Maintain safe distance. Keep water or sand nearby. Strictly follow Sivakasi Green Crackers precautions.
-        </div>
+        <div class="dashed-divider"></div>
 
-        <div class="signatures">
-          <div class="sig-box">Customer Signature</div>
-          <div class="sig-box">
-            ${SHARP_SIGNATURE_BASE64 ? `<img src="${SHARP_SIGNATURE_BASE64}" class="sig-img" alt="Digital Signature" />` : ''}
-            Authorized Signatory<br/><strong>SHARP CRACKERS</strong>
-          </div>
+        <!-- Footer -->
+        <div class="footer-note">
+          <div class="footer-salute">THANK YOU FOR YOUR ORDER!</div>
+          <div>Wish You A Joyous & Safe Celebration! 🎆</div>
+          <div style="margin-top: 3px; font-size: 8.5px; color: #777;">*** Computer Generated Thermal Slip ***</div>
         </div>
 
         <script>
