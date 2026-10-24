@@ -64,8 +64,8 @@ The server will start on [http://localhost:10000](http://localhost:10000) (or th
 ## 🔐 Administrative Access
 
 Navigate to `/admin` on the website:
-- **Default Username:** `admin`
-- **Default Password:** `sharp2026!`
+- **Default Username:** `sharpcrackers`
+- **Default Password:** `genzworks@7`
 
 *Note: For production deployments, ensure admin credentials are kept secure.*
 

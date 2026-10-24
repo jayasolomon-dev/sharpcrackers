@@ -580,13 +580,13 @@ const server = http.createServer(async (req, res) => {
       const body = await parseRequestBody(req);
       const user = (body.username || '').trim().toLowerCase();
       const pass = (body.password || '').trim();
-      const adminPass = process.env.ADMIN_PASSWORD || 'sharp2026!';
+      const adminPass = process.env.ADMIN_PASSWORD || 'genzworks@7';
 
-      if ((user === 'admin' || user === 'sharp') && pass === adminPass) {
+      if ((user === 'sharpcrackers' || user === 'admin') && pass === adminPass) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,
-          user: user === 'admin' ? 'Admin Manager' : 'Store Admin',
+          user: user === 'sharpcrackers' ? 'Sharp Crackers Admin' : 'Admin Manager',
           token: `sharp_adm_${Date.now()}_${Math.random().toString(36).substring(2)}`
         }));
       } else {

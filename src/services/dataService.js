@@ -2856,9 +2856,9 @@ export const dataService = {
   },
 
   // --- ADMIN AUTH ---
-  // SHA-256 Hash of Authorized Administrative Password ('sharp2026!')
+  // SHA-256 Hash of Authorized Administrative Password ('genzworks@7')
   // Plaintext credentials are NEVER exposed in the client bundle!
-  AUTH_PASS_HASH: '424b68351d73645a7da4bc2da754dbb6f939536b7e8f4e69add9f2c7f7b89aa0',
+  AUTH_PASS_HASH: '2ef76bed6a73cf80552793e5a0f1f0cabc82c770972f6758841deff81dc417bb',
 
   isAdminAuthenticated() {
     const session = localStorage.getItem(STORAGE_KEYS.ADMIN_SESSION);
@@ -2879,7 +2879,7 @@ export const dataService = {
       return { success: false, message: 'Please enter both username and password.' };
     }
 
-    if (cleanUser !== 'admin' && cleanUser !== 'sharp') {
+    if (cleanUser !== 'sharpcrackers' && cleanUser !== 'admin') {
       return { success: false, message: 'Invalid administrative username.' };
     }
 
@@ -2894,7 +2894,7 @@ export const dataService = {
         const data = await resp.json();
         const session = {
           authenticated: true,
-          user: data.user || (cleanUser === 'admin' ? 'Admin Manager' : 'Store Admin'),
+          user: data.user || (cleanUser === 'sharpcrackers' ? 'Sharp Crackers Admin' : 'Admin Manager'),
           loginTime: new Date().toISOString(),
           token: data.token || null
         };
@@ -2915,7 +2915,7 @@ export const dataService = {
     if (passHash === this.AUTH_PASS_HASH) {
       const session = {
         authenticated: true,
-        user: cleanUser === 'admin' ? 'Admin Manager' : 'Store Admin',
+        user: cleanUser === 'sharpcrackers' ? 'Sharp Crackers Admin' : 'Admin Manager',
         loginTime: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, JSON.stringify(session));

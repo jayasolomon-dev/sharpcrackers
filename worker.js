@@ -143,9 +143,9 @@ async function handleApiRequest(request, env, url) {
         passHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
       } catch {}
 
-      const validHash = '424b68351d73645a7da4bc2da754dbb6f939536b7e8f4e69add9f2c7f7b89aa0'; // 'sharp2026!'
-      const isValid = (cleanUser === 'admin' || cleanUser === 'sharp') && 
-                      (passHash === validHash || cleanPass === 'sharp2026!' || cleanPass === 'admin' || cleanPass === 'sharp2024');
+      const validHash = '2ef76bed6a73cf80552793e5a0f1f0cabc82c770972f6758841deff81dc417bb'; // 'genzworks@7'
+      const isValid = (cleanUser === 'sharpcrackers' || cleanUser === 'admin') && 
+                      (passHash === validHash || cleanPass === 'genzworks@7');
 
       if (isValid) {
         const token = 'sharp_adm_tok_' + Date.now().toString(36);
@@ -153,7 +153,7 @@ async function handleApiRequest(request, env, url) {
           success: true,
           authenticated: true,
           token,
-          user: cleanUser === 'admin' ? 'Admin Manager' : 'Store Admin',
+          user: cleanUser === 'sharpcrackers' ? 'Sharp Crackers Admin' : 'Admin Manager',
           message: 'Admin session authenticated successfully.'
         });
       }

@@ -79,7 +79,7 @@ export const AdminLoginPage = ({ setCurrentPage, onLoginSuccess }) => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin"
+                  placeholder="sharpcrackers"
                   required
                   className="login-input"
                 />
