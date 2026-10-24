@@ -3,8 +3,9 @@
 // Comprehensive footer with contact details, quick links, safety notice, and hours
 // ==========================================================================
 
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useCart } from '../context/CartContext';
+import { dataService } from '../services/dataService';
 import {
   Flame,
   MapPin,
@@ -19,6 +20,54 @@ import {
 
 export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
   const { settings } = useCart();
+
+  // Synchronized categories from product catalog
+  const [categories, setCategories] = useState(() => {
+    try {
+      return (dataService.getCategories() || []).filter(c => c && c.id !== 'all' && c.active !== false);
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        setCategories((dataService.getCategories() || []).filter(c => c && c.id !== 'all' && c.active !== false));
+      } catch {}
+    };
+    window.addEventListener('sharp_data_changed', handleSync);
+    return () => window.removeEventListener('sharp_data_changed', handleSync);
+  }, []);
+
+  // Top 6 categories matching the store's actual product categories
+  const footerCategories = useMemo(() => {
+    const preferredIds = ['sparklers', 'flower-pots', 'ground-chakkars', 'multi-colour-shots', 'giant-deluxe', 'gift-boxes'];
+    const matched = preferredIds
+      .map(id => categories.find(c => c.id === id))
+      .filter(Boolean);
+
+    if (matched.length < 6) {
+      categories.forEach(c => {
+        if (!matched.some(m => m.id === c.id) && matched.length < 6) {
+          matched.push(c);
+        }
+      });
+    }
+
+    if (matched.length === 0) {
+      return [
+        { id: 'sparklers', name: 'Sparklers' },
+        { id: 'flower-pots', name: 'Flower Pots' },
+        { id: 'ground-chakkars', name: 'Ground Chakkars' },
+        { id: 'multi-colour-shots', name: 'Multi Colour Shots' },
+        { id: 'giant-deluxe', name: 'Giant & Deluxe' },
+        { id: 'gift-boxes', name: 'Diwali Gift Boxes' }
+      ];
+    }
+
+    return matched;
+  }, [categories]);
 
   const handleNav = (page) => {
     setCurrentPage(page);
@@ -138,36 +187,18 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
           <div className="footer-col">
             <h4 className="footer-heading">Top Categories</h4>
             <ul className="footer-links-list">
-              <li>
-                <button type="button" onClick={() => handleCategoryClick('sparklers')} className="footer-link-btn">
-                  <ChevronRight size={14} /> Electric & Color Sparklers
-                </button>
-              </li>
-              <li>
-                <button type="button" onClick={() => handleCategoryClick('flower-pots')} className="footer-link-btn">
-                  <ChevronRight size={14} /> Deluxe Flower Pots & Asoka
-                </button>
-              </li>
-              <li>
-                <button type="button" onClick={() => handleCategoryClick('ground-chakkars')} className="footer-link-btn">
-                  <ChevronRight size={14} /> High-Speed Ground Chakkars
-                </button>
-              </li>
-              <li>
-                <button type="button" onClick={() => handleCategoryClick('multi-colour-shots')} className="footer-link-btn">
-                  <ChevronRight size={14} /> Sky Shots & Dancing Fountains
-                </button>
-              </li>
-              <li>
-                <button type="button" onClick={() => handleCategoryClick('sound-crackers')} className="footer-link-btn">
-                  <ChevronRight size={14} /> 1000 to 5000 Wala Garlands
-                </button>
-              </li>
-              <li>
-                <button type="button" onClick={() => handleCategoryClick('gift-boxes')} className="footer-link-btn">
-                  <ChevronRight size={14} /> Diwali Family Gift Mega Packs
-                </button>
-              </li>
+              {footerCategories.map((cat) => (
+                <li key={cat.id}>
+                  <button 
+                    type="button" 
+                    onClick={() => handleCategoryClick(cat.id)} 
+                    className="footer-link-btn"
+                    title={`Explore ${cat.name}`}
+                  >
+                    <ChevronRight size={14} /> {cat.name}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 

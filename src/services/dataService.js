@@ -286,7 +286,7 @@ const DEFAULT_CATEGORIES = [
   { id: "ground-chakkars", name: "Ground Chakkars", ta: "தரை சக்கரம்", icon: "", image: "/images/products/ground_chakkars_special.jpg", active: true },
   { id: "rockets", name: "Rockets & Twinkling", ta: "ராக்கெட் & ட்விங்க்ளிங்", icon: "", image: "/images/products/rocket_bomb_v2.jpg", active: true },
   { id: "sound-crackers", name: "One Sound Crackers & Bijili", ta: "ஒன் சவுண்ட் & பிஜிலி", icon: "", image: "/images/products/kuruvi_vedi_v1.jpg", active: true },
-  { id: "giant-deluxe", name: "Gaint & Deluxe", ta: "ஜெயின்ட் & டீலக்ஸ்", icon: "", image: "/images/products/taj_mahal_28_gaint_v1.jpg", active: true },
+  { id: "giant-deluxe", name: "Giant & Deluxe", ta: "ஜெயின்ட் & டீலக்ஸ்", icon: "", image: "/images/products/taj_mahal_28_gaint_v1.jpg", active: true },
   { id: "multi-colour-shots", name: "Multi Colour Shots", ta: "மல்டி கலர் ஷாட்ஸ்", icon: "", image: "/images/products/7_shot_multi_colour_v1.jpg", active: true },
   { id: "gift-boxes", name: "Diwali Gift Boxes", ta: "கிப்ட் பாக்ஸ்", icon: "", image: "/images/products/gift_box_35_items_v1.jpg", active: true },
   { id: "guns", name: "Toy Guns & Caps", ta: "துப்பாக்கி ரகம்", icon: "", image: "/images/products/gun_leo_v1.jpg", active: true },
@@ -1997,7 +1997,11 @@ export const dataService = {
 
     const mapped = categories.map(c => {
       const defCat = defaultCatMap[c.id];
-      const expectedName = c.name || defCat?.name || c.id;
+      let expectedName = c.name || defCat?.name || c.id;
+      if (c.id === 'giant-deluxe' && expectedName === 'Gaint & Deluxe') {
+        expectedName = 'Giant & Deluxe';
+        needsSave = true;
+      }
       const expectedTa = c.ta || CATEGORY_TAMIL_NAMES[c.id] || defCat?.ta || '';
       const expectedImage = c.image || defCat?.image || '/images/sharp_celebration_hero_banner.jpg';
       const expectedIcon = c.icon || defCat?.icon || '';
