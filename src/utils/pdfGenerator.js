@@ -7,7 +7,6 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { SHARP_LOGO_INVOICE_BASE64 } from './logoInvoiceBase64.js';
 import { SHARP_SIGNATURE_BASE64 } from './signatureBase64.js';
 
 /**
@@ -54,22 +53,9 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
     }
   };
 
-  let currentY = 5;
+  let currentY = 7;
 
-  // 1. Official Brand Logo (Centered)
-  if (SHARP_LOGO_INVOICE_BASE64) {
-    try {
-      const logoWidth = 15;
-      const logoHeight = 15;
-      const logoX = 40 - (logoWidth / 2);
-      doc.addImage(SHARP_LOGO_INVOICE_BASE64, 'JPEG', logoX, currentY, logoWidth, logoHeight);
-      currentY += logoHeight + 2;
-    } catch (e) {
-      console.warn("Thermal receipt logo render fallback:", e);
-    }
-  }
-
-  // 2. Shop Name & Details (Centered POS Header)
+  // 1. Shop Name & Details (Centered POS Header)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12.5);
   doc.setTextColor(15, 23, 42);
@@ -406,15 +392,6 @@ export const printOrderDocument = (order, settings) => {
             text-align: center;
             margin-bottom: 6px;
           }
-          .logo-img {
-            width: 48px;
-            height: 48px;
-            object-fit: contain;
-            margin: 0 auto 5px;
-            display: block;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-          }
           .shop-title {
             font-size: 16px;
             font-weight: 900;
@@ -585,7 +562,6 @@ export const printOrderDocument = (order, settings) => {
       <body>
         <!-- Header -->
         <div class="header">
-          <img src="${SHARP_LOGO_INVOICE_BASE64 || '/images/sharp_crackers_brand_logo.jpg'}" alt="Sharp Crackers Official Logo" class="logo-img" />
           <h1 class="shop-title">${settings.shopName || 'SHARP CRACKERS'}</h1>
           <div class="shop-tagline">${settings.tagline || 'Light Up Your Celebrations!'}</div>
           <div class="shop-desc">100% Genuine Sivakasi Green Crackers</div>
