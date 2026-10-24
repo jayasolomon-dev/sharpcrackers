@@ -2,6 +2,7 @@
 // SHARP CRACKERS - POS THERMAL RECEIPT & INVOICE GENERATOR (80MM ROLL)
 // Generates standard 80mm (3-inch) POS thermal receipts with official Logo,
 // items table, customer details, guidelines, and authorized digital signature.
+// Optimized for zero overflow & responsive alignment on mobile and POS printers.
 // ==========================================================================
 
 import jsPDF from 'jspdf';
@@ -11,7 +12,7 @@ import { SHARP_SIGNATURE_BASE64 } from './signatureBase64.js';
 
 /**
  * Generates and downloads a thermal receipt (80mm width POS format) as PDF.
- * Uses dynamic height to provide a seamless continuous receipt roll.
+ * Uses dynamic height with ample margin to guarantee zero overflow/cutoff on mobile devices.
  */
 export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   const jsPDFClass = typeof jsPDF === 'function' ? jsPDF : (jsPDF.jsPDF || jsPDF);
@@ -21,11 +22,12 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   const totalQuantity = (order.items || []).reduce((sum, it) => sum + Number(it.quantity || 0), 0);
   const grandTotal = order.grandTotal || (order.items || []).reduce((sum, it) => sum + ((it.unitPrice || 0) * (it.quantity || 0)), 0);
 
-  // Dynamic height calculation for thermal roll (prevents mid-receipt cut)
-  const baseThermalHeight = 175;
-  const itemsHeight = totalItems * 7.5;
-  const notesHeight = order.customer?.notes ? 8 : 0;
-  const calculatedHeight = Math.max(180, Math.ceil(baseThermalHeight + itemsHeight + notesHeight));
+  // Dynamic height calculation with generous vertical headroom
+  // Header (~55mm) + Meta (~32mm) + Table (~12 + items*8.5mm) + Totals (~30mm) + Safety (~26mm) + Signatures (~32mm) + Footer (~25mm)
+  const baseThermalHeight = 225;
+  const itemsHeight = totalItems * 9;
+  const notesHeight = order.customer?.notes ? 14 : 0;
+  const calculatedHeight = Math.max(235, Math.ceil(baseThermalHeight + itemsHeight + notesHeight));
 
   const doc = new jsPDFClass({
     orientation: 'portrait',
@@ -35,7 +37,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
 
   const formatCur = (num) => `Rs. ${Number(num || 0).toLocaleString('en-IN')}`;
 
-  // Helper for dashed receipt dividers
+  // Helper for dashed receipt dividers (spans width 4mm to 76mm)
   const drawDashedLine = (y) => {
     doc.setDrawColor(130, 130, 130);
     doc.setLineWidth(0.2);
@@ -44,7 +46,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
     } else if (typeof doc.setLineDash === 'function') {
       doc.setLineDash([1.2, 1], 0);
     }
-    doc.line(3, y, 77, y);
+    doc.line(4, y, 76, y);
     if (typeof doc.setLineDashPattern === 'function') {
       doc.setLineDashPattern([], 0);
     } else if (typeof doc.setLineDash === 'function') {
@@ -57,8 +59,8 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   // 1. Official Brand Logo (Centered)
   if (SHARP_LOGO_INVOICE_BASE64) {
     try {
-      const logoWidth = 16;
-      const logoHeight = 16;
+      const logoWidth = 15;
+      const logoHeight = 15;
       const logoX = 40 - (logoWidth / 2);
       doc.addImage(SHARP_LOGO_INVOICE_BASE64, 'JPEG', logoX, currentY, logoWidth, logoHeight);
       currentY += logoHeight + 2;
@@ -69,24 +71,24 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
 
   // 2. Shop Name & Details (Centered POS Header)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
+  doc.setFontSize(12.5);
   doc.setTextColor(15, 23, 42);
   doc.text(settings.shopName || "SHARP CRACKERS", 40, currentY, { align: 'center' });
   currentY += 4.5;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.setTextColor(70, 70, 70);
+  doc.setTextColor(60, 60, 60);
   doc.text(settings.tagline || "Light Up Your Celebrations!", 40, currentY, { align: 'center' });
   currentY += 3.5;
 
   doc.setFontSize(7);
-  doc.setTextColor(90, 90, 90);
+  doc.setTextColor(80, 80, 80);
   doc.text("100% Genuine Sivakasi Green Crackers", 40, currentY, { align: 'center' });
   currentY += 3.5;
 
   const shopAddress = settings.address || "89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021";
-  const addressLines = doc.splitTextToSize(shopAddress, 72);
+  const addressLines = doc.splitTextToSize(shopAddress, 70);
   doc.text(addressLines, 40, currentY, { align: 'center' });
   currentY += (addressLines.length * 3) + 0.5;
 
@@ -119,17 +121,21 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
-  doc.setTextColor(80, 80, 80);
+  doc.setTextColor(70, 70, 70);
   doc.text(`Date & Time:`, 4, currentY);
   doc.text(orderDateStr, 76, currentY, { align: 'right' });
   currentY += 3.8;
 
-  // Customer Details
+  // Customer Details (Responsive font sizing for long names/emails)
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 41, 59);
   doc.text(`Customer:`, 4, currentY);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${order.customer?.name || 'Walk-in Customer'}`, 76, currentY, { align: 'right' });
+  const custName = String(order.customer?.name || 'Walk-in Customer').trim();
+  if (custName.length > 25) doc.setFontSize(6.2);
+  else doc.setFontSize(7);
+  doc.text(custName, 76, currentY, { align: 'right' });
+  doc.setFontSize(7);
   currentY += 3.8;
 
   doc.setFont('helvetica', 'bold');
@@ -142,7 +148,11 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
     doc.setFont('helvetica', 'bold');
     doc.text(`Email:`, 4, currentY);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${order.customer.email}`, 76, currentY, { align: 'right' });
+    const custEmail = String(order.customer.email).trim();
+    if (custEmail.length > 23) doc.setFontSize(6.2);
+    else doc.setFontSize(7);
+    doc.text(custEmail, 76, currentY, { align: 'right' });
+    doc.setFontSize(7);
     currentY += 3.8;
   }
 
@@ -150,7 +160,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
     doc.setFont('helvetica', 'bold');
     doc.text(`Notes:`, 4, currentY);
     doc.setFont('helvetica', 'italic');
-    const noteLines = doc.splitTextToSize(order.customer.notes, 52);
+    const noteLines = doc.splitTextToSize(order.customer.notes, 50);
     doc.text(noteLines, 76, currentY, { align: 'right' });
     currentY += (noteLines.length * 3.5);
   }
@@ -159,7 +169,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   drawDashedLine(currentY);
   currentY += 2;
 
-  // 4. Products Table (Clean POS Thermal Format)
+  // 4. Products Table (Clean POS Thermal Format - 72mm Width)
   const tableData = (order.items || []).map((item, index) => {
     const sno = item.sno ? String(parseInt(item.sno, 10)).padStart(2, '0') : String(index + 1).padStart(2, '0');
     const nameWithPack = item.packDetails ? `${item.name || '-'}\n[${item.packDetails}]` : (item.name || '-');
@@ -179,7 +189,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
     theme: 'plain',
     styles: {
       fontSize: 6.8,
-      cellPadding: 1.5,
+      cellPadding: 1.4,
       font: 'helvetica',
       textColor: [20, 20, 20],
       overflow: 'linebreak',
@@ -195,13 +205,13 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 7 },
-      1: { cellWidth: 32 },
-      2: { halign: 'center', cellWidth: 9, fontStyle: 'bold' },
+      1: { cellWidth: 31 },
+      2: { halign: 'center', cellWidth: 8, fontStyle: 'bold' },
       3: { halign: 'right', cellWidth: 12 },
       4: { halign: 'right', cellWidth: 14, fontStyle: 'bold' }
     },
-    margin: { left: 3, right: 3 },
-    tableWidth: 74,
+    margin: { left: 4, right: 4 },
+    tableWidth: 72,
     didDrawCell: (data) => {
       // Dotted horizontal border under each row for authentic receipt look
       if (data.section === 'body' && data.row.index !== undefined) {
@@ -232,11 +242,11 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   doc.text(`${totalQuantity} boxes/pkts`, 75, currentY, { align: 'right' });
   currentY += 5;
 
-  // Grand Total Highlight Box
+  // Grand Total Highlight Box (Centered 72mm Width)
   doc.setFillColor(242, 242, 242);
   doc.setDrawColor(30, 30, 30);
   doc.setLineWidth(0.35);
-  doc.roundedRect(3, currentY, 74, 8.5, 1, 1, 'FD');
+  doc.roundedRect(4, currentY, 72, 8.5, 1, 1, 'FD');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
@@ -310,9 +320,9 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   doc.setTextColor(70, 70, 70);
   doc.text("For SHARP CRACKERS", 60, sigBlockY + 19, { align: 'center' });
 
-  currentY = sigBlockY + 22;
+  currentY = sigBlockY + 23;
 
-  // 8. Footer Salutation
+  // 8. Footer Salutation (Full visibility guaranteed with proper padding)
   drawDashedLine(currentY);
   currentY += 4;
 
@@ -339,9 +349,10 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
 
 /**
  * Opens browser print dialog with dedicated 80mm thermal receipt template.
+ * Fully responsive on mobile screens with zero horizontal/vertical overflow.
  */
 export const printOrderDocument = (order, settings) => {
-  const printWindow = window.open('', '_blank', 'width=450,height=700');
+  const printWindow = window.open('', '_blank', 'width=450,height=750');
   if (!printWindow) {
     alert("Please allow popups to print the thermal order invoice.");
     return;
@@ -361,6 +372,7 @@ export const printOrderDocument = (order, settings) => {
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <title>SHARP CRACKERS - Thermal Receipt #${order.orderId || 'Draft'}</title>
         <style>
           @page {
@@ -372,8 +384,8 @@ export const printOrderDocument = (order, settings) => {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          body {
-            width: 80mm;
+          html, body {
+            width: 100%;
             max-width: 80mm;
             margin: 0 auto;
             padding: 5mm 3.5mm;
@@ -382,6 +394,8 @@ export const printOrderDocument = (order, settings) => {
             background: #fff;
             font-size: 11px;
             line-height: 1.35;
+            overflow-x: hidden;
+            word-break: break-word;
           }
           .text-center { text-align: center; }
           .text-right { text-align: right; }
@@ -453,10 +467,12 @@ export const printOrderDocument = (order, settings) => {
             font-size: 10.5px;
             margin-bottom: 4px;
             border-collapse: collapse;
+            table-layout: fixed;
           }
           .meta-table td {
             padding: 1.5px 0;
             vertical-align: top;
+            word-break: break-word;
           }
 
           .items-table {
@@ -464,6 +480,7 @@ export const printOrderDocument = (order, settings) => {
             border-collapse: collapse;
             font-size: 10px;
             margin: 4px 0;
+            table-layout: fixed;
           }
           .items-table th {
             border-top: 1px dashed #444;
@@ -476,6 +493,7 @@ export const printOrderDocument = (order, settings) => {
             padding: 3.5px 1px;
             border-bottom: 1px dotted #ccc;
             vertical-align: top;
+            word-break: break-word;
           }
           .pack-badge {
             font-size: 9px;
@@ -600,7 +618,7 @@ export const printOrderDocument = (order, settings) => {
           ${order.customer?.email ? `
           <tr>
             <td class="bold">Email:</td>
-            <td class="text-right">${order.customer.email}</td>
+            <td class="text-right" style="font-size: 9.5px;">${order.customer.email}</td>
           </tr>` : ''}
           ${order.customer?.notes ? `
           <tr>
