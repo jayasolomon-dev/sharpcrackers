@@ -2715,6 +2715,32 @@ export const dataService = {
     this.setLastPlacedOrderId(placedOrder.orderId);
     notifyDataChanged({ type: 'ORDER_CREATED', order: placedOrder });
 
+    // Deduct stock for each ordered item from local catalog & live sync across tabs
+    try {
+      const allProducts = this.getProducts();
+      let stockChanged = false;
+      const updatedProducts = allProducts.map(p => {
+        const ord = validatedItems.find(it => it.id === p.id);
+        if (ord && Number(ord.quantity) > 0) {
+          const currentStock = p.stockCount !== undefined ? Number(p.stockCount) : (p.inStock !== false ? 100 : 0);
+          const nextStock = Math.max(0, currentStock - Number(ord.quantity));
+          stockChanged = true;
+          return {
+            ...p,
+            stockCount: nextStock,
+            inStock: nextStock > 0
+          };
+        }
+        return p;
+      });
+
+      if (stockChanged) {
+        this.saveProducts(updatedProducts);
+      }
+    } catch (stockErr) {
+      console.warn('Local stock deduction error:', stockErr);
+    }
+
     // Update sequence counter
     const seqMatch = String(placedOrder.orderId).match(/SC-(?:\d{4}-)?(\d+)$/i);
     if (seqMatch) {

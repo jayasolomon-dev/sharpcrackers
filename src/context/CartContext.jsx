@@ -20,6 +20,16 @@ export const isProductOutOfStock = (product) => {
   return false;
 };
 
+// Helper to get real-time available stock count for any product
+export const getProductAvailableStock = (product) => {
+  if (!product || product.inStock === false) return 0;
+  if (product.stockCount !== undefined && product.stockCount !== null && product.stockCount !== '') {
+    const s = parseInt(product.stockCount, 10);
+    return isNaN(s) ? 0 : Math.max(0, s);
+  }
+  return 100; // Default stock when inStock is true
+};
+
 export const CartProvider = ({ children }) => {
   // Cart stored as { [productId]: quantity }
   const [quantities, setQuantities] = useState(() => {
@@ -84,23 +94,51 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(quantities));
   }, [quantities]);
 
+  // Live multi-device / cross-tab stock reconciliation:
+  // If product stock decreases below what customer selected, clamp quantity to available stock!
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    setQuantities(prev => {
+      let changed = false;
+      const updated = { ...prev };
+      for (const [id, qty] of Object.entries(prev)) {
+        if (qty > 0) {
+          const prod = products.find(p => p.id === id);
+          if (prod) {
+            const maxStock = getProductAvailableStock(prod);
+            if (maxStock > 0 && qty > maxStock) {
+              changed = true;
+              updated[id] = maxStock;
+            }
+          }
+        }
+      }
+      return changed ? updated : prev;
+    });
+  }, [products]);
+
   const getItemQuantity = (productId) => {
     return quantities[productId] || 0;
   };
 
-
   const updateQuantity = (productId, delta) => {
-    // If trying to increase or add an out of stock product, prevent it!
-    if (delta > 0) {
-      const product = products.find(p => p.id === productId);
-      if (isProductOutOfStock(product)) {
-        return;
-      }
+    const product = products.find(p => p.id === productId);
+    const availableStock = getProductAvailableStock(product);
+
+    // If trying to increase when stock is exhausted or 0, prevent it!
+    if (delta > 0 && availableStock <= 0) {
+      return;
     }
 
     setQuantities(prev => {
       const current = prev[productId] || 0;
-      const next = Math.min(99999, Math.max(0, current + delta));
+      let next = current + delta;
+      // Strictly prevent ordering more than available stock
+      if (next > availableStock) {
+        next = availableStock;
+      }
+      next = Math.max(0, next);
+
       const updated = { ...prev };
       if (next === 0) {
         delete updated[productId];
@@ -117,15 +155,13 @@ export const CartProvider = ({ children }) => {
       sanitized = rawValue.replace(/\D/g, '').replace(/^0+/, '');
     }
     const val = parseInt(sanitized, 10);
-    const next = isNaN(val) ? 0 : Math.min(99999, Math.max(0, val));
+    const rawNext = isNaN(val) ? 0 : Math.max(0, val);
 
-    // If trying to set positive quantity on out-of-stock product, prevent it!
-    if (next > 0) {
-      const product = products.find(p => p.id === productId);
-      if (isProductOutOfStock(product)) {
-        return;
-      }
-    }
+    const product = products.find(p => p.id === productId);
+    const availableStock = getProductAvailableStock(product);
+
+    // Strictly clamp input to available stock limit
+    const next = Math.min(availableStock, rawNext);
 
     setQuantities(prev => {
       const updated = { ...prev };
@@ -150,18 +186,22 @@ export const CartProvider = ({ children }) => {
     setQuantities({});
   };
 
-  // Compile cart items with full product snapshots and out-of-stock flags
+  // Compile cart items with full product snapshots, availableStock, and out-of-stock flags
   const cartItems = Object.entries(quantities)
     .filter(([_, qty]) => qty > 0)
     .map(([productId, qty]) => {
       const product = products.find(p => p.id === productId);
       if (!product) return null;
-      const isOut = isProductOutOfStock(product);
+      const availableStock = getProductAvailableStock(product);
+      const isOut = isProductOutOfStock(product) || availableStock <= 0;
+      const safeQty = isOut ? qty : Math.min(qty, availableStock);
       return {
         ...product,
-        quantity: qty,
-        totalPrice: Number(product.unitPrice) * qty,
-        isOutOfStock: isOut
+        availableStock,
+        quantity: safeQty,
+        totalPrice: Number(product.unitPrice) * safeQty,
+        isOutOfStock: isOut,
+        isStockExceeded: qty > availableStock
       };
     })
     .filter(Boolean);
@@ -169,7 +209,7 @@ export const CartProvider = ({ children }) => {
   const totalSelectedProducts = cartItems.length;
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartSubtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const hasOutOfStockItems = cartItems.some(item => item.isOutOfStock);
+  const hasOutOfStockItems = cartItems.some(item => item.isOutOfStock || (item.availableStock !== undefined && item.quantity > item.availableStock));
 
   const deliveryCharge = 0;
   const cartGrandTotal = cartSubtotal;
@@ -188,6 +228,7 @@ export const CartProvider = ({ children }) => {
         deliveryCharge,
         hasOutOfStockItems,
         isProductOutOfStock,
+        getProductAvailableStock,
         getItemQuantity,
         updateQuantity,
         setItemQuantity,

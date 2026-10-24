@@ -58,7 +58,8 @@ export const ProductsPage = ({
     deliveryCharge, 
     cartGrandTotal,
     settings,
-    isProductOutOfStock 
+    isProductOutOfStock,
+    getProductAvailableStock
   } = useCart();
 
   const [categories, setCategories] = useState(() => dataService.getCategories());
@@ -567,7 +568,8 @@ export const ProductsPage = ({
                     <tbody>
                       {filteredProducts.map((product, index) => {
                         const qty = getItemQuantity(product.id);
-                        const isOutOfStock = isProductOutOfStock(product);
+                        const availableStock = getProductAvailableStock ? getProductAvailableStock(product) : (product.stockCount !== undefined ? Number(product.stockCount) : 100);
+                        const isOutOfStock = isProductOutOfStock(product) || availableStock <= 0;
                         const lineTotal = product.unitPrice * qty;
                         const hasSelected = qty > 0;
                         const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
@@ -634,6 +636,9 @@ export const ProductsPage = ({
                                     {product.isBestseller && (
                                       <span className="bestseller-pill">Bestseller</span>
                                     )}
+                                    {availableStock > 0 && availableStock <= 15 && (
+                                      <span className="stock-alert-pill">Only {availableStock} left!</span>
+                                    )}
                                   </>
                                 )}
                               </div>
@@ -665,40 +670,46 @@ export const ProductsPage = ({
                                   <span className="badge-out-ta">இருப்பு இல்லை</span>
                                 </div>
                               ) : (
-                                <div className="table-qty-control">
-                                  <button
-                                    type="button"
-                                    className="table-qty-btn minus-btn"
-                                    onClick={() => updateQuantity(product.id, -1)}
-                                    disabled={qty === 0}
-                                    title="Decrease quantity"
-                                  >
-                                    <Minus size={14} />
-                                  </button>
+                                <div className="table-qty-container">
+                                  <div className="table-qty-control">
+                                    <button
+                                      type="button"
+                                      className="table-qty-btn minus-btn"
+                                      onClick={() => updateQuantity(product.id, -1)}
+                                      disabled={qty === 0}
+                                      title="Decrease quantity"
+                                    >
+                                      <Minus size={14} />
+                                    </button>
 
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    placeholder="0"
-                                    value={qty === 0 ? '' : qty}
-                                    onFocus={(e) => e.target.select()}
-                                    onChange={(e) => {
-                                      const clean = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
-                                      setItemQuantity(product.id, clean);
-                                    }}
-                                    className={`table-qty-input ${qty > 0 ? 'active-input' : ''}`}
-                                    aria-label="Quantity"
-                                  />
+                                    <input
+                                      type="text"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
+                                      placeholder="0"
+                                      value={qty === 0 ? '' : qty}
+                                      onFocus={(e) => e.target.select()}
+                                      onChange={(e) => {
+                                        const clean = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
+                                        setItemQuantity(product.id, clean);
+                                      }}
+                                      className={`table-qty-input ${qty > 0 ? 'active-input' : ''}`}
+                                      aria-label="Quantity"
+                                    />
 
-                                  <button
-                                    type="button"
-                                    className="table-qty-btn plus-btn"
-                                    onClick={() => updateQuantity(product.id, 1)}
-                                    title="Increase quantity"
-                                  >
-                                    <Plus size={14} />
-                                  </button>
+                                    <button
+                                      type="button"
+                                      className="table-qty-btn plus-btn"
+                                      onClick={() => updateQuantity(product.id, 1)}
+                                      disabled={qty >= availableStock}
+                                      title={qty >= availableStock ? `Maximum stock reached (${availableStock} units)` : "Increase quantity"}
+                                    >
+                                      <Plus size={14} />
+                                    </button>
+                                  </div>
+                                  {qty >= availableStock && availableStock > 0 && (
+                                    <div className="table-stock-limit-note">Max: {availableStock}</div>
+                                  )}
                                 </div>
                               )}
                             </td>
@@ -724,7 +735,8 @@ export const ProductsPage = ({
                 <div className="mobile-catalog-view">
                   {filteredProducts.map((product) => {
                     const qty = getItemQuantity(product.id);
-                    const isOutOfStock = isProductOutOfStock(product);
+                    const availableStock = getProductAvailableStock ? getProductAvailableStock(product) : (product.stockCount !== undefined ? Number(product.stockCount) : 100);
+                    const isOutOfStock = isProductOutOfStock(product) || availableStock <= 0;
                     const lineTotal = product.unitPrice * qty;
                     const hasSelected = qty > 0;
                     const discount = Math.round(((product.mrp - product.unitPrice) / product.mrp) * 100);
@@ -774,6 +786,9 @@ export const ProductsPage = ({
                                   )}
                                   {product.isBestseller && (
                                     <span className="mobile-bestseller-badge">Bestseller</span>
+                                  )}
+                                  {availableStock > 0 && availableStock <= 15 && (
+                                    <span className="mobile-stock-badge">Only {availableStock} left!</span>
                                   )}
                                 </>
                               )}
@@ -833,45 +848,52 @@ export const ProductsPage = ({
                                 type="button"
                                 className="mobile-add-btn"
                                 onClick={() => updateQuantity(product.id, 1)}
+                                disabled={availableStock <= 0}
                                 aria-label={`Add ${product.name}`}
                               >
                                 <Plus size={16} />
                                 <span>ADD</span>
                               </button>
                             ) : (
-                              <div className="mobile-qty-stepper">
-                                <button
-                                  type="button"
-                                  className="mobile-stepper-btn minus"
-                                  onClick={() => updateQuantity(product.id, -1)}
-                                  title="Decrease quantity"
-                                  aria-label="Decrease quantity"
-                                >
-                                  <Minus size={15} />
-                                </button>
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9]*"
-                                  placeholder="0"
-                                  value={qty === 0 ? '' : qty}
-                                  onFocus={(e) => e.target.select()}
-                                  onChange={(e) => {
-                                    const clean = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
-                                    setItemQuantity(product.id, clean);
-                                  }}
-                                  className="mobile-stepper-input"
-                                  aria-label="Quantity"
-                                />
-                                <button
-                                  type="button"
-                                  className="mobile-stepper-btn plus"
-                                  onClick={() => updateQuantity(product.id, 1)}
-                                  title="Increase quantity"
-                                  aria-label="Increase quantity"
-                                >
-                                  <Plus size={15} />
-                                </button>
+                              <div className="mobile-stepper-wrap">
+                                <div className="mobile-qty-stepper">
+                                  <button
+                                    type="button"
+                                    className="mobile-stepper-btn minus"
+                                    onClick={() => updateQuantity(product.id, -1)}
+                                    title="Decrease quantity"
+                                    aria-label="Decrease quantity"
+                                  >
+                                    <Minus size={15} />
+                                  </button>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    placeholder="0"
+                                    value={qty === 0 ? '' : qty}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                      const clean = e.target.value.replace(/\D/g, '').replace(/^0+/, '');
+                                      setItemQuantity(product.id, clean);
+                                    }}
+                                    className="mobile-stepper-input"
+                                    aria-label="Quantity"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="mobile-stepper-btn plus"
+                                    onClick={() => updateQuantity(product.id, 1)}
+                                    disabled={qty >= availableStock}
+                                    title={qty >= availableStock ? `Max stock reached (${availableStock})` : "Increase quantity"}
+                                    aria-label="Increase quantity"
+                                  >
+                                    <Plus size={15} />
+                                  </button>
+                                </div>
+                                {qty >= availableStock && availableStock > 0 && (
+                                  <span className="mobile-stock-limit-note">Max: {availableStock}</span>
+                                )}
                               </div>
                             )}
                           </div>
@@ -943,7 +965,8 @@ export const ProductsPage = ({
 
       {/* Image Preview Lightbox Modal */}
       {previewProduct && (() => {
-        const isPreviewOutOfStock = isProductOutOfStock(previewProduct);
+        const previewAvailableStock = getProductAvailableStock ? getProductAvailableStock(previewProduct) : (previewProduct.stockCount !== undefined ? Number(previewProduct.stockCount) : 100);
+        const isPreviewOutOfStock = isProductOutOfStock(previewProduct) || previewAvailableStock <= 0;
 
         return (
           <div className="modal-overlay" onClick={() => setPreviewProduct(null)}>
@@ -983,7 +1006,11 @@ export const ProductsPage = ({
                       </span>
                     )}
                   </h2>
-                  <div className="pack-info">Packing: <strong>{previewProduct.packDetails}</strong></div>
+                  <div className="pack-info">
+                    Packing: <strong>{previewProduct.packDetails}</strong>
+                    <span className="modal-stock-divider"> • </span>
+                    Available Stock: <strong style={{ color: previewAvailableStock <= 10 ? '#dc2626' : '#16a34a' }}>{previewAvailableStock} units</strong>
+                  </div>
                   <p className="modal-desc">{previewProduct.description || "Direct from Sivakasi factory. PESO approved eco-friendly formulation."}</p>
                   <div className="modal-price-strip">
                     <div>
@@ -1021,6 +1048,8 @@ export const ProductsPage = ({
                             <button 
                               onClick={() => updateQuantity(previewProduct.id, 1)} 
                               className="table-qty-btn plus-btn"
+                              disabled={getItemQuantity(previewProduct.id) >= previewAvailableStock}
+                              title={getItemQuantity(previewProduct.id) >= previewAvailableStock ? `Maximum stock reached (${previewAvailableStock} units)` : "Increase quantity"}
                               aria-label="Increase quantity"
                             >
                               <Plus size={16} />
@@ -1039,8 +1068,9 @@ export const ProductsPage = ({
 
                           <button 
                             className="btn btn-primary modal-done-btn"
+                            disabled={previewAvailableStock <= 0}
                             onClick={() => {
-                              if (getItemQuantity(previewProduct.id) === 0) {
+                              if (getItemQuantity(previewProduct.id) === 0 && previewAvailableStock > 0) {
                                 updateQuantity(previewProduct.id, 1);
                               }
                               setPreviewProduct(null);
@@ -2027,6 +2057,62 @@ export const ProductsPage = ({
         .table-qty-btn:disabled {
           opacity: 0.35;
           cursor: not-allowed;
+          pointer-events: none;
+        }
+
+        .table-qty-container {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .table-stock-limit-note {
+          font-size: 0.72rem;
+          color: #ea580c;
+          font-weight: 700;
+          line-height: 1;
+        }
+
+        .stock-alert-pill {
+          display: inline-flex;
+          align-items: center;
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: #dc2626;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          padding: 1px 7px;
+          border-radius: 9999px;
+          margin-left: 6px;
+          white-space: nowrap;
+        }
+
+        .mobile-stock-badge {
+          display: inline-flex;
+          align-items: center;
+          font-size: 0.64rem;
+          font-weight: 800;
+          color: #dc2626;
+          background: #fff1f2;
+          border: 1px solid #ffe4e6;
+          padding: 1px 5px;
+          border-radius: 4px;
+          white-space: nowrap;
+        }
+
+        .mobile-stepper-wrap {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 3px;
+        }
+
+        .mobile-stock-limit-note {
+          font-size: 0.68rem;
+          color: #ea580c;
+          font-weight: 800;
+          line-height: 1;
         }
 
         .table-qty-input {

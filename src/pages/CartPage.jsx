@@ -46,7 +46,8 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     deliveryCharge,
     cartGrandTotal,
     settings,
-    hasOutOfStockItems 
+    hasOutOfStockItems,
+    getProductAvailableStock
   } = useCart();
 
   // Simplified Form State: Name, Phone, optional Email, Notes
@@ -132,6 +133,15 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
     e.preventDefault();
     if (hasOutOfStockItems) {
       alert("Your order contains Out of Stock products! Please remove them from your order list before submitting.");
+      return;
+    }
+    const overStockItem = cartItems.find(item => {
+      const avail = item.availableStock !== undefined ? item.availableStock : (getProductAvailableStock ? getProductAvailableStock(item) : (item.stockCount !== undefined ? Number(item.stockCount) : 100));
+      return item.quantity > avail;
+    });
+    if (overStockItem) {
+      const avail = overStockItem.availableStock !== undefined ? overStockItem.availableStock : 0;
+      alert(`The requested quantity for "${overStockItem.name}" exceeds available stock (${avail} available). Please adjust quantity before placing your order.`);
       return;
     }
     if (!validateForm()) return;
@@ -857,23 +867,33 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                         </td>
                         <td className="col-price text-right">{formatCur(item.unitPrice)}</td>
                         <td className="col-qty text-center">
-                          <div className="cart-qty-ctrl">
-                            <button 
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className="cart-qbtn"
-                            >
-                              <Minus size={12} />
-                            </button>
-                            <span className="cart-qval">{item.quantity}</span>
-                            <button 
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className="cart-qbtn"
-                              disabled={item.isOutOfStock}
-                              title={item.isOutOfStock ? "Product is Out of Stock" : "Increase quantity"}
-                            >
-                              <Plus size={12} />
-                            </button>
-                          </div>
+                          {(() => {
+                            const maxStock = item.availableStock !== undefined ? item.availableStock : (getProductAvailableStock ? getProductAvailableStock(item) : 100);
+                            return (
+                              <div className="cart-qty-ctrl-wrap">
+                                <div className="cart-qty-ctrl">
+                                  <button 
+                                    onClick={() => updateQuantity(item.id, -1)}
+                                    className="cart-qbtn"
+                                  >
+                                    <Minus size={12} />
+                                  </button>
+                                  <span className="cart-qval">{item.quantity}</span>
+                                  <button 
+                                    onClick={() => updateQuantity(item.id, 1)}
+                                    className="cart-qbtn"
+                                    disabled={item.isOutOfStock || item.quantity >= maxStock}
+                                    title={item.isOutOfStock ? "Product is Out of Stock" : item.quantity >= maxStock ? `Maximum stock reached (${maxStock} units)` : "Increase quantity"}
+                                  >
+                                    <Plus size={12} />
+                                  </button>
+                                </div>
+                                {item.quantity >= maxStock && maxStock > 0 && (
+                                  <div className="cart-stock-limit-note">Max: {maxStock}</div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="col-total text-right font-bold text-red">
                           {formatCur(item.totalPrice)}
@@ -925,23 +945,33 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
                     </div>
 
                     <div className="m-cart-bottom">
-                      <div className="m-cart-stepper">
-                        <button 
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="m-c-btn minus"
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span className="m-c-qty">{item.quantity}</span>
-                        <button 
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="m-c-btn plus"
-                          disabled={item.isOutOfStock}
-                          title={item.isOutOfStock ? "Product is Out of Stock" : "Increase quantity"}
-                        >
-                          <Plus size={13} />
-                        </button>
-                      </div>
+                      {(() => {
+                        const maxStock = item.availableStock !== undefined ? item.availableStock : (getProductAvailableStock ? getProductAvailableStock(item) : 100);
+                        return (
+                          <div className="m-cart-stepper-wrap">
+                            <div className="m-cart-stepper">
+                              <button 
+                                onClick={() => updateQuantity(item.id, -1)}
+                                className="m-c-btn minus"
+                              >
+                                <Minus size={13} />
+                              </button>
+                              <span className="m-c-qty">{item.quantity}</span>
+                              <button 
+                                onClick={() => updateQuantity(item.id, 1)}
+                                className="m-c-btn plus"
+                                disabled={item.isOutOfStock || item.quantity >= maxStock}
+                                title={item.isOutOfStock ? "Product is Out of Stock" : item.quantity >= maxStock ? `Maximum stock reached (${maxStock} units)` : "Increase quantity"}
+                              >
+                                <Plus size={13} />
+                              </button>
+                            </div>
+                            {item.quantity >= maxStock && maxStock > 0 && (
+                              <span className="m-cart-stock-limit-note">Max: {maxStock}</span>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       <div className="m-cart-line-total">
                         <span className="m-line-lbl">Line Total:</span>
@@ -1341,9 +1371,31 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
           background: #f8fafc;
           color: #334155;
         }
-        .cart-qbtn:hover {
+        .cart-qbtn:hover:not(:disabled) {
           background: #ff6f00;
           color: #ffffff;
+        }
+
+        .cart-qbtn:disabled {
+          opacity: 0.35 !important;
+          cursor: not-allowed !important;
+          pointer-events: none !important;
+          background: #f1f5f9 !important;
+          color: #94a3b8 !important;
+        }
+
+        .cart-qty-ctrl-wrap {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .cart-stock-limit-note {
+          font-size: 0.7rem;
+          color: #ea580c;
+          font-weight: 700;
+          line-height: 1;
         }
 
         .cart-qval {
@@ -1676,9 +1728,30 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
             align-items: center;
             justify-content: center;
           }
-          .m-c-btn:active {
+          .m-c-btn:active:not(:disabled) {
             background: #ff6f00;
             color: #ffffff;
+          }
+          .m-c-btn:disabled {
+            opacity: 0.35 !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+            background: #f1f5f9 !important;
+            color: #94a3b8 !important;
+          }
+
+          .m-cart-stepper-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+          }
+
+          .m-cart-stock-limit-note {
+            font-size: 0.65rem;
+            color: #ea580c;
+            font-weight: 800;
+            line-height: 1;
           }
 
           .m-c-qty {

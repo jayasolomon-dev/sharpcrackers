@@ -135,6 +135,39 @@ export async function onRequestPost({ request, env }) {
 
     await env.DB.prepare('DELETE FROM deleted_orders WHERE order_id = ?').bind(orderId).run().catch(() => {});
 
+    // Live Stock Deduction: Deduct purchased items from Cloudflare D1 products catalog
+    try {
+      const prodRow = await env.DB.prepare("SELECT value_json FROM settings WHERE key = 'products'").first();
+      if (prodRow && prodRow.value_json) {
+        const catalogProds = JSON.parse(prodRow.value_json);
+        if (Array.isArray(catalogProds) && Array.isArray(cleanOrder.items)) {
+          let catalogModified = false;
+          const updatedCatalog = catalogProds.map(p => {
+            const match = cleanOrder.items.find(it => it.id === p.id);
+            if (match && Number(match.quantity) > 0) {
+              const curStock = p.stockCount !== undefined ? Number(p.stockCount) : (p.inStock !== false ? 100 : 0);
+              const nextStock = Math.max(0, curStock - Number(match.quantity));
+              catalogModified = true;
+              return {
+                ...p,
+                stockCount: nextStock,
+                inStock: nextStock > 0
+              };
+            }
+            return p;
+          });
+
+          if (catalogModified) {
+            await env.DB.prepare(`
+              UPDATE settings SET value_json = ?, updated_at = ? WHERE key = 'products'
+            `).bind(JSON.stringify(updatedCatalog), new Date().toISOString()).run();
+          }
+        }
+      }
+    } catch (stockDeductErr) {
+      console.warn('Pages function stock deduction error:', stockDeductErr);
+    }
+
     return new Response(JSON.stringify({ success: true, orderId, order: fullOrder }), { status: 201, headers: corsHeaders });
   } catch (err) {
     return new Response(

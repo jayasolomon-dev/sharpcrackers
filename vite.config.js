@@ -311,6 +311,32 @@ function apiDevPlugin() {
               orders.unshift(newOrder)
             }
             writeJsonFile(ORDERS_FILE, orders)
+
+            // Deduct stock in local products.json if present
+            try {
+              const catalog = readJsonFile(PRODUCTS_FILE, null)
+              if (Array.isArray(catalog) && Array.isArray(newOrder.items)) {
+                let modified = false
+                const updatedProds = catalog.map(p => {
+                  const match = newOrder.items.find(it => it.id === p.id)
+                  if (match && Number(match.quantity) > 0) {
+                    const curStock = p.stockCount !== undefined ? Number(p.stockCount) : (p.inStock !== false ? 100 : 0)
+                    const nextStock = Math.max(0, curStock - Number(match.quantity))
+                    modified = true
+                    return {
+                      ...p,
+                      stockCount: nextStock,
+                      inStock: nextStock > 0
+                    }
+                  }
+                  return p
+                })
+                if (modified) {
+                  writeJsonFile(PRODUCTS_FILE, updatedProds)
+                }
+              }
+            } catch (_) {}
+
             res.statusCode = 201
             res.end(JSON.stringify(newOrder))
           } catch (e) {
