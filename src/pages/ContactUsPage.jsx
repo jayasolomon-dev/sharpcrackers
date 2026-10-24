@@ -995,7 +995,10 @@ export const ContactUsPage = () => {
 
         @media (max-width: 768px) {
           .contact-hero {
-            padding: 3.5rem 0 3rem;
+            padding: 3rem 0 2.5rem;
+          }
+          .contact-main-grid {
+            gap: 2rem;
           }
           .enquiry-form-card {
             padding: 2rem 1.5rem;
@@ -1003,6 +1006,95 @@ export const ContactUsPage = () => {
           .form-fields-dual-row {
             grid-template-columns: 1fr;
             gap: 1.1rem;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .contact-hero {
+            padding: 2.5rem 0 2rem;
+          }
+          .contact-hero-title {
+            font-size: 1.85rem;
+          }
+          .contact-hero-desc {
+            font-size: 0.95rem;
+          }
+          .contact-info-card {
+            padding: 1.15rem 1rem;
+            gap: 0.9rem;
+          }
+          .info-icon-box {
+            width: 44px;
+            height: 44px;
+          }
+          .info-card-label {
+            font-size: 0.98rem;
+          }
+          .info-card-value {
+            font-size: 0.88rem;
+          }
+          .help-callout-card {
+            padding: 1.4rem 1.25rem;
+            gap: 1rem;
+          }
+          .btn-call-direct {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .enquiry-form-card {
+            padding: 1.25rem 0.95rem;
+            border-radius: var(--radius-lg);
+          }
+          .form-card-header {
+            margin-bottom: 1.25rem;
+          }
+          .form-main-heading {
+            font-size: 1.35rem;
+          }
+          .form-main-desc {
+            font-size: 0.85rem;
+          }
+          .contact-info-card {
+            padding: 1rem 0.85rem;
+            gap: 0.75rem;
+            border-radius: var(--radius-md);
+          }
+          .info-icon-box {
+            width: 40px;
+            height: 40px;
+          }
+          .help-callout-card {
+            padding: 1.15rem 1rem;
+            border-radius: var(--radius-lg);
+          }
+          .help-callout-heading {
+            font-size: 1.1rem;
+          }
+          .help-callout-text {
+            font-size: 0.82rem;
+          }
+          .phone-links-wrap {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+          }
+          .phone-link-divider {
+            display: none;
+          }
+          .phone-call-link, .email-link {
+            word-break: break-all;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .contact-hero-title {
+            font-size: 1.6rem;
+          }
+          .enquiry-form-card {
+            padding: 1rem 0.75rem;
           }
         }
       `}</style>

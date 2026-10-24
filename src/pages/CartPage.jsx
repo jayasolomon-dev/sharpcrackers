@@ -624,8 +624,25 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
 
           @media (max-width: 480px) {
             .order-submitted-modal {
-              padding: 1.15rem 1rem 1rem;
+              padding: 1.15rem 0.85rem 1rem;
               border-radius: 16px;
+              width: 95%;
+              max-width: 100%;
+            }
+            .submitted-modal-header {
+              flex-direction: column;
+              align-items: stretch;
+              gap: 0.65rem;
+            }
+            .submitted-modal-top-actions {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              width: 100%;
+            }
+            .submitted-modal-download-btn {
+              flex: 1;
+              justify-content: center;
             }
             .submitted-compact-title {
               font-size: 1.2rem;
@@ -2033,13 +2050,45 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
 
         @media (max-width: 576px) {
           .order-submitted-modal {
-            padding: 2rem 1.25rem 1.5rem;
+            padding: 1.25rem 0.85rem 1rem !important;
+            width: 95% !important;
           }
           .submitted-main-title {
-            font-size: 1.75rem;
+            font-size: 1.45rem;
           }
           .submitted-quick-info {
             grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .m-cart-thumb {
+            width: 54px;
+            height: 54px;
+          }
+          .m-cart-title {
+            font-size: 0.88rem;
+          }
+          .m-cart-bottom {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+          }
+          .m-cart-line-total {
+            text-align: left;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-top: 1px dotted #f1f5f9;
+            padding-top: 0.35rem;
+          }
+          .m-c-btn {
+            width: 30px;
+            height: 30px;
+          }
+          .m-c-qty {
+            width: 32px;
+            font-size: 0.88rem;
           }
         }
       `}</style>

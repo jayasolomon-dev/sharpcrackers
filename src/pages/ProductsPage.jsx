@@ -2186,6 +2186,7 @@ export const ProductsPage = ({
           z-index: 400;
           transform: translateY(100%);
           transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
         }
 
         .sticky-order-bar.visible {
@@ -2558,7 +2559,7 @@ export const ProductsPage = ({
         /* Mobile Screens (Phone Screens <= 768px) */
         @media (max-width: 768px) {
           .products-page-container {
-            padding-bottom: 100px;
+            padding-bottom: calc(105px + env(safe-area-inset-bottom, 0px));
             width: 100% !important;
             max-width: 100% !important;
             min-width: 0 !important;
@@ -2675,7 +2676,7 @@ export const ProductsPage = ({
 
           .mobile-categories-2col-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 0.45rem;
             width: 100% !important;
             max-width: 100% !important;
@@ -3252,6 +3253,130 @@ export const ProductsPage = ({
             border: 1px solid #e2e8f0;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             z-index: 40;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .catalog-title {
+            font-size: 1.35rem;
+          }
+          .mobile-card-bottom-bar {
+            padding: 0.5rem 0.65rem;
+            gap: 0.45rem;
+          }
+          .sticky-bar-inner {
+            padding: 0.55rem 0.75rem;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+          }
+          .mobile-sticky-price {
+            font-size: clamp(1.15rem, 5vw, 1.4rem);
+          }
+          .proceed-btn {
+            padding: 0.55rem 0.95rem;
+            font-size: 0.88rem;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .catalog-workspace {
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+          }
+          .mobile-product-card {
+            padding: 0.65rem 0.55rem;
+            gap: 0.45rem;
+          }
+          .mobile-thumb-frame {
+            width: 66px;
+            height: 66px;
+          }
+          .mobile-product-title {
+            font-size: 0.86rem;
+            line-height: 1.3;
+          }
+          .mobile-card-bottom-bar {
+            padding: 0.4rem 0.45rem;
+            gap: 0.3rem;
+          }
+          .mobile-unit-price {
+            font-size: 1.12rem;
+          }
+          .mobile-mrp-price {
+            font-size: 0.72rem;
+          }
+          .mobile-wholesale-label {
+            font-size: 0.66rem;
+          }
+          .mobile-stepper-btn {
+            width: 32px;
+            height: 34px;
+          }
+          .mobile-stepper-input {
+            width: 34px;
+            min-width: 30px;
+            height: 34px;
+            font-size: 0.95rem;
+          }
+          .mobile-qty-stepper {
+            min-height: 34px;
+          }
+          .mobile-add-btn {
+            min-width: 72px;
+            padding: 0.38rem 0.75rem;
+            font-size: 0.82rem;
+            min-height: 34px;
+          }
+          .sticky-bar-inner {
+            padding: 0.45rem 0.5rem;
+            gap: 0.35rem;
+          }
+          .clear-btn {
+            padding: 0.42rem 0.55rem;
+            font-size: 0.75rem;
+          }
+          .proceed-btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.82rem;
+            letter-spacing: -0.2px;
+          }
+          .mobile-sticky-price {
+            font-size: 1.15rem;
+          }
+          .mobile-sticky-count {
+            font-size: 0.68rem;
+          }
+        }
+
+        @media (max-width: 340px) {
+          .mobile-thumb-frame {
+            width: 54px;
+            height: 54px;
+          }
+          .mobile-card-top-section {
+            gap: 0.45rem;
+          }
+          .mobile-unit-price {
+            font-size: 1.02rem;
+          }
+          .mobile-stepper-btn {
+            width: 28px;
+            height: 32px;
+          }
+          .mobile-stepper-input {
+            width: 28px;
+            min-width: 24px;
+            height: 32px;
+            font-size: 0.88rem;
+          }
+          .mobile-qty-stepper {
+            min-height: 32px;
+          }
+          .mobile-add-btn {
+            min-width: 64px;
+            padding: 0.35rem 0.6rem;
+            font-size: 0.78rem;
+            min-height: 32px;
           }
         }
 

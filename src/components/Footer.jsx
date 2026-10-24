@@ -472,12 +472,20 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
         }
 
         @media (max-width: 640px) {
+          .site-footer {
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+          }
           .footer-grid {
             grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+          .contact-line {
+            word-break: break-word;
           }
           .bottom-content {
             flex-direction: column;
             text-align: center;
+            gap: 0.65rem;
           }
         }
       `}</style>

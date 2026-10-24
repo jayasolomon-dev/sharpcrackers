@@ -1007,6 +1007,12 @@ export const AboutUsPage = ({ setCurrentPage }) => {
             width: 100%;
           }
         }
+
+        @media (max-width: 380px) {
+          .about-stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
     </div>
   );

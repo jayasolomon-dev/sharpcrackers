@@ -1607,19 +1607,75 @@ export const HomePage = ({ setCurrentPage, setSelectedCategory }) => {
 
         @media (max-width: 520px) {
           .categories-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+          }
+          .cat-img-wrapper {
+            height: 140px;
+            padding: 0.5rem;
+          }
+          .cat-info {
+            padding: 0.85rem;
+          }
+          .cat-title {
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+          }
+          .cat-desc {
+            font-size: 0.76rem;
+            line-height: 1.35;
+            margin-bottom: 0.65rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          .cat-btn {
+            font-size: 0.76rem;
+            padding: 0.32rem 0.65rem;
+            gap: 0.3rem;
+          }
+          .cat-badge {
+            top: 0.5rem;
+            right: 0.5rem;
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+          }
+          .gift-boxes-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+          }
+          .gift-card-media {
+            aspect-ratio: 1.1;
+            padding: 0.45rem;
+          }
+          .gift-card-body {
+            padding: 0.75rem;
+          }
+          .gift-name-en {
+            font-size: 0.88rem;
+          }
+          .gift-price-current {
+            font-size: 1.1rem;
+          }
+          .gift-order-btn {
+            padding: 0.35rem 0.65rem;
+            font-size: 0.75rem;
+          }
+          .bestseller-slide-card {
+            min-width: min(235px, 78vw);
+            max-width: min(235px, 78vw);
+          }
+        }
+
+        @media (max-width: 340px) {
+          .categories-grid {
             grid-template-columns: 1fr;
-            gap: 1.15rem;
+            gap: 0.75rem;
           }
           .gift-boxes-grid {
             grid-template-columns: 1fr;
-            gap: 1.25rem;
-          }
-          .gift-card-media {
-            aspect-ratio: 1.2;
-          }
-          .gift-price-row {
-            flex-direction: row;
-            align-items: center;
+            gap: 0.75rem;
           }
         }
 

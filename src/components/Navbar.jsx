@@ -996,9 +996,10 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
           background: #091326;
           border-top: 1.5px solid rgba(255, 183, 3, 0.35);
           border-bottom: 2px solid rgba(255, 183, 3, 0.25);
-          padding: 1rem 1rem 1.75rem;
+          padding: 1rem 1rem max(1.75rem, calc(1.25rem + env(safe-area-inset-bottom, 0px)));
           box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85);
           animation: slideDownDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          max-height: calc(100dvh - 75px);
           max-height: calc(100vh - 75px);
           overflow-y: auto;
           -webkit-overflow-scrolling: touch !important;
@@ -1415,22 +1416,31 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
             gap: 0.25rem;
           }
           .nav-brand {
-            gap: 0.4rem;
+            gap: 0.35rem;
+            min-width: 0;
+            overflow: hidden;
           }
           .brand-logo-frame {
             width: 36px;
             height: 36px;
             border-radius: 8px;
+            flex-shrink: 0;
+          }
+          .brand-text-col {
+            min-width: 0;
+            overflow: hidden;
           }
           .brand-name {
             font-size: 0.92rem;
             gap: 0.12rem;
+            white-space: nowrap;
           }
           .brand-name-sharp {
             padding-left: 0;
           }
           .nav-actions {
             gap: 0.25rem;
+            flex-shrink: 0;
           }
           .action-icon-btn {
             width: 33px;
@@ -1446,6 +1456,31 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
             height: 35px;
             min-width: 35px;
             border-radius: 8px;
+          }
+        }
+
+        @media (max-width: 340px) {
+          .brand-logo-frame {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+          }
+          .brand-name {
+            font-size: 0.82rem;
+          }
+          .action-icon-btn {
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+          }
+          .cart-action-btn {
+            padding: 0.3rem 0.4rem;
+            height: 30px;
+          }
+          .mobile-toggle-btn {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
           }
         }
       `}</style>
