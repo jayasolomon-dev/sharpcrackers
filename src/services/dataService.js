@@ -70,7 +70,9 @@ const DEFAULT_SETTINGS = {
   freeDeliveryThreshold: 0,
   promoBannerText: "DIWALI 2026 SPECIAL OFFER: Flat Direct Sourcing with Heavy Savings! Order online now for guaranteed express booking!",
   logoUrl: "/images/sharp_crackers_brand_logo.jpg",
-  heroBannerUrl: "/images/home_hero_bg.jpg"
+  heroBannerUrl: "/images/home_hero_bg.jpg",
+  mapUrl: "https://www.google.com/maps/place/10%C2%B055'50.5%22N+76%C2%B059'19.4%22E/@10.9306841,76.9887314,17z",
+  mapCoordinates: "10.9306841,76.9887314"
 };
 
 // Permanent 3-Digit Continuous Serial Numbers across all categories (001 -> 007 and expandable)

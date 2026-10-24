@@ -146,6 +146,18 @@ export const ContactUsPage = () => {
                     <p className="info-card-value">
                       {settings.address || "89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu"}
                     </p>
+                    <div style={{ marginTop: '0.45rem' }}>
+                      <a
+                        href={settings.mapUrl || "https://www.google.com/maps/place/10%C2%B055'50.5%22N+76%C2%B059'19.4%22E/@10.9306841,76.9887314,17z"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="info-map-link"
+                        title="View Location on Google Maps"
+                      >
+                        <MapPin size={13} />
+                        <span>Get Directions on Google Maps</span>
+                      </a>
+                    </div>
                     {settings.branchAddress && (
                       <div className="branch-info-pill">
                         <strong>Branch:</strong> {settings.branchAddress}
@@ -409,7 +421,7 @@ export const ContactUsPage = () => {
           <div className="map-frame-wrapper">
             <iframe
               title="Sharp Crackers Coimbatore Location Map"
-              src="https://maps.google.com/maps?q=Echanari%2C%20Chettipalayam%20Road%2C%20Coimbatore%2C%20Tamil%20Nadu%20641021&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              src="https://maps.google.com/maps?q=10.9306841,76.9887314&t=&z=16&ie=UTF8&iwloc=&output=embed"
               width="100%"
               height="440"
               style={{ border: 0 }}
@@ -417,6 +429,19 @@ export const ContactUsPage = () => {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
+          </div>
+
+          <div className="map-actions-bar" style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+            <a
+              href={settings.mapUrl || "https://www.google.com/maps/place/10%C2%B055'50.5%22N+76%C2%B059'19.4%22E/@10.9306841,76.9887314,17z"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-map-action"
+              title="Open Coimbatore Location in Google Maps"
+            >
+              <MapPin size={17} />
+              <span>Open in Google Maps / Get Directions</span>
+            </a>
           </div>
         </div>
       </section>
@@ -973,6 +998,50 @@ export const ContactUsPage = () => {
           overflow: hidden;
           box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
           border: 2px solid #e2e8f0;
+          background: #f8fafc;
+        }
+
+        .info-map-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #ff6f00;
+          text-decoration: none;
+          padding: 0.22rem 0.65rem;
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+        }
+        .info-map-link:hover {
+          background: #ff6f00;
+          color: #ffffff;
+          border-color: #ff6f00;
+        }
+
+        .btn-map-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.55rem;
+          background: linear-gradient(135deg, #0a1329 0%, #15254d 100%);
+          border: 1.5px solid #ffb703;
+          color: #ffd166;
+          font-weight: 800;
+          font-size: 0.95rem;
+          padding: 0.75rem 1.6rem;
+          border-radius: 9999px;
+          text-decoration: none;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+          transition: all 0.25s ease;
+        }
+        .btn-map-action:hover {
+          background: linear-gradient(135deg, #ff6f00 0%, #ea580c 100%);
+          border-color: #ff6f00;
+          color: #ffffff;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(255, 111, 0, 0.35);
         }
 
         /* Background Colors */

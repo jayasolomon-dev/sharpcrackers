@@ -208,7 +208,15 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
             <div className="footer-contact-block">
               <div className="contact-line">
                 <MapPin size={18} className="contact-icon text-orange" />
-                <span>{settings.address || '89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu'}</span>
+                <a
+                  href={settings.mapUrl || "https://www.google.com/maps/place/10%C2%B055'50.5%22N+76%C2%B059'19.4%22E/@10.9306841,76.9887314,17z"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="footer-map-link"
+                  title="Open location on Google Maps"
+                >
+                  {settings.address || '89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu'}
+                </a>
               </div>
               <div className="contact-line">
                 <Phone size={18} className="contact-icon text-gold" />

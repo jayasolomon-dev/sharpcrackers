@@ -177,7 +177,16 @@ export const AboutUsPage = ({ setCurrentPage }) => {
                 </div>
                 <div className="qc-details">
                   <div className="qc-title">Located at Coimbatore, Tamil Nadu</div>
-                  <div className="qc-desc">{settings.address || "89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021"}</div>
+                  <a
+                    href={settings.mapUrl || "https://www.google.com/maps/place/10%C2%B055'50.5%22N+76%C2%B059'19.4%22E/@10.9306841,76.9887314,17z"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="qc-desc"
+                    style={{ color: 'inherit', textDecoration: 'none', display: 'block' }}
+                    title="Open in Google Maps"
+                  >
+                    {settings.address || "89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021"}
+                  </a>
                 </div>
               </div>
             </div>
