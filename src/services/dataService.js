@@ -2604,7 +2604,7 @@ export const dataService = {
   generateContinuousInvoiceId() {
     const orders = this.getOrders();
     const currentYear = new Date().getFullYear();
-    let maxSeq = 10; // Floor at 10 to avoid collision with legacy sample orders
+    let maxSeq = 0; // Starts from 0001 (nextSeq = 1)
 
     // 1. Check all existing active orders
     orders.forEach(o => {
@@ -2617,17 +2617,6 @@ export const dataService = {
         }
       }
     });
-
-    // 2. Check local sequence counter in localStorage
-    try {
-      const storedSeq = typeof window !== 'undefined' ? localStorage.getItem('sharp_crackers_invoice_counter') : null;
-      if (storedSeq) {
-        const parsed = parseInt(storedSeq, 10);
-        if (!isNaN(parsed) && parsed > maxSeq) {
-          maxSeq = parsed;
-        }
-      }
-    } catch {}
 
     const nextSeq = maxSeq + 1;
     if (typeof window !== 'undefined') {

@@ -275,7 +275,7 @@ async function handleApiRequest(request, env, url) {
           LIMIT 500
         `).all().catch(() => ({ results: [] }));
         
-        let maxSeq = 10;
+        let maxSeq = 0;
         (maxRow.results || []).forEach(r => {
           const m = String(r.order_id).match(/SC-(?:\d{4}-)?(\d+)$/i);
           if (m) {
@@ -618,7 +618,7 @@ async function handleApiRequest(request, env, url) {
             LIMIT 500
           `).all().catch(() => ({ results: [] }));
           
-          let maxSeq = 10; // Guaranteed minimum to prevent reusing sample IDs 0001-0006
+          let maxSeq = 0; // Starts from 0001 (nextSeq = 1)
           (maxRow.results || []).forEach(r => {
             const m = String(r.order_id).match(/SC-(?:\d{4}-)?(\d+)$/i);
             if (m) {

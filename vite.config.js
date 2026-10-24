@@ -299,7 +299,17 @@ function apiDevPlugin() {
             const rawOrders = readJsonFile(ORDERS_FILE, [])
             const orders = pruneExpiredOrders(rawOrders)
             if (!newOrder.orderId) {
-              newOrder.orderId = `SC-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`
+              const currentYear = new Date().getFullYear();
+              let maxSeq = 0;
+              orders.forEach(o => {
+                const match = String(o?.orderId || '').match(/SC-(?:\d{4}-)?(\d+)$/i);
+                if (match) {
+                  const num = parseInt(match[1], 10);
+                  if (!isNaN(num) && num > maxSeq) maxSeq = num;
+                }
+              });
+              const nextSeq = maxSeq + 1;
+              newOrder.orderId = `SC-${currentYear}-${String(nextSeq).padStart(4, '0')}`;
             }
             if (!newOrder.createdAt) {
               newOrder.createdAt = new Date().toISOString()
