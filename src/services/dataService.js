@@ -2856,9 +2856,9 @@ export const dataService = {
   },
 
   // --- ADMIN AUTH ---
-  // SHA-256 Hash of Authorized Administrative Password ('genzworks@7')
+  // SHA-256 Hash of Authorized Administrative Password ('sharpcrackers2026')
   // Plaintext credentials are NEVER exposed in the client bundle!
-  AUTH_PASS_HASH: '2ef76bed6a73cf80552793e5a0f1f0cabc82c770972f6758841deff81dc417bb',
+  AUTH_PASS_HASH: '29d7b05af3672ad1d69aab750b8d10d3beac8767676ed461a9f80fdb8362b358',
 
   isAdminAuthenticated() {
     const session = localStorage.getItem(STORAGE_KEYS.ADMIN_SESSION);

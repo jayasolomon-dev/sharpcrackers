@@ -580,7 +580,7 @@ const server = http.createServer(async (req, res) => {
       const body = await parseRequestBody(req);
       const user = (body.username || '').trim().toLowerCase();
       const pass = (body.password || '').trim();
-      const adminPass = process.env.ADMIN_PASSWORD || 'genzworks@7';
+      const adminPass = process.env.ADMIN_PASSWORD || 'sharpcrackers2026';
 
       if ((user === 'sharpcrackers' || user === 'admin') && pass === adminPass) {
         res.writeHead(200, { 'Content-Type': 'application/json' });

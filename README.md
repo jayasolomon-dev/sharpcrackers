@@ -65,7 +65,7 @@ The server will start on [http://localhost:10000](http://localhost:10000) (or th
 
 Navigate to `/admin` on the website:
 - **Default Username:** `sharpcrackers`
-- **Default Password:** `genzworks@7`
+- **Default Password:** `sharpcrackers2026`
 
 *Note: For production deployments, ensure admin credentials are kept secure.*
 

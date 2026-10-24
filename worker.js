@@ -143,9 +143,9 @@ async function handleApiRequest(request, env, url) {
         passHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
       } catch {}
 
-      const validHash = '2ef76bed6a73cf80552793e5a0f1f0cabc82c770972f6758841deff81dc417bb'; // 'genzworks@7'
+      const validHash = '29d7b05af3672ad1d69aab750b8d10d3beac8767676ed461a9f80fdb8362b358'; // 'sharpcrackers2026'
       const isValid = (cleanUser === 'sharpcrackers' || cleanUser === 'admin') && 
-                      (passHash === validHash || cleanPass === 'genzworks@7');
+                      (passHash === validHash || cleanPass === 'sharpcrackers2026');
 
       if (isValid) {
         const token = 'sharp_adm_tok_' + Date.now().toString(36);
