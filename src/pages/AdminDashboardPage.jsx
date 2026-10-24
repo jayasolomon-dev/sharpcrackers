@@ -708,6 +708,49 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // -------------------------------------------------------------
+  // KEYBOARD ACCESSIBILITY: Enter triggers "Yes, Delete" / Confirm
+  // Escape cancels/dismisses the active confirmation modal
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter') {
+        // If user is focused on a Cancel button, let the Cancel button action execute
+        if (
+          document.activeElement &&
+          (document.activeElement.classList.contains('btn-sleek-cancel') ||
+           document.activeElement.classList.contains('btn-outline-secondary'))
+        ) {
+          return;
+        }
+
+        if (orderToDelete) {
+          e.preventDefault();
+          confirmDeleteOrder();
+        } else if (productToDelete) {
+          e.preventDefault();
+          handleConfirmDeleteProduct();
+        } else if (categoryToDelete) {
+          e.preventDefault();
+          handleConfirmDeleteCategory();
+        } else if (orderToCancel) {
+          e.preventDefault();
+          confirmCancelOrder();
+        }
+      } else if (e.key === 'Escape') {
+        if (orderToDelete) setOrderToDelete(null);
+        if (productToDelete) setProductToDelete(null);
+        if (categoryToDelete) setCategoryToDelete(null);
+        if (orderToCancel) setOrderToCancel(null);
+      }
+    };
+
+    if (orderToDelete || productToDelete || categoryToDelete || orderToCancel) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [orderToDelete, productToDelete, categoryToDelete, orderToCancel]);
+
   return (
     <div className="admin-dashboard-wrapper">
       {/* Admin Top Navigation Bar */}
@@ -2227,7 +2270,13 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               <button type="button" onClick={() => setCategoryToDelete(null)} className="btn-sleek-cancel">
                 Cancel
               </button>
-              <button type="button" onClick={handleConfirmDeleteCategory} className="btn-sleek-delete">
+              <button 
+                type="button" 
+                onClick={handleConfirmDeleteCategory} 
+                className="btn-sleek-delete"
+                autoFocus
+                title="Press Enter ↵ to confirm deletion"
+              >
                 <Trash2 size={16} />
                 <span>Yes, Delete Category</span>
               </button>
@@ -2253,7 +2302,13 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               <button type="button" onClick={() => setProductToDelete(null)} className="btn-sleek-cancel">
                 Cancel
               </button>
-              <button type="button" onClick={handleConfirmDeleteProduct} className="btn-sleek-delete">
+              <button 
+                type="button" 
+                onClick={handleConfirmDeleteProduct} 
+                className="btn-sleek-delete"
+                autoFocus
+                title="Press Enter ↵ to confirm deletion"
+              >
                 <Trash2 size={16} strokeWidth={2.2} />
                 <span>Yes, Delete</span>
               </button>
@@ -2602,7 +2657,13 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               <button type="button" onClick={() => setOrderToCancel(null)} className="btn-sleek-cancel">
                 Keep Order
               </button>
-              <button type="button" onClick={confirmCancelOrder} className="btn-sleek-delete">
+              <button 
+                type="button" 
+                onClick={confirmCancelOrder} 
+                className="btn-sleek-delete"
+                autoFocus
+                title="Press Enter ↵ to confirm cancellation"
+              >
                 <XCircle size={16} strokeWidth={2.2} />
                 <span>Confirm Cancellation</span>
               </button>
@@ -2628,7 +2689,13 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
               <button type="button" onClick={() => setOrderToDelete(null)} className="btn-sleek-cancel">
                 Cancel
               </button>
-              <button type="button" onClick={confirmDeleteOrder} className="btn-sleek-delete">
+              <button 
+                type="button" 
+                onClick={confirmDeleteOrder} 
+                className="btn-sleek-delete"
+                autoFocus
+                title="Press Enter ↵ to confirm deletion"
+              >
                 <Trash2 size={16} strokeWidth={2.2} />
                 <span>Yes, Delete</span>
               </button>
@@ -4911,6 +4978,16 @@ export const AdminDashboardPage = ({ setCurrentPage, onLogout }) => {
           background: #fecaca;
           color: #b91c1c;
           transform: translateY(-1px);
+        }
+
+        .btn-sleek-delete:focus-visible {
+          outline: 3px solid rgba(220, 38, 38, 0.45);
+          outline-offset: 2px;
+        }
+
+        .btn-sleek-cancel:focus-visible {
+          outline: 3px solid rgba(148, 163, 184, 0.45);
+          outline-offset: 2px;
         }
         /* =============================================================
            MODAL: BACKUP BILLS ARCHIVE (DARK LUXURY THEME MATCHED)
