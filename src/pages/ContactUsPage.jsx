@@ -6,13 +6,13 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { dataService } from '../services/dataService';
-import { 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Clock, 
-  Send, 
-  CheckCircle2, 
+import {
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  Send,
+  CheckCircle2,
   MessageSquare,
   Sparkles,
   ExternalLink,
@@ -46,7 +46,7 @@ export const ContactUsPage = () => {
     if (!cleanPhone) {
       errs.phone = 'Please enter your mobile number';
     } else if (!/^(\+?\d{1,4})?[6-9]\d{9}$/.test(cleanPhone) && !/^\+?\d{10,15}$/.test(cleanPhone)) {
-      errs.phone = 'Please enter a valid mobile number (e.g. 9566886795 or +91 9566886795)';
+      errs.phone = 'Please enter a valid mobile number (e.g. 9566886785 or +91 9566886785)';
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       errs.email = 'Please enter a valid email address';
@@ -72,8 +72,8 @@ export const ContactUsPage = () => {
       });
 
       // 2. Prepare WhatsApp message content
-      const whatsappNumber = (settings.whatsapp || '919566886795').replace(/\D/g, '');
-      const whatsappText = 
+      const whatsappNumber = (settings.whatsapp || '919566886785').replace(/\D/g, '');
+      const whatsappText =
         `💥 *SHARP CRACKERS - NEW ENQUIRY* 💥\n\n` +
         `👤 *Name:* ${formData.name.trim()}\n` +
         `📱 *Mobile:* ${formData.phone.trim()}\n` +
@@ -121,7 +121,7 @@ export const ContactUsPage = () => {
       <section className="section-padding bg-cream">
         <div className="contact-container">
           <div className="contact-main-grid">
-            
+
             {/* Left Column: Showroom Info & Contact Stack */}
             <div className="contact-left-col">
               <div className="contact-section-intro">
@@ -162,8 +162,8 @@ export const ContactUsPage = () => {
                   <div className="info-text-group">
                     <h4 className="info-card-label">Direct Phone & WhatsApp</h4>
                     <div className="phone-links-wrap">
-                      <a href={`tel:${settings.phone || '9566886795'}`} className="phone-call-link">
-                        {settings.phone || "+91 95668 86795"}
+                      <a href={`tel:${settings.phone || '9566886785'}`} className="phone-call-link">
+                        {settings.phone || "+91 95668 86785"}
                       </a>
                     </div>
                     <p className="info-card-hint">Available 8:00 AM – 10:00 PM for instant order assistance.</p>
@@ -208,12 +208,12 @@ export const ContactUsPage = () => {
                     <p className="help-callout-text">Call directly with our customer desk for custom pricing and seasonal festive packages.</p>
                   </div>
                 </div>
-                <a 
-                  href={`tel:${settings.phone || '9566886795'}`}
+                <a
+                  href={`tel:${settings.phone || '9566886785'}`}
                   className="btn btn-call-direct"
                 >
                   <Phone size={18} />
-                  <span>Call {settings.phone || '+91 95668 86795'}</span>
+                  <span>Call {settings.phone || '+91 95668 86785'}</span>
                 </a>
               </div>
             </div>
@@ -244,7 +244,7 @@ export const ContactUsPage = () => {
 
                     <div className="success-actions-wrap" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '1.25rem' }}>
                       {submittedWhatsappUrl && (
-                        <a 
+                        <a
                           href={submittedWhatsappUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -265,8 +265,8 @@ export const ContactUsPage = () => {
                           <span>Open WhatsApp Chat</span>
                         </a>
                       )}
-                      <button 
-                        onClick={() => setSubmitted(false)} 
+                      <button
+                        onClick={() => setSubmitted(false)}
                         className="btn btn-outline-dark"
                         style={{ padding: '0.85rem 1.5rem', fontWeight: 700 }}
                       >
@@ -284,9 +284,9 @@ export const ContactUsPage = () => {
                       </label>
                       <div className="input-with-icon">
                         <User size={18} className="input-field-icon" />
-                        <input 
-                          type="text" 
-                          placeholder="e.g. Anandha Kumar" 
+                        <input
+                          type="text"
+                          placeholder="e.g. Anandha Kumar"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           className={`form-text-input ${errors.name ? 'is-invalid' : ''}`}
@@ -305,9 +305,9 @@ export const ContactUsPage = () => {
                         </label>
                         <div className="input-with-icon">
                           <Phone size={18} className="input-field-icon" />
-                          <input 
-                            type="tel" 
-                            placeholder="10-digit mobile number" 
+                          <input
+                            type="tel"
+                            placeholder="10-digit mobile number"
                             value={formData.phone}
                             maxLength={10}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
@@ -325,9 +325,9 @@ export const ContactUsPage = () => {
                         </label>
                         <div className="input-with-icon">
                           <Mail size={18} className="input-field-icon" />
-                          <input 
-                            type="email" 
-                            placeholder="e.g. anand@gmail.com" 
+                          <input
+                            type="email"
+                            placeholder="e.g. anand@gmail.com"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             className={`form-text-input ${errors.email ? 'is-invalid' : ''}`}
@@ -343,9 +343,9 @@ export const ContactUsPage = () => {
                         <span>Subject / Purpose</span>
                         <span className="optional-tag">(Optional)</span>
                       </label>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Diwali Booking / Price List Inquiry" 
+                      <input
+                        type="text"
+                        placeholder="e.g. Diwali Booking / Price List Inquiry"
                         value={formData.subject}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                         className="form-text-input no-icon-input"
@@ -358,7 +358,7 @@ export const ContactUsPage = () => {
                         <span>Your Enquiry Message</span>
                         <span className="req-star">*</span>
                       </label>
-                      <textarea 
+                      <textarea
                         rows="5"
                         placeholder="Please specify which cracker items you are interested in, your delivery location, or any specific order queries..."
                         value={formData.message}
@@ -370,8 +370,8 @@ export const ContactUsPage = () => {
 
                     {/* Submit Button */}
                     <div className="form-submit-wrapper">
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         className="btn btn-message-submit btn-block"
                         disabled={loading}
                       >
@@ -407,14 +407,14 @@ export const ContactUsPage = () => {
           </div>
 
           <div className="map-frame-wrapper">
-            <iframe 
+            <iframe
               title="Sharp Crackers Coimbatore Location Map"
               src="https://maps.google.com/maps?q=Echanari%2C%20Chettipalayam%20Road%2C%20Coimbatore%2C%20Tamil%20Nadu%20641021&t=&z=15&ie=UTF8&iwloc=&output=embed"
-              width="100%" 
-              height="440" 
-              style={{ border: 0 }} 
-              allowFullScreen="" 
-              loading="lazy" 
+              width="100%"
+              height="440"
+              style={{ border: 0 }}
+              allowFullScreen=""
+              loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>

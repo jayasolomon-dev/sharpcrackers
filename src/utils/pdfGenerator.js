@@ -87,7 +87,7 @@ export const generateOrderPdf = (order, settings, shouldDownload = true) => {
   const shopAddr = doc.splitTextToSize(settings.address || "89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021", 85);
   doc.text(shopAddr, 14, startY + 4);
   const nextShopY = startY + 4 + (shopAddr.length * 3.5);
-  doc.text(`Phone: ${settings.phone || '+91 95668 86795'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}`, 14, nextShopY);
+  doc.text(`Phone: ${settings.phone || '+91 95668 86785'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}`, 14, nextShopY);
 
   // Right Column: Customer Details Box
   const boxX = 110;
@@ -318,7 +318,7 @@ export const printOrderDocument = (order, settings) => {
               <div class="tagline">${settings.tagline || 'Direct Sivakasi Fireworks Sales'}</div>
               <div style="font-size: 11px; color: #475569; margin-top: 4px;">
                 ${settings.address || '89, Sivasakthy Layout, Chettipalayam Rd, Echanari, Coimbatore - 641021'}<br/>
-                Phone: ${settings.phone || '+91 95668 86795'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}
+                Phone: ${settings.phone || '+91 95668 86785'} | Email: ${settings.email || 'sharpcrackars@gmail.com'}
               </div>
             </div>
           </div>

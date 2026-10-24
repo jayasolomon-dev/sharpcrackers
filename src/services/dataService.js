@@ -57,9 +57,9 @@ const DEFAULT_SETTINGS = {
   shopName: "SHARP CRACKERS",
   tagline: "Light Up Your Celebrations!",
   subtitle: "100% Genuine Green Crackers • Retail & Online",
-  phone: "+91 95668 86795",
+  phone: "+91 95668 86785",
   altPhone: "",
-  whatsapp: "919566886795",
+  whatsapp: "919566886785",
   email: "sharpcrackars@gmail.com",
   address: "89, Sivasakthy Layout, Selvam Mahal (opposite), Chettipalayam Road, Echanari, Coimbatore - 641 021. Tamilnadu",
   branchAddress: "",
@@ -1894,16 +1894,16 @@ export const dataService = {
         parsed.logoUrl = '/images/sharp_crackers_brand_logo.jpg';
         changed = true;
       }
-      if (!parsed.phone || parsed.phone.includes('98421')) {
-        parsed.phone = '+91 95668 86795';
+      if (!parsed.phone || parsed.phone.includes('98421') || parsed.phone.includes('86795')) {
+        parsed.phone = '+91 95668 86785';
         changed = true;
       }
       if (parsed.altPhone && parsed.altPhone.includes('94432')) {
         parsed.altPhone = '';
         changed = true;
       }
-      if (!parsed.whatsapp || parsed.whatsapp.includes('98421')) {
-        parsed.whatsapp = '919566886795';
+      if (!parsed.whatsapp || parsed.whatsapp.includes('98421') || parsed.whatsapp.includes('86795')) {
+        parsed.whatsapp = '919566886785';
         changed = true;
       }
       if (!parsed.email || parsed.email.includes('sharpcrackers.com')) {

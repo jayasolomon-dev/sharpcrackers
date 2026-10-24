@@ -182,7 +182,7 @@ export const Footer = ({ setCurrentPage, setSelectedCategory }) => {
               <div className="contact-line">
                 <Phone size={18} className="contact-icon text-gold" />
                 <div>
-                  <a href={`tel:${settings.phone || '9566886795'}`}>{settings.phone || '+91 95668 86795'}</a>
+                  <a href={`tel:${settings.phone || '9566886785'}`}>{settings.phone || '+91 95668 86785'}</a>
                   {settings.altPhone && <span>, <a href={`tel:${settings.altPhone}`}>{settings.altPhone}</a></span>}
                 </div>
               </div>

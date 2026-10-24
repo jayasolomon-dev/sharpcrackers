@@ -206,7 +206,7 @@ export const CartPage = ({ setCurrentPage, setLastOrderPlaced }) => {
   // Forward Order Summary to WhatsApp
   const handleSendOrderToWhatsApp = () => {
     if (!submittedOrder) return;
-    const whatsappNumber = (settings.whatsapp || '919566886795').replace(/\D/g, '');
+    const whatsappNumber = (settings.whatsapp || '919566886785').replace(/\D/g, '');
     const itemsText = (submittedOrder.items || [])
       .map((it, idx) => `${idx + 1}. ${it.name} (${it.packDetails || '1 box'}) x ${it.quantity} = ₹${it.totalPrice}`)
       .join('\n');
