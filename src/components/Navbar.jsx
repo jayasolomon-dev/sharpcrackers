@@ -23,22 +23,22 @@ import {
 export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
   const { totalQuantity, totalSelectedProducts, settings, products } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [lastCustomerOrder, setLastCustomerOrder] = useState(() => dataService.getLastPlacedOrder());
+  const [lastCustomerOrder, setLastCustomerOrder] = useState(() => (typeof dataService?.getLastPlacedOrder === 'function' ? dataService.getLastPlacedOrder() : null));
 
   // Live order status synchronization for Navbar
   useEffect(() => {
-    const unsub = dataService.subscribe((event) => {
+    const unsub = typeof dataService?.subscribe === 'function' ? dataService.subscribe((event) => {
       if (
         event?.type === 'ORDER_CREATED' || 
         event?.type === 'ORDER_STATUS_CHANGED' ||
         event?.type === 'ORDERS_UPDATED'
       ) {
-        setLastCustomerOrder(dataService.getLastPlacedOrder());
+        setLastCustomerOrder(typeof dataService?.getLastPlacedOrder === 'function' ? dataService.getLastPlacedOrder() : null);
       }
-    });
+    }) : () => {};
 
     const timer = setInterval(() => {
-      const order = dataService.getLastPlacedOrder();
+      const order = typeof dataService?.getLastPlacedOrder === 'function' ? dataService.getLastPlacedOrder() : null;
       if (order) {
         setLastCustomerOrder(prev => {
           if (!prev || prev.status !== order.status || prev.orderId !== order.orderId) {
@@ -50,7 +50,7 @@ export const Navbar = ({ currentPage, setCurrentPage, onSearchOpen }) => {
     }, 3000);
 
     return () => {
-      unsub();
+      if (unsub) unsub();
       clearInterval(timer);
     };
   }, []);

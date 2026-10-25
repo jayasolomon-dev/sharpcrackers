@@ -36,27 +36,27 @@ const getInitialPage = () => {
 export function App() {
   const [currentPage, setCurrentPageRaw] = useState(getInitialPage);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [lastOrderPlaced, setLastOrderPlaced] = useState(() => dataService.getLastPlacedOrder());
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => dataService.isAdminAuthenticated());
+  const [lastOrderPlaced, setLastOrderPlaced] = useState(() => (typeof dataService?.getLastPlacedOrder === 'function' ? dataService.getLastPlacedOrder() : null));
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => (typeof dataService?.isAdminAuthenticated === 'function' ? dataService.isAdminAuthenticated() : false));
   const searchInputRef = useRef(null);
 
   // Live order status synchronization for customer store
   useEffect(() => {
-    const unsub = dataService.subscribe((event) => {
+    const unsub = typeof dataService?.subscribe === 'function' ? dataService.subscribe((event) => {
       if (
         event?.type === 'ORDER_STATUS_CHANGED' || 
         event?.type === 'ORDER_CREATED' ||
         event?.type === 'ORDERS_UPDATED'
       ) {
-        const latest = dataService.getLastPlacedOrder();
+        const latest = typeof dataService?.getLastPlacedOrder === 'function' ? dataService.getLastPlacedOrder() : null;
         if (latest) {
           setLastOrderPlaced(latest);
         }
       }
-    });
+    }) : () => {};
 
     const timer = setInterval(() => {
-      const latest = dataService.getLastPlacedOrder();
+      const latest = typeof dataService?.getLastPlacedOrder === 'function' ? dataService.getLastPlacedOrder() : null;
       if (latest) {
         setLastOrderPlaced(prev => {
           // If the user already dismissed the notification banner, do not resurrect it
